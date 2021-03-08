@@ -2,36 +2,32 @@ using System;
 using System.Collections.Generic;
 using RestSharp;
 using Newtonsoft.Json;
+using SpaceTraders.Models;
 
-namespace SpaceTraders
+namespace SpaceTraders.Commands
 {
-    public class LoanShowCommand : ICommand
+    public class StatusCommand : ICommand
     {
         public string Name
         {
             get
             {
-                return "LoanShow";
+                return "Status";
             }
         }
         public void Execute(SpaceTraderStateModel state)
         {
-            Console.WriteLine("Getting Loan Info...");
             var client = new RestClient("https://api.spacetraders.io");
-            var request = new RestRequest($"/game/loans/?token={state.Token}", Method.GET);
+            var request = new RestRequest("/game/status", Method.GET);
             var response = client.Execute(request);
-            var accountResponse = JsonConvert.DeserializeObject<LoanList>(response.Content);
-            Console.WriteLine(string.Join(Environment.NewLine, accountResponse.Loans));
-            Console.WriteLine("Completed.");
+            var status = JsonConvert.DeserializeObject<StatusResponse>(response.Content).Status;
+            Console.WriteLine(status);
         }
         public IEnumerable<string> GetInputs()
         {
             return new List<string>
             {
-                "ls",
-                "loan show",
-                "loan",
-                "loans",
+                "status",
             };
         }
         public bool CanExecute(SpaceTraderStateModel state)
@@ -40,3 +36,4 @@ namespace SpaceTraders
         }
     }
 }
+   

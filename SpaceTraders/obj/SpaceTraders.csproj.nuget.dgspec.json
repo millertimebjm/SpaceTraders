@@ -1,25 +1,30 @@
 {
   "format": 1,
   "restore": {
-    "/home/miller/Development/SpaceTraders/SpaceTraders/SpaceTraders.csproj": {}
+    "C:\\BrandonDevelopment\\github\\SpaceTraders\\SpaceTraders\\SpaceTraders.csproj": {}
   },
   "projects": {
-    "/home/miller/Development/SpaceTraders/SpaceTraders/SpaceTraders.csproj": {
+    "C:\\BrandonDevelopment\\github\\SpaceTraders\\SpaceTraders\\SpaceTraders.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/miller/Development/SpaceTraders/SpaceTraders/SpaceTraders.csproj",
+        "projectUniqueName": "C:\\BrandonDevelopment\\github\\SpaceTraders\\SpaceTraders\\SpaceTraders.csproj",
         "projectName": "SpaceTraders",
-        "projectPath": "/home/miller/Development/SpaceTraders/SpaceTraders/SpaceTraders.csproj",
-        "packagesPath": "/home/miller/.nuget/packages/",
-        "outputPath": "/home/miller/Development/SpaceTraders/SpaceTraders/obj/",
+        "projectPath": "C:\\BrandonDevelopment\\github\\SpaceTraders\\SpaceTraders\\SpaceTraders.csproj",
+        "packagesPath": "C:\\Users\\bmiller\\.nuget\\packages\\",
+        "outputPath": "C:\\BrandonDevelopment\\github\\SpaceTraders\\SpaceTraders\\obj\\",
         "projectStyle": "PackageReference",
+        "fallbackFolders": [
+          "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"
+        ],
         "configFilePaths": [
-          "/home/miller/.nuget/NuGet/NuGet.Config"
+          "C:\\Users\\bmiller\\AppData\\Roaming\\NuGet\\NuGet.Config",
+          "C:\\Program Files (x86)\\NuGet\\Config\\Microsoft.VisualStudio.Offline.config"
         ],
         "originalTargetFrameworks": [
           "netcoreapp3.1"
         ],
         "sources": {
+          "C:\\Program Files (x86)\\Microsoft SDKs\\NuGetPackages\\": {},
           "https://api.nuget.org/v3/index.json": {}
         },
         "frameworks": {
@@ -60,7 +65,7 @@
               "privateAssets": "all"
             }
           },
-          "runtimeIdentifierGraphPath": "/usr/share/dotnet/sdk/3.1.108/RuntimeIdentifierGraph.json"
+          "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\3.1.112\\RuntimeIdentifierGraph.json"
         }
       }
     }

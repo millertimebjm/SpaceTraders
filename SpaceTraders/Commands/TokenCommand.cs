@@ -2,8 +2,9 @@ using System;
 using System.Collections.Generic;
 using RestSharp;
 using Newtonsoft.Json;
+using SpaceTraders.Models;
 
-namespace SpaceTraders
+namespace SpaceTraders.Commands
 {
     public class TokenCommand : ICommand
     {

@@ -12,3 +12,17 @@
 /home/miller/Development/SpaceTraders/SpaceTraders/obj/Debug/netcoreapp3.1/SpaceTraders.csproj.CopyComplete
 /home/miller/Development/SpaceTraders/SpaceTraders/obj/Debug/netcoreapp3.1/SpaceTraders.dll
 /home/miller/Development/SpaceTraders/SpaceTraders/obj/Debug/netcoreapp3.1/SpaceTraders.pdb
+C:\BrandonDevelopment\github\SpaceTraders\SpaceTraders\obj\Debug\netcoreapp3.1\SpaceTraders.csprojAssemblyReference.cache
+C:\BrandonDevelopment\github\SpaceTraders\SpaceTraders\obj\Debug\netcoreapp3.1\SpaceTraders.AssemblyInfoInputs.cache
+C:\BrandonDevelopment\github\SpaceTraders\SpaceTraders\obj\Debug\netcoreapp3.1\SpaceTraders.AssemblyInfo.cs
+C:\BrandonDevelopment\github\SpaceTraders\SpaceTraders\obj\Debug\netcoreapp3.1\SpaceTraders.dll
+C:\BrandonDevelopment\github\SpaceTraders\SpaceTraders\obj\Debug\netcoreapp3.1\SpaceTraders.pdb
+C:\BrandonDevelopment\github\SpaceTraders\SpaceTraders\bin\Debug\netcoreapp3.1\SpaceTraders.exe
+C:\BrandonDevelopment\github\SpaceTraders\SpaceTraders\bin\Debug\netcoreapp3.1\SpaceTraders.deps.json
+C:\BrandonDevelopment\github\SpaceTraders\SpaceTraders\bin\Debug\netcoreapp3.1\SpaceTraders.runtimeconfig.json
+C:\BrandonDevelopment\github\SpaceTraders\SpaceTraders\bin\Debug\netcoreapp3.1\SpaceTraders.runtimeconfig.dev.json
+C:\BrandonDevelopment\github\SpaceTraders\SpaceTraders\bin\Debug\netcoreapp3.1\SpaceTraders.dll
+C:\BrandonDevelopment\github\SpaceTraders\SpaceTraders\bin\Debug\netcoreapp3.1\SpaceTraders.pdb
+C:\BrandonDevelopment\github\SpaceTraders\SpaceTraders\bin\Debug\netcoreapp3.1\Newtonsoft.Json.dll
+C:\BrandonDevelopment\github\SpaceTraders\SpaceTraders\bin\Debug\netcoreapp3.1\RestSharp.dll
+C:\BrandonDevelopment\github\SpaceTraders\SpaceTraders\obj\Debug\netcoreapp3.1\SpaceTraders.csproj.CopyComplete

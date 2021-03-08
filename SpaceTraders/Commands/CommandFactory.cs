@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace SpaceTraders 
+namespace SpaceTraders.Commands
 {
     public static class CommandFactory
     {
