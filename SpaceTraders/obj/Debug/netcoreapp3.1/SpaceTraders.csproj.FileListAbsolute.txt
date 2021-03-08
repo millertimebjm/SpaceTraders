@@ -1,0 +1,14 @@
+/home/miller/Development/SpaceTraders/SpaceTraders/bin/Debug/netcoreapp3.1/SpaceTraders
+/home/miller/Development/SpaceTraders/SpaceTraders/bin/Debug/netcoreapp3.1/SpaceTraders.deps.json
+/home/miller/Development/SpaceTraders/SpaceTraders/bin/Debug/netcoreapp3.1/SpaceTraders.runtimeconfig.json
+/home/miller/Development/SpaceTraders/SpaceTraders/bin/Debug/netcoreapp3.1/SpaceTraders.runtimeconfig.dev.json
+/home/miller/Development/SpaceTraders/SpaceTraders/bin/Debug/netcoreapp3.1/SpaceTraders.dll
+/home/miller/Development/SpaceTraders/SpaceTraders/bin/Debug/netcoreapp3.1/SpaceTraders.pdb
+/home/miller/Development/SpaceTraders/SpaceTraders/bin/Debug/netcoreapp3.1/Newtonsoft.Json.dll
+/home/miller/Development/SpaceTraders/SpaceTraders/bin/Debug/netcoreapp3.1/RestSharp.dll
+/home/miller/Development/SpaceTraders/SpaceTraders/obj/Debug/netcoreapp3.1/SpaceTraders.csprojAssemblyReference.cache
+/home/miller/Development/SpaceTraders/SpaceTraders/obj/Debug/netcoreapp3.1/SpaceTraders.AssemblyInfoInputs.cache
+/home/miller/Development/SpaceTraders/SpaceTraders/obj/Debug/netcoreapp3.1/SpaceTraders.AssemblyInfo.cs
+/home/miller/Development/SpaceTraders/SpaceTraders/obj/Debug/netcoreapp3.1/SpaceTraders.csproj.CopyComplete
+/home/miller/Development/SpaceTraders/SpaceTraders/obj/Debug/netcoreapp3.1/SpaceTraders.dll
+/home/miller/Development/SpaceTraders/SpaceTraders/obj/Debug/netcoreapp3.1/SpaceTraders.pdb

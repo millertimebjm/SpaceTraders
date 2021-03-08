@@ -27,7 +27,8 @@ namespace SpaceTraders
         private Dictionary<string, ICommand> commandDictionary = new Dictionary<string, ICommand>();
         public SpaceTraderService()
         {
-            _state.Token = "81027fa0-d927-49b4-af77-e726b364a6c2";
+            //_state.Token = "81027fa0-d927-49b4-af77-e726b364a6c2";
+            _state.Token = "77573311-bbe9-4fc0-9143-0577d4d01b7b";
             _state.User = new User()
             {
                 Id = "cklvs4ky928836em89qtw9qdty",
@@ -115,132 +116,6 @@ namespace SpaceTraders
         public string Token { get; set; } = "";
     }
 
-    public class ExitCommand : ICommand
-    {
-        public string Name 
-        { 
-            get 
-            {
-                return "Exit";
-            }
-        }
-        public void Execute(SpaceTraderStateModel state)
-        {
-            Console.WriteLine("Thank you for playing.");
-            state.Complete = true;
-        }
-        public IEnumerable<string> GetInputs()
-        {
-            return new List<string>
-            {
-                "quit",
-                "exit",
-            };
-        }
-    }
-
-    public class StatusCommand : ICommand
-    {
-        public string Name
-        {
-            get
-            {
-                return "Status";
-            }
-        }
-        public void Execute(SpaceTraderStateModel state)
-        {
-            var client = new RestClient("https://api.spacetraders.io");
-            var request = new RestRequest("/game/status", Method.GET);
-            var response = client.Execute(request);
-            var status = JsonConvert.DeserializeObject<StatusResponse>(response.Content).Status;
-            Console.WriteLine(status);
-        }
-        public IEnumerable<string> GetInputs()
-        {
-            return new List<string>
-            {
-                "status",
-            };
-        }
-    }
-
-    //public class TokenCommand : ICommand
-    //{
-    //    public void Execute(SpaceTraderStateModel state)
-    //    {
-    //        Console.WriteLine($"Generating token...");
-    //        var client = new RestClient("https://api.spacetraders.io");
-    //        var request = new RestRequest($"/users/{state.User.Username}/token", Method.POST);
-    //        var response = client.Execute(request);
-    //        var tokenResponse = JsonConvert.DeserializeObject<TokenResponse>(response.Content);
-    //        state.User = tokenResponse.User;
-    //        state.Token = tokenResponse.Token;
-    //        Console.WriteLine($"Token generated: {state.Token}");
-    //    }
-    //}
-    
-    public class AccountCommand : ICommand
-    {
-        public string Name
-        {
-            get
-            {
-                return "Account";
-            }
-        }
-        public void Execute(SpaceTraderStateModel state)
-        {
-            Console.WriteLine("Getting Account Info...");
-            var client = new RestClient("https://api.spacetraders.io");
-            var request = new RestRequest($"/users/{state.User.Username}?token={state.Token}", Method.GET);
-            var response = client.Execute(request);
-            var accountResponse = JsonConvert.DeserializeObject<AccountResponse>(response.Content);
-            state.User = accountResponse.User;
-            Console.WriteLine(state.User.ToString());
-            Console.WriteLine("Completed.");
-        }
-        public IEnumerable<string> GetInputs()
-        {
-            return new List<string>
-            {
-                "account",
-                "a",
-            };
-        }
-    }
-
-    public class LoanShowCommand : ICommand
-    {
-        public string Name
-        {
-            get
-            {
-                return "LoanShow";
-            }
-        }
-        public void Execute(SpaceTraderStateModel state)
-        {
-            Console.WriteLine("Getting Loan Info...");
-            var client = new RestClient("https://api.spacetraders.io");
-            var request = new RestRequest($"/game/loans/?token={state.Token}", Method.GET);
-            var response = client.Execute(request);
-            var accountResponse = JsonConvert.DeserializeObject<LoanList>(response.Content);
-            Console.WriteLine(string.Join(Environment.NewLine, accountResponse.Loans));
-            Console.WriteLine("Completed.");
-        }
-        public IEnumerable<string> GetInputs()
-        {
-            return new List<string>
-            {
-                "ls",
-                "loan show",
-                "loan",
-                "loans",
-            };
-        }
-    }
-
     interface IResponse
     {
 
@@ -258,13 +133,35 @@ namespace SpaceTraders
     {
         public string Id { get; set; }
         public string Username { get; set; }
-        public string picture { get; set; }
-        public string email { get; set; }
+        public string Picture { get; set; }
+        public string Email { get; set; }
         public long Credits { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
-        public List<Ship> Ships { get; set; }
-        public List<Loan> Loans { get; set; }
+        public IEnumerable<Ship> Ships { get; set; } = new List<Ship>();
+        public IEnumerable<Loan> Loans { get; set; } = new List<Loan>();
+
+        public override string ToString()
+        {
+            var result = $@"User {Username} ({Id}) | Credits:{Credits}"; // UpdatedAt:{UpdatedAt.ToString("s", CultureInfo.CreateSpecificCulture("en-US"))}
+            if (Ships != null && Ships.Any())
+            {
+                result += Environment.NewLine + string.Join(Environment.NewLine, Ships.ToString());
+            } 
+            else 
+            {
+                result += Environment.NewLine + "Ships: none";
+            }
+            if (Loans != null && Loans.Any())
+            {
+                result += Environment.NewLine + string.Join(Environment.NewLine, Loans.ToString());
+            }
+            else 
+            {
+                result += Environment.NewLine + "Loans: none";
+            }
+            return result;
+        }
     }
     public class AccountResponse : IResponse
     {
@@ -272,18 +169,43 @@ namespace SpaceTraders
     }
     public class Ship
     {
+        // General Info
+        public string Class { get; set; }
+        public string Manufacturer { get; set; }
+        public decimal MaxCargo { get; set; }
+        public int Plating { get; set; }
+        public IEnumerable<PurchaseLocation> PurchaseLocations { get; set; }
+        public int Speed { get; set; }
+        public string Type { get; set; }
+        public int Weapons { get; set; }
 
+        // Owned
+        public IEnumerable<Cargo> Cargo { get; set; }
+        public string Id { get; set; }
+        public string Location { get; set; }
+        public decimal SpaceAvailable { get; set; }
+    }
+    public class Cargo 
+    {
+        public string Good { get; set; }
+        public int Quantity { get; set; }
+    }
+    public class PurchaseLocation 
+    {
+        public string Location { get; set; }
+        public decimal Price { get; set; }
     }
     public enum LoanStatusEnum {
         Current,
     }
     public class Loan
     {
+        // General Info
         public string Type { get; set; }
         public decimal Amount { get; set; }
         public bool CollateralRequired { get; set; }
         public decimal Rate { get; set; }
-        public int TerminInDays { get; set; }
+        public int TermInDays { get; set; }
 
         public bool HasLoan { 
             get 
@@ -291,6 +213,8 @@ namespace SpaceTraders
                 return !string.IsNullOrWhiteSpace(Id);
             }
         }
+
+        // Owned Loan
         public DateTime Due { get; set; }
         public string Id { get; set; }
         public decimal RepaymentAmount { get; set; }
@@ -301,11 +225,11 @@ namespace SpaceTraders
             var collateralRequiredString = CollateralRequired ? "Y" : "N";
             if (HasLoan) 
             {
-                return $"Loan {Status} Due:{Due.ToString("s", CultureInfo.CreateSpecificCulture("en-US"))} | {Type} {RepaymentAmount}({Amount})  Collateral:{collateralRequiredString} {Rate} Term:{TerminInDays}";
+                return $"Loan {Status} Due:{Due.ToString("s", CultureInfo.CreateSpecificCulture("en-US"))} | {Type} {RepaymentAmount}({Amount})  Collateral:{collateralRequiredString} {Rate} Term:{TermInDays}";
             } 
             else 
             {
-                return $"Loan | {Type} {Amount} Collateral:{collateralRequiredString} {Rate} Term:{TerminInDays}";
+                return $"Loan | {Type} {Amount} Collateral:{collateralRequiredString} {Rate} Term:{TermInDays}";
             }
             
         }
@@ -313,6 +237,32 @@ namespace SpaceTraders
     public class LoanList
     {
         public List<Loan> Loans { get; set; }
+    }
+    public class Order 
+    {
+        public string Good { get; set; }
+        public decimal PricePerUnit { get; set; }
+        public decimal Quantity { get; set; }
+        public decimal Total { get; set; }
+    }
+    public class Location 
+    {
+        public string Name { get; set; }
+        public string Symbol { get; set; }
+        public string Type { get; set; }
+        public int X { get; set; }
+        public int Y { get; set; }
+    }
+    public class FlightPlan 
+    {
+        public DateTime ArrivesAt { get; set; }
+        public string Destination { get; set; }
+        public int FuelConsumed { get; set; }
+        public int FuelRemaining { get; set; }
+        public string Id { get; set; }
+        public string ShipId { get; set; }
+        public DateTime? TerminatedAt { get; set; }
+        public int TimeRemainingInSeconds { get; set; }
     }
 }
 

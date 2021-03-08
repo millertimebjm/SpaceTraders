@@ -8,5 +8,6 @@ namespace SpaceTraders
         string Name { get; }
         void Execute(SpaceTraderStateModel state);
         IEnumerable<string> GetInputs();
+        bool CanExecute(SpaceTraderStateModel state);
     }
 }

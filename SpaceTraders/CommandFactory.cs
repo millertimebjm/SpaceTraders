@@ -9,6 +9,7 @@ namespace SpaceTraders
         {
             return new List<ICommand>
             {
+                new TokenCommand(),
                 new StatusCommand(),
                 new AccountCommand(),
                 new ExitCommand(),
