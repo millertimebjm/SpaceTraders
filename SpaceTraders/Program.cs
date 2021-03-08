@@ -3,6 +3,7 @@ using RestSharp;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Globalization;
 
 namespace SpaceTraders
 {
@@ -106,33 +107,12 @@ namespace SpaceTraders
         }
     }
 
-    public static class CommandFactory
-    {
-        public static IEnumerable<ICommand> GetCommands()
-        {
-            return new List<ICommand>
-            {
-                new StatusCommand(),
-                new AccountCommand(),
-                new ExitCommand(),
-                new LoanShowCommand(),
-            };
-        }
-    }
-
     public class SpaceTraderStateModel
     {
         public User User { get; set; }
         public bool Complete { get; set; } = false;
         public string Status { get; set; } = "";
         public string Token { get; set; } = "";
-    }
-
-    public interface ICommand
-    {
-        string Name { get; }
-        void Execute(SpaceTraderStateModel state);
-        IEnumerable<string> GetInputs();
     }
 
     public class ExitCommand : ICommand
@@ -294,9 +274,41 @@ namespace SpaceTraders
     {
 
     }
+    public enum LoanStatusEnum {
+        Current,
+    }
     public class Loan
     {
+        public string Type { get; set; }
+        public decimal Amount { get; set; }
+        public bool CollateralRequired { get; set; }
+        public decimal Rate { get; set; }
+        public int TerminInDays { get; set; }
 
+        public bool HasLoan { 
+            get 
+            {
+                return !string.IsNullOrWhiteSpace(Id);
+            }
+        }
+        public DateTime Due { get; set; }
+        public string Id { get; set; }
+        public decimal RepaymentAmount { get; set; }
+        public LoanStatusEnum Status { get; set; }
+
+        public override string ToString() 
+        {
+            var collateralRequiredString = CollateralRequired ? "Y" : "N";
+            if (HasLoan) 
+            {
+                return $"Loan {Status} Due:{Due.ToString("s", CultureInfo.CreateSpecificCulture("en-US"))} | {Type} {RepaymentAmount}({Amount})  Collateral:{collateralRequiredString} {Rate} Term:{TerminInDays}";
+            } 
+            else 
+            {
+                return $"Loan | {Type} {Amount} Collateral:{collateralRequiredString} {Rate} Term:{TerminInDays}";
+            }
+            
+        }
     }
     public class LoanList
     {
