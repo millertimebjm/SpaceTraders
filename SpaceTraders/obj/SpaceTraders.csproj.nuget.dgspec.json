@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "C:\\BrandonDevelopment\\github\\SpaceTraders\\SpaceTraders\\SpaceTraders.csproj": {}
+    "C:\\BrandonDevelopment\\Github\\SpaceTraders\\SpaceTraders\\SpaceTraders.csproj": {}
   },
   "projects": {
-    "C:\\BrandonDevelopment\\github\\SpaceTraders\\SpaceTraders\\SpaceTraders.csproj": {
+    "C:\\BrandonDevelopment\\Github\\SpaceTraders\\SpaceTraders\\SpaceTraders.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "C:\\BrandonDevelopment\\github\\SpaceTraders\\SpaceTraders\\SpaceTraders.csproj",
+        "projectUniqueName": "C:\\BrandonDevelopment\\Github\\SpaceTraders\\SpaceTraders\\SpaceTraders.csproj",
         "projectName": "SpaceTraders",
-        "projectPath": "C:\\BrandonDevelopment\\github\\SpaceTraders\\SpaceTraders\\SpaceTraders.csproj",
+        "projectPath": "C:\\BrandonDevelopment\\Github\\SpaceTraders\\SpaceTraders\\SpaceTraders.csproj",
         "packagesPath": "C:\\Users\\bmiller\\.nuget\\packages\\",
-        "outputPath": "C:\\BrandonDevelopment\\github\\SpaceTraders\\SpaceTraders\\obj\\",
+        "outputPath": "C:\\BrandonDevelopment\\Github\\SpaceTraders\\SpaceTraders\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files\\dotnet\\sdk\\NuGetFallbackFolder"

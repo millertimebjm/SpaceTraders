@@ -1,8 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using SpaceTraders.Commands;
-using SpaceTraders.Models;
-
+﻿
 namespace SpaceTraders
 {
     class Program
@@ -14,4 +10,3 @@ namespace SpaceTraders
         }
     }
 }
-

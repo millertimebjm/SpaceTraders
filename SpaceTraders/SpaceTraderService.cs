@@ -32,11 +32,17 @@ namespace SpaceTraders
             Console.WriteLine();
             DisplayCommands();
             Console.WriteLine();
-            //GetUsername();
+            if (string.IsNullOrWhiteSpace(_state.User.Username))
+            {
+                GetUsername();
+            }
             ICommand statusCommand = new StatusCommand();
             statusCommand.Execute(_state);
-            //ICommand tokenCommand = new TokenCommand();
-            //tokenCommand.Execute(_state);
+            if (string.IsNullOrWhiteSpace(_state.Token))
+            {
+                ICommand tokenCommand = new TokenCommand();
+                tokenCommand.Execute(_state);
+            }
             do
             {
                 Console.WriteLine();
@@ -70,16 +76,16 @@ namespace SpaceTraders
             Console.WriteLine("Complete.");
         }
 
-        //private void GetUsername()
-        //{
-        //    //Console.Write($"Username ({_state.User.Username}?): ");
-        //    var input = Console.ReadLine();
-        //    if (!string.IsNullOrWhiteSpace(input))
-        //    {
-        //        _state.User.Username = input;
-        //    }
-        //    Console.WriteLine($"Using {_state.User.Username}.");
-        //}
+        private void GetUsername()
+        {
+           //Console.Write($"Username ({_state.User.Username}?): ");
+           var input = Console.ReadLine();
+           if (!string.IsNullOrWhiteSpace(input))
+           {
+               _state.User.Username = input;
+           }
+           Console.WriteLine($"Using {_state.User.Username}.");
+        }
 
         private ICommand GetCommand(string input)
         {
