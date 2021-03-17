@@ -18,7 +18,7 @@ namespace SpaceTraders.Models
 
         public override string ToString()
         {
-            var result = $@"User {Username} ({Id}) | Credits:{Credits}"; // UpdatedAt:{UpdatedAt.ToString("s", CultureInfo.CreateSpecificCulture("en-US"))}
+            var result = $@"User {Username} | Credits:{Credits}"; // UpdatedAt:{UpdatedAt.ToString("s", CultureInfo.CreateSpecificCulture("en-US"))}
             if (Ships != null && Ships.Any())
             {
                 result += Environment.NewLine + string.Join(Environment.NewLine, Ships.ToString());

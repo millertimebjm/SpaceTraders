@@ -34,7 +34,7 @@ namespace SpaceTraders.Models
             } 
             else 
             {
-                return $"Loan | {Type} {Amount} Collateral:{collateralRequiredString} {Rate} Term:{TermInDays}";
+                return $"Loan {Type} | {Amount} Collateral:{collateralRequiredString} {Rate} Term:{TermInDays}";
             }
             
         }

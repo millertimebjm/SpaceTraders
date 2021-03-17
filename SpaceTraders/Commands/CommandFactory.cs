@@ -14,6 +14,7 @@ namespace SpaceTraders.Commands
                 new AccountCommand(),
                 new ExitCommand(),
                 new LoanShowCommand(),
+                new LoanTakeCommand(),
             };
         }
     }
