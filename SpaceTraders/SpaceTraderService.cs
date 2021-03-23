@@ -11,17 +11,18 @@ namespace SpaceTraders
     {
         private SpaceTraderStateModel _state = new SpaceTraderStateModel();
         private Dictionary<string, ICommand> commandDictionary = new Dictionary<string, ICommand>();
+        private readonly IRestApi _restApi = new SpaceTradersRestApi("https://api.spacetraders.io");
+        private readonly ICredentials _credentials = new FileCredentials("Credentials.txt");
         public SpaceTraderService()
         {
-            //_state.Token = "81027fa0-d927-49b4-af77-e726b364a6c2";
-            //_state.Token = "77573311-bbe9-4fc0-9143-0577d4d01b7b";
-            _state.Token = "e53fd57e-701a-48e2-8cb6-b54635ef86ff";
+            var model = _credentials.Get();
+
+            _state.Token = model.Token;
             _state.User = new User()
             {
-                //Id = "cklvs4ky928836em89qtw9qdty",
-                Username = "millertimebjm",
+                Username = model.Username,
             };
-            foreach (var command in CommandFactory.GetCommands())
+            foreach (var command in CommandFactory.GetCommands(_restApi))
             {
                 foreach (var commandString in command.GetInputs())
                 {
@@ -36,33 +37,31 @@ namespace SpaceTraders
             Console.WriteLine();
             DisplayCommands();
             Console.WriteLine();
-            VerifyUsername();
-            DisplayStatus();
-            GetToken();
-            CommandLoop();
-        }
-
-        private void VerifyUsername()
-        {
-            if (string.IsNullOrWhiteSpace(_state.User.Username))
+            if (string.IsNullOrWhiteSpace(_state.Token))
             {
                 RequestUsername();
+                ICommand command = new TokenCommand();
+                command.Execute(_state);
+                _credentials.Save(new CredentialsModel()
+                {
+                    Username = _state.User.Username,
+                    Token = _state.Token,
+                });
             }
+            else
+            {
+                //ICommand command = new AccountCommand(_restApi);
+                //command.Execute(_state);
+                //if ()
+            }
+            DisplayStatus();
+            CommandLoop();
         }
 
         private void DisplayStatus()
         {
             ICommand statusCommand = new StatusCommand();
             statusCommand.Execute(_state);
-        }
-
-        private void GetToken()
-        {
-            if (string.IsNullOrWhiteSpace(_state.Token))
-            {
-                ICommand tokenCommand = new TokenCommand();
-                tokenCommand.Execute(_state);
-            }
         }
 
         private void CommandLoop()
@@ -92,7 +91,7 @@ namespace SpaceTraders
         private void DisplayCommands()
         {
             Console.WriteLine("Listing Commands...");
-            foreach (var command in CommandFactory.GetCommands())
+            foreach (var command in CommandFactory.GetCommands(null))
             {
                 Console.WriteLine($"{command.Name} [{string.Join(",", command.GetInputs())}]");
             }
@@ -100,13 +99,13 @@ namespace SpaceTraders
 
         private void RequestUsername()
         {
-           //Console.Write($"Username ({_state.User.Username}?): ");
+           Console.Write($"Username [{_state.User.Username}]: ");
            var input = Console.ReadLine();
            if (!string.IsNullOrWhiteSpace(input))
            {
                _state.User.Username = input;
            }
-           Console.WriteLine($"Using {_state.User.Username}.");
+           Console.WriteLine($"Using [{_state.User.Username}].");
         }
 
         private ICommand GetCommand(string input)
