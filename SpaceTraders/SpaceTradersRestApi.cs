@@ -1,12 +1,8 @@
 ﻿using Newtonsoft.Json;
 using RestSharp;
-using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace SpaceTraders
 {
-
     public class ErrorResponse
     {
         public Error Error { get; set; }

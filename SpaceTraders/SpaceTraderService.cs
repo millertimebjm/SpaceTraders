@@ -110,14 +110,26 @@ namespace SpaceTraders
 
         private ICommand GetCommand(string input)
         {
-            var key = commandDictionary.Keys.SingleOrDefault(_ => input.ToLower().Trim() == _);
-            if (key != null)
+            var inputTemp = input;
+            while (input.Length > 0)
             {
-                _state.CommandKey = key;
-                _state.CommandParameters = input.Replace(key, "").Trim().Split(" ");
-                return commandDictionary[key];
+                var key = commandDictionary.Keys.SingleOrDefault(_ => inputTemp.ToLower().Trim() == _);
+                if (key != null)
+                {
+                    _state.CommandKey = key;
+                    _state.CommandParameters = input.Replace(key, "").Trim().Split(" ");
+                    return commandDictionary[key];
+                }
+                inputTemp = RemoveLastWord(inputTemp);
             }
             return null;
+        }
+
+        private string RemoveLastWord(string input)
+        {
+            var inputArray = input.Split(" ", StringSplitOptions.RemoveEmptyEntries).ToList();
+            inputArray.Remove(inputArray.Last());
+            return string.Join(" ", inputArray);
         }
     }
 }

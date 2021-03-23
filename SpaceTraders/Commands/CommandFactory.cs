@@ -15,6 +15,7 @@ namespace SpaceTraders.Commands
                 new ExitCommand(),
                 new LoanShowCommand(),
                 new LoanTakeCommand(),
+                new ShipViewCommand(restApi),
             };
         }
     }
