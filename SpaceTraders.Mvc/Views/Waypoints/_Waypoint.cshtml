@@ -1,0 +1,15 @@
+@using SpaceTraders.Models;
+@model Tuple<string, Waypoint>
+@{
+    var waypoint = Model.Item2;
+    var systemSymbol = Model.Item1;
+}
+
+<h6>Waypoint</h6>
+<ul>
+    <li><b>System:</b> <a href="/systems/@systemSymbol">@systemSymbol</a></li>
+    <li><b>Symbol:</b> @waypoint.Symbol</li>
+    <li><b>Type: </b> @waypoint.Type</li>
+    <li><b>X:</b> @waypoint.X</li>
+    <li><b>Y:</b> @waypoint.Y</li>
+</ul>
