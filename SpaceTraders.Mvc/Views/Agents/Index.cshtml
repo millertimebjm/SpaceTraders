@@ -1,4 +1,5 @@
 ﻿@using SpaceTraders.Models
+@using SpaceTraders.Mvc.Services;
 @model Agent
 @{
     ViewData["Title"] = "Home Page";
@@ -11,7 +12,7 @@
             <li><b>Symbol:</b> @Model.Symbol</li>
             <li><b>Headquarters:</b> @Model.Headquarters</li>
             <li><b>Headquarters System:</b> <a href="/systems/@(Model.Headquarters.Substring(0, Model.Headquarters.IndexOf('-', 3)))">@(Model.Headquarters.Substring(0, Model.Headquarters.IndexOf('-', 3)))</a></li>
-            <li><b>Credits:</b> @Model.Credits</li>
+            <li><b>Credits:</b> @ViewHelperService.ReadableCreditValue(Model.Credits)</li>
             <li><b>StartingFaction:</b> @Model.StartingFaction</li>
             <li><b>ShipCount:</b> @Model.ShipCount</li>
         </ul>

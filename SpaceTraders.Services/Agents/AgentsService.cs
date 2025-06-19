@@ -24,9 +24,9 @@ public class AgentsService : IAgentsService
     {
         _logger = logger;
         _httpClient = httpClient;
-        _apiUrl = configuration[ConfigurationEnums.ApiUrl.ToString()];
+        _apiUrl = configuration[ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
         ArgumentException.ThrowIfNullOrWhiteSpace(_apiUrl);
-        _token = configuration[ConfigurationEnums.AgentToken.ToString()];
+        _token = configuration[ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
         ArgumentException.ThrowIfNullOrWhiteSpace(_token);
     }
 
@@ -38,6 +38,7 @@ public class AgentsService : IAgentsService
             new AuthenticationHeaderValue("Bearer", _token);
         var agentsDataString = await _httpClient.GetAsync(url.ToString());
         _logger.LogInformation("{agentsDataString}", await agentsDataString.Content.ReadAsStringAsync());
+        agentsDataString.EnsureSuccessStatusCode();
         var agentsData = await agentsDataString.Content.ReadFromJsonAsync<DataSingle<Agent>>();
         if (agentsData is null) throw new HttpRequestException("Agent Data not retrieved.");
         if (agentsData.Datum is null) throw new HttpRequestException("Agent not retrieved");

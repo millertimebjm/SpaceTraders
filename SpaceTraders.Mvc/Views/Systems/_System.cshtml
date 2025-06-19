@@ -1,19 +1,25 @@
 @using SpaceTraders.Models
+@using SpaceTraders.Models.Enums
 @model STSystem
 
-<h6><u>System</u></h6>
+<h6><u>System @Model.Symbol</u></h6>
 <ul>
     <li><b>AccountId:</b> @Model.Constellation</li>
-    <li><b>Symbol:</b> @Model.Symbol</li>
     <li><b>SectorSymbol:</b> @Model.SectorSymbol</li>
     <li><b>Type:</b> @Model.Type</li>
     <li><b>X:</b> @Model.X</li>
     <li><b>Y:</b> @Model.Y</li>
     <li><b>Name:</b> @Model.Name</li>
+    <li><a href="/systems/@Model.Symbol/@WaypointTypesEnum.SHIPYARD">Get Shipyards</a></li>
+    <li><a href="/systems/@Model.Symbol/@WaypointTypesEnum.JUMP_GATE">Get Jump Gates</a></li>
+    @if (Model.Type == WaypointTypesEnum.SHIPYARD.ToString())
+    {
+        <li><a href="/">Buy Mining Drone Ship</a></li>
+    }
 </ul>
-<div style="margin-left:10px; border-left-style: solid; border-left-width: 1px; padding-left: 10px;">
+<div style="margin-left:10px; border-left-style: solid; border-left-width: 1px; padding-left: 10px;  margin-bottom: 0px;">
     @foreach (var waypoint in Model.Waypoints)
     {
-        await Html.RenderPartialAsync("~/Views/Waypoints/_Waypoint.cshtml", new Tuple<string, Waypoint>(@Model.Symbol, waypoint));
+        await Html.RenderPartialAsync("~/Views/Waypoints/_Waypoint.cshtml", waypoint);
     }
 </div>

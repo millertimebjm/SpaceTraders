@@ -2,8 +2,15 @@ using Serilog;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents;
 using SpaceTraders.Services.Agents.Interfaces;
+using SpaceTraders.Services.Contracts;
+using SpaceTraders.Services.Contracts.Interfaces;
+using SpaceTraders.Services.Ships.Interfaces;
+using SpaceTraders.Services.Shipyards;
+using SpaceTraders.Services.Shipyards.Interfaces;
 using SpaceTraders.Services.Systems;
 using SpaceTraders.Services.Systems.Interfaces;
+using SpaceTraders.Services.Waypoints;
+using SpaceTraders.Services.Waypoints.Interfaces;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -12,6 +19,10 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddHttpClient();
 builder.Services.AddScoped<IAgentsService, AgentsService>();
 builder.Services.AddScoped<ISystemsService, SystemsService>();
+builder.Services.AddScoped<IContractsService, ContractsService>();
+builder.Services.AddScoped<IShipyardsService, ShipyardsService>();
+builder.Services.AddScoped<IShipsService, ShipsService>();
+builder.Services.AddScoped<IWaypointsService, WaypointsService>();
 
 builder.Services.AddLogging();
 Log.Logger = new LoggerConfiguration()
@@ -29,7 +40,6 @@ var accountToken = builder.Configuration[ConfigurationEnums.AccountToken.ToStrin
 ArgumentException.ThrowIfNullOrWhiteSpace(accountToken);
 var agentToken = builder.Configuration[ConfigurationEnums.AgentToken.ToString()];
 ArgumentException.ThrowIfNullOrWhiteSpace(agentToken);
-
 
 var app = builder.Build();
 

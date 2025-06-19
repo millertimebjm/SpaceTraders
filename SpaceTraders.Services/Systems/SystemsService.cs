@@ -4,6 +4,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
+using SpaceTraders.Services.HttpHelpers;
 using SpaceTraders.Services.Systems.Interfaces;
 
 namespace SpaceTraders.Services.Systems;
@@ -24,9 +25,9 @@ public class SystemsService : ISystemsService
     {
         _logger = logger;
         _httpClient = httpClient;
-        _apiUrl = configuration[ConfigurationEnums.ApiUrl.ToString()];
+        _apiUrl = configuration[ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
         ArgumentException.ThrowIfNullOrWhiteSpace(_apiUrl);
-        _token = configuration[ConfigurationEnums.AgentToken.ToString()];
+        _token = configuration[ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
         ArgumentException.ThrowIfNullOrWhiteSpace(_token);
     }
 
@@ -36,11 +37,16 @@ public class SystemsService : ISystemsService
         url.Path = DIRECTORY_PATH + systemSymbol;
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);
-        var agentsDataString = await _httpClient.GetAsync(url.ToString());
-        _logger.LogInformation("{agentsDataString}", await agentsDataString.Content.ReadAsStringAsync());
-        var agentsData = await agentsDataString.Content.ReadFromJsonAsync<DataSingle<STSystem>>();
-        if (agentsData is null) throw new HttpRequestException("System Data not retrieved.");
-        if (agentsData.Datum is null) throw new HttpRequestException("System not retrieved");
-        return agentsData.Datum;
+        var data = await HttpHelperService.HttpGetHelper<DataSingle<STSystem>>(
+            url.ToString(),
+            _httpClient,
+            _logger);
+        // var systemsDataString = await _httpClient.GetAsync(url.ToString());
+        // _logger.LogInformation("{systemsDataString}", await systemsDataString.Content.ReadAsStringAsync());
+        // systemsDataString.EnsureSuccessStatusCode();
+        // var systemsData = await systemsDataString.Content.ReadFromJsonAsync<DataSingle<STSystem>>();
+        // if (systemsData is null) throw new HttpRequestException("System Data not retrieved.");
+        if (data.Datum is null) throw new HttpRequestException("System not retrieved");
+        return data.Datum;
     }
 }

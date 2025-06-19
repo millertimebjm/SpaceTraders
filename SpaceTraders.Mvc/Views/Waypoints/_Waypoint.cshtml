@@ -1,15 +1,24 @@
 @using SpaceTraders.Models;
-@model Tuple<string, Waypoint>
-@{
-    var waypoint = Model.Item2;
-    var systemSymbol = Model.Item1;
-}
+@using SpaceTraders.Services.Systems
+@using SpaceTraders.Services.Waypoints
+@using SpaceTraders.Services.Waypoints.Interfaces
+@model Waypoint
 
-<h6>Waypoint</h6>
+<h6 style="margin-top:20px; margin-bottom: 0px;">Waypoint @Model.Symbol</h6>
 <ul>
-    <li><b>System:</b> <a href="/systems/@systemSymbol">@systemSymbol</a></li>
-    <li><b>Symbol:</b> @waypoint.Symbol</li>
-    <li><b>Type: </b> @waypoint.Type</li>
-    <li><b>X:</b> @waypoint.X</li>
-    <li><b>Y:</b> @waypoint.Y</li>
+    <li><b>System:</b> <a href="/systems/@WaypointsService.ExtractSystemFromWaypoint(Model.Symbol)">@WaypointsService.ExtractSystemFromWaypoint(Model.Symbol)</a></li>
+    <li><b>Type: </b> @Model.Type</li>
+    <li><b>X:</b> @Model.X</li>
+    <li><b>Y:</b> @Model.Y</li>
+    @if (!string.IsNullOrWhiteSpace(Model.Orbits))
+    {
+        <li><b>Orbits:</b> @Model.Orbits</li>
+    }
 </ul>
+
+<div style="margin-left:10px; border-left-style: solid; border-left-width: 1px; padding-left: 10px;">
+    @foreach (var orbital in Model.Orbitals)
+    {
+        await Html.RenderPartialAsync("~/Views/Orbitals/_Orbital.cshtml", orbital);
+    }
+</div>

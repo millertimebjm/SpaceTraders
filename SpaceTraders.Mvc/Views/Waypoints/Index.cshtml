@@ -1,0 +1,8 @@
+﻿@using SpaceTraders.Models
+@using SpaceTraders.Mvc.Services
+@model Waypoint
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+@await Html.PartialAsync("_Waypoint", Model)

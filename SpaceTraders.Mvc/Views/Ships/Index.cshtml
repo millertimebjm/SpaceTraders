@@ -1,0 +1,33 @@
+﻿@using SpaceTraders.Models
+@using SpaceTraders.Mvc.Services
+@model IEnumerable<Ship>
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+@foreach (var ship in Model)
+{
+    <h6>Ship @ship.Symbol</h6>
+    <ul>
+        <li><b>Registration Name:</b> @ship.Registration.Name</li>
+        <li><b>Registration Faction:</b> @ship.Registration.FactionSymbol</li>
+        <li><b>Registration Role:</b> @ship.Registration.Role</li>
+        <li><b>Nav System:</b> @ship.Nav.SystemSymbol</li>
+        <li><b>Waypoint Symbol:</b> <a href="/waypoints/@ship.Nav.WaypointSymbol">@ship.Nav.WaypointSymbol</a></li>
+        <li><b>Destination:</b> @ship.Nav.Route.Destination.Symbol</li>
+        <li><b>Nav Status:</b> @ship.Nav.Status</li>
+        <li><b>FlightMode:</b> @ship.Nav.FlightMode</li>
+        <li><b>Crew Capacity:</b> @ship.Crew.Capacity</li>
+        <li><b>Crew Required:</b> @ship.Crew.Required</li>
+        <li><b>Frame:</b> @ship.Frame.Symbol</li>
+        <li><b>Reactor:</b> @ship.Reactor.Symbol</li>
+        <li><b>Engine:</b> @ship.Engine.Symbol</li>
+        <li><b>Models:</b> @string.Join(",", ship.Modules.Select(m => m.Symbol))</li>
+        <li><b>Mounts:</b> @string.Join(",", ship.Mounts.Select(m => m.Symbol))</li>
+        <li><b>Cargo Capacity:</b> @ship.Cargo.Capacity</li>
+        <li><b>Cargo Units:</b> @ship.Cargo.Units</li>
+        <li><b>Fuel:</b> </li>
+        <li><b>Cooldown:</b> </li>
+    </ul>
+}
+

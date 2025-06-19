@@ -1,0 +1,24 @@
+﻿@using SpaceTraders.Models
+@using SpaceTraders.Mvc.Services
+@model IEnumerable<STContract>
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+@foreach (var contract in Model)
+{
+    <h6>Contract @contract.Id</h6>
+    <ul>
+        <li><b>FactionSymbol:</b> @contract.FactionSymbol</li>
+        <li><b>Type:</b> @contract.Type</li>
+        <li><b>Accepted:</b> @contract.Accepted</li>
+        <li><b>Fulfilled:</b> @contract.Fulfilled</li>
+        <li><b>DeadlineToComplete:</b> @ViewHelperService.MinimalHumanReadableTimeSpan(contract.Terms.Deadline - DateTime.UtcNow)</li>
+        @if(!contract.Accepted)
+        {
+            <li><b>DeadlineToAccept:</b> @ViewHelperService.MinimalHumanReadableTimeSpan(contract.DeadlineToAccept - DateTime.UtcNow)</li>
+            <li><a href="/contracts/accept/@contract.Id">Accept</a></li>
+        }
+    </ul>
+}
+
