@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
+using SpaceTraders.Models;
 using SpaceTraders.Mvc.Models;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Waypoints.Interfaces;
@@ -24,16 +25,22 @@ public class SystemsController : Controller
     }
 
     [Route("/systems/{systemSymbol}")]
-    public async Task<IActionResult> Index(string systemSymbol)
+    public async Task<IActionResult> Index(
+        string systemSymbol,
+        [FromQuery] string type,
+        [FromQuery] string traits)
     {
+        if (!string.IsNullOrWhiteSpace(type))
+        {
+            var waypoints = await _waypointsService.GetByTypeAsync(systemSymbol, type);
+            return View("~/Views/Waypoints/WaypointsByType.cshtml", waypoints);
+        }
+        else if (!string.IsNullOrWhiteSpace(traits))
+        {
+            var waypoints = await _waypointsService.GetByTraitAsync(systemSymbol, traits);
+            return View("~/Views/Waypoints/WaypointsByType.cshtml", waypoints);
+        }
         var system = await _systemsService.GetAsync(systemSymbol);
         return View(system);
-    }
-
-    [Route("/systems/{systemSymbol}/{type}")]
-    public async Task<IActionResult> WaypointsByType(string systemSymbol, string type)
-    {
-        var waypoints = await _waypointsService.GetByTypeAsync(systemSymbol, type);
-        return View("~/Views/Waypoints/WaypointsByType.cshtml", waypoints);
     }
 }

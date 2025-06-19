@@ -15,7 +15,7 @@ else
     <div style="margin-left:10px; border-left-style: solid; border-left-width: 1px; padding-left: 10px;  margin-bottom: 0px;">
         @foreach (var waypoint in Model)
         {
-            await Html.PartialAsync("~/Views/Waypoints/_Waypoint.cshtml", waypoint);
+            await Html.RenderPartialAsync("~/Views/Waypoints/_Waypoint.cshtml", waypoint);
         }
     </div>
 }
