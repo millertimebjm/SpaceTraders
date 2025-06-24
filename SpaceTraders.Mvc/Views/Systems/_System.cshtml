@@ -10,12 +10,8 @@
     <li><b>X:</b> @Model.X</li>
     <li><b>Y:</b> @Model.Y</li>
     <li><b>Name:</b> @Model.Name</li>
-    <li><a href="/systems/@Model.Symbol/@WaypointTypesEnum.SHIPYARD">Get Shipyards</a></li>
-    <li><a href="/systems/@Model.Symbol/@WaypointTypesEnum.JUMP_GATE">Get Jump Gates</a></li>
-    @if (Model.Type == WaypointTypesEnum.SHIPYARD.ToString())
-    {
-        <li><a href="/">Buy Mining Drone Ship</a></li>
-    }
+    <li><a href="/systems/@Model.Symbol?traits=@WaypointTypesEnum.SHIPYARD">Get Shipyards</a></li>
+    <li><a href="/systems/@Model.Symbol?type=@WaypointTypesEnum.JUMP_GATE">Get Jump Gates</a></li>
 </ul>
 <div style="margin-left:10px; border-left-style: solid; border-left-width: 1px; padding-left: 10px;  margin-bottom: 0px;">
     @foreach (var waypoint in Model.Waypoints)

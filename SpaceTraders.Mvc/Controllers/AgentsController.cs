@@ -6,7 +6,7 @@ using SpaceTraders.Services.Agents.Interfaces;
 
 namespace SpaceTraders.Mvc.Controllers;
 
-public class AgentsController : Controller
+public class AgentsController : BaseController
 {
     private readonly ILogger<AgentsController> _logger;
     private readonly IAgentsService _agentsService;

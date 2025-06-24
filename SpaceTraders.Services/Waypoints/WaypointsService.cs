@@ -64,6 +64,19 @@ public class WaypointsService : IWaypointsService
         return data.DataList;
     }
 
+    public async Task<IEnumerable<Waypoint>> GetByTraitAsync(
+        string systemSymbol,
+        string trait)
+    {
+        var url = new UriBuilder(_apiUrl);
+        url.Path = $"/v2/systems/{systemSymbol}/waypoints";
+        url.Query = $"traits={trait}";
+        _httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _token);
+        var data = await HttpHelperService.HttpGetHelper<Data<Waypoint>>(url.ToString(), _httpClient, _logger);
+        return data.DataList;
+    }
+
     public static string ExtractSystemFromWaypoint(string waypointSymbol)
     {
         return waypointSymbol[..waypointSymbol.IndexOf('-', 3)];

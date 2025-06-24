@@ -4,7 +4,7 @@ using SpaceTraders.Mvc.Models;
 
 namespace SpaceTraders.Mvc.Controllers;
 
-public class HomeController : Controller
+public class HomeController : BaseController
 {
     private readonly ILogger<HomeController> _logger;
 

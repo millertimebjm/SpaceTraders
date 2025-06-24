@@ -6,4 +6,6 @@ public interface IWaypointsService
 {
     Task<Waypoint> GetAsync(string waypointSymbol);
     Task<IEnumerable<Waypoint>> GetByTypeAsync(string waypointSymbol, string type);
+    Task<IEnumerable<Waypoint>> GetByTraitAsync(string waypointSymbol, string trait);
+
 }

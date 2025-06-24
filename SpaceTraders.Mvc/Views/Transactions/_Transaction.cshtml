@@ -1,0 +1,12 @@
+@using SpaceTraders.Models
+@using SpaceTraders.Mvc.Services
+@using SpaceTraders.Services.Waypoints
+@model Transaction
+
+<h6 style="margin-top:20px; margin-bottom: 0px;">Transaction <a href="/waypoints/@Model.WaypointSymbol">@Model.WaypointSymbol</a></h6>
+<ul>
+    <li><b>Ship Type:</b> @Model.ShipType</li>
+    <li><b>Price: </b> @Model.Price</li>
+    <li><b>Timestamp:</b> @ViewHelperService.MinimalHumanReadableTimeSpan(Model.Timestamp - DateTime.UtcNow)</li>
+</ul>
+

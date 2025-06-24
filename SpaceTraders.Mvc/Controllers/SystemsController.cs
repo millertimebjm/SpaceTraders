@@ -1,14 +1,11 @@
-using System.Diagnostics;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using SpaceTraders.Models;
-using SpaceTraders.Mvc.Models;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Mvc.Controllers;
 
-public class SystemsController : Controller
+public class SystemsController : BaseController
 {
     private readonly ILogger<SystemsController> _logger;
     private readonly ISystemsService _systemsService;

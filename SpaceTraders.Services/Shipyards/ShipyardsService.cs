@@ -1,5 +1,6 @@
 ﻿using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SpaceTraders.Models;
@@ -11,7 +12,6 @@ namespace SpaceTraders.Services.Shipyards;
 
 public class ShipyardsService : IShipyardsService
 {
-    private const string DIRECTORY_PATH = "/v2/systems";
     private readonly string _apiUrl;
     private readonly HttpClient _httpClient;
     private readonly string _token;
@@ -34,7 +34,7 @@ public class ShipyardsService : IShipyardsService
     {
         var url = new UriBuilder(_apiUrl)
         {
-            Path = DIRECTORY_PATH + $"/{systemSymbol}/{shipyardWaypointSymbol}/shipyard"
+            Path = $"/systems/{systemSymbol}/waypoints/{shipyardWaypointSymbol}/shipyard"
         };
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);
@@ -42,11 +42,26 @@ public class ShipyardsService : IShipyardsService
             url.ToString(),
             _httpClient,
             _logger);
-        // var shipyardsDataString = await _httpClient.GetAsync(url.ToString());
-        // _logger.LogInformation("{shipyardsDataString}", await shipyardsDataString.Content.ReadAsStringAsync());
-        // shipyardsDataString.EnsureSuccessStatusCode();
-        // var shipyardsData = await shipyardsDataString.Content.ReadFromJsonAsync<DataSingle<Shipyard>>();
-        // if (shipyardsData is null) throw new HttpRequestException("Shipyard Data not retrieved.");
+        if (data.Datum is null) throw new HttpRequestException("Shipyard not retrieved");
+        return data.Datum;
+    }
+
+    public async Task<Ship> BuyAsync(string waypointSymbol, string shipType)
+    {
+        var url = new UriBuilder(_apiUrl)
+        {
+            Path = $"/v2/my/ships"
+        };
+        _httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _token);
+        var content = JsonContent.Create(new { shipType, waypointSymbol });
+        //var content = new StringContent(JsonSerializer.Serialize(new { shipType, waypointSymbol }));
+        _logger.LogInformation("Content passed to buy ship {content}.", JsonSerializer.Serialize(new { shipType, waypointSymbol }));
+        var data = await HttpHelperService.HttpPostHelper<DataSingle<Ship>>(
+            url.ToString(),
+            _httpClient,
+            content,
+            _logger);
         if (data.Datum is null) throw new HttpRequestException("Shipyard not retrieved");
         return data.Datum;
     }

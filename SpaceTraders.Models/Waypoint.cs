@@ -7,5 +7,7 @@ public record Waypoint(
     int X,
     int Y,
     IReadOnlyList<Orbital> Orbitals,
-    string Orbits
+    string Orbits,
+    IReadOnlyList<Trait> Traits,
+    Shipyard? Shipyard
 );

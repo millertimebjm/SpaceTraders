@@ -28,6 +28,15 @@
         <li><b>Cargo Units:</b> @ship.Cargo.Units</li>
         <li><b>Fuel:</b> </li>
         <li><b>Cooldown:</b> </li>
+        <li><a href="/ships/@ship.Symbol/active">Set as Active</a></li>
+        @if (ship.Nav.Status != NavStatusEnum.IN_ORBIT.ToString())
+        {
+            <li><a href="/ships/@ship.Symbol/orbit">Travel To Orbit</a></li>
+        }
+        @if (ship.Nav.Status != NavStatusEnum.DOCKED.ToString())
+        {
+            <li><a href="/ships/@ship.Symbol/dock">Dock To Current Waypoint</a></li>
+        }
     </ul>
 }
 

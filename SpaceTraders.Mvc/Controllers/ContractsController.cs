@@ -5,7 +5,7 @@ using SpaceTraders.Services.Contracts.Interfaces;
 
 namespace SpaceTraders.Mvc.Controllers;
 
-public class ContractsController : Controller
+public class ContractsController : BaseController
 {
     private readonly ILogger<ContractsController> _logger;
     private readonly IContractsService _contractsService;

@@ -1,5 +1,6 @@
 ﻿using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SpaceTraders.Models;
@@ -42,12 +43,59 @@ public class ShipsService : IShipsService
             url.ToString(),
             _httpClient,
             _logger);
-        // var shipsDataString = await _httpClient.GetAsync(url.ToString());
-        // _logger.LogInformation("{shipsDataString}", await shipsDataString.Content.ReadAsStringAsync());
-        // shipsDataString.EnsureSuccessStatusCode();
-        // var shipsData = await shipsDataString.Content.ReadFromJsonAsync<Data<Ship>>();
-        // if (shipsData is null) throw new HttpRequestException("Ship Data not retrieved.");
         if (data.DataList is null) throw new HttpRequestException("Ship not retrieved");
         return data.DataList;
+    }
+
+    public async Task<Nav> OrbitAsync(string shipSymbol)
+    {
+        var url = new UriBuilder(_apiUrl)
+        {
+            Path = $"/v2/my/ships/{shipSymbol}/orbit"
+        };
+        _httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _token);
+        var data = await HttpHelperService.HttpPostHelper<DataSingle<Nav>>(
+            url.ToString(),
+            _httpClient,
+            null,
+            _logger);
+        if (data.Datum is null) throw new HttpRequestException("Orbit Nav not retrieved");
+        return data.Datum;
+    }
+
+    public async Task<Nav> DockAsync(string shipSymbol)
+    {
+        var url = new UriBuilder(_apiUrl)
+        {
+            Path = $"/v2/my/ships/{shipSymbol}/dock"
+        };
+        _httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _token);
+        var data = await HttpHelperService.HttpPostHelper<DataSingle<Nav>>(
+            url.ToString(),
+            _httpClient,
+            null,
+            _logger);
+        if (data.Datum is null) throw new HttpRequestException("Dock Nav not retrieved");
+        return data.Datum;
+    }
+
+    public async Task<Nav> TravelAsync(string waypointSymbol, string shipSymbol)
+    {
+        var url = new UriBuilder(_apiUrl)
+        {
+            Path = $"/v2/my/ships/{shipSymbol}/navigate"
+        };
+        _httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _token);
+        var content = JsonContent.Create(new { waypointSymbol });
+        var data = await HttpHelperService.HttpPostHelper<DataSingle<Nav>>(
+            url.ToString(),
+            _httpClient,
+            content,
+            _logger);
+        if (data.Datum is null) throw new HttpRequestException("Navigate Nav not retrieved");
+        return data.Datum;
     }
 }

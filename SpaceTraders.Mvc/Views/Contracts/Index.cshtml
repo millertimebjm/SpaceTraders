@@ -14,6 +14,18 @@
         <li><b>Accepted:</b> @contract.Accepted</li>
         <li><b>Fulfilled:</b> @contract.Fulfilled</li>
         <li><b>DeadlineToComplete:</b> @ViewHelperService.MinimalHumanReadableTimeSpan(contract.Terms.Deadline - DateTime.UtcNow)</li>
+        @foreach (var deliver in contract.Terms.Deliver)
+        {
+            <div style="margin-left:10px; border-left-style: solid; border-left-width: 1px; padding-left: 10px;  margin-bottom: 0px;">
+                @* <h6 style="margin-top:20px; margin-bottom: 0px;">Deliver</h6> *@
+                <ul>
+                    <li><b>Deliver Trade Symbol:</b> @deliver.TradeSymbol</li>
+                    <li><b>Deliver Destination:</b> <a href="/waypoints/@deliver.DestinationSymbol">@deliver.DestinationSymbol</a></li>
+                    <li><b>Deliver Units Required:</b> @deliver.UnitsRequired</li>
+                    <li><b>Deliver Units Fulfilled:</b> @deliver.UnitsFulfilled</li>
+                </ul>
+            </div>
+        }
         @if(!contract.Accepted)
         {
             <li><b>DeadlineToAccept:</b> @ViewHelperService.MinimalHumanReadableTimeSpan(contract.DeadlineToAccept - DateTime.UtcNow)</li>
@@ -21,4 +33,3 @@
         }
     </ul>
 }
-
