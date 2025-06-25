@@ -40,13 +40,22 @@ public class ContractsService : IContractsService
             url.ToString(),
             _httpClient,
             _logger);
-        // var contractsDataString = await _httpClient.GetAsync(url.ToString());
-        // _logger.LogInformation("{agentsDataString}", await contractsDataString.Content.ReadAsStringAsync());
-        // contractsDataString.EnsureSuccessStatusCode();
-        // var contractsData = await contractsDataString.Content.ReadFromJsonAsync<Data<STContract>>();
-        // if (contractsData is null) throw new HttpRequestException("Contract Data not retrieved.");
         if (data.DataList is null) throw new HttpRequestException("Contracts not retrieved");
         return data.DataList;
+    }
+
+    public async Task<STContract> GetAsync(string contractId)
+    {
+        var url = new UriBuilder(_apiUrl);
+        url.Path = DIRECTORY_PATH + $"/{contractId}";
+        _httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _token);
+        var data = await HttpHelperService.HttpGetHelper<DataSingle<STContract>>(
+            url.ToString(),
+            _httpClient,
+            _logger);
+        if (data.Datum is null) throw new HttpRequestException("Contract not retrieved.");
+        return data.Datum;
     }
 
     public async Task<STContract> AcceptAsync(string contractId)
@@ -62,13 +71,27 @@ public class ContractsService : IContractsService
             _httpClient,
             null,
             _logger);
-
-        // var contractsDataString = await _httpClient.PostAsync(url.ToString(), null);
-        // _logger.LogInformation("{agentsDataString}", await contractsDataString.Content.ReadAsStringAsync());
-        // contractsDataString.EnsureSuccessStatusCode();
-        // var contractsData = await contractsDataString.Content.ReadFromJsonAsync<DataSingle<STContract>>();
-        // if (contractsData is null) throw new HttpRequestException("Contract Data not retrieved.");
         if (data.Datum is null) throw new HttpRequestException("Contract not retrieved");
         return data.Datum;
+    }
+
+    public async Task DeliverAsync(
+        string contractId,
+        string shipSymbol,
+        string tradeSymbol,
+        int units)
+    {
+        var url = new UriBuilder(_apiUrl)
+        {
+            Path = DIRECTORY_PATH + $"/{contractId}/deliver"
+        };
+        _httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _token);
+        var content = JsonContent.Create(new { shipSymbol, tradeSymbol, units });
+        var data = await HttpHelperService.HttpPostHelper(
+            url.ToString(),
+            _httpClient,
+            content,
+            _logger);
     }
 }

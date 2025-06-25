@@ -1,0 +1,11 @@
+@using SpaceTraders.Models
+@using SpaceTraders.Models.Enums
+@model Marketplace
+
+<h6><u>Marketplace @Model.Symbol</u></h6>
+<ul>
+    @foreach (var tradeGood in Model.TradeGoods)
+    {
+        <li>@tradeGood.Symbol @tradeGood.Type (@tradeGood.SellPrice) <a href="/marketplaces/@Model.Symbol/buy/@tradeGood.Symbol"></a></li>
+    }
+</ul>

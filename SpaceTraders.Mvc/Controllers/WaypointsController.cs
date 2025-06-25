@@ -1,4 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
+using SpaceTraders.Models;
+using SpaceTraders.Mvc.Services;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
@@ -20,19 +22,30 @@ public class WaypointsController : BaseController
         _shipsService = shipsService;
     }
 
-    [Route("/waypoints/{waypoint}")]
-    public async Task<IActionResult> Index(string waypoint)
+    [Route("/waypoints/{waypointSymbol}")]
+    public async Task<IActionResult> Index(string waypointSymbol)
     {
-        var waypoints = await _waypointsService.GetAsync(waypoint);
-        return View(waypoints);
+        var waypoint = await _waypointsService.GetAsync(waypointSymbol);
+        return View(waypoint);
     }
 
-    [Route("/waypoints/{waypoint}/navigate")]
-    public async Task<IActionResult> Navigate(string waypoint)
+    [Route("/waypoints/{waypointSymbol}/navigate")]
+    public async Task<IActionResult> Navigate(string waypointSymbol)
     {
-        var shipSymbol = HttpContext.Session.GetString("CurrentShipSymbol");
-        ArgumentException.ThrowIfNullOrWhiteSpace(shipSymbol);
-        var nav = await _shipsService.TravelAsync(waypoint, shipSymbol);
+        var ship = SessionHelper.Get<Ship>(HttpContext, SessionEnum.CurrentShip);
+        ArgumentException.ThrowIfNullOrWhiteSpace(ship?.Symbol);
+        await _shipsService.NavigateAsync(waypointSymbol, ship.Symbol);
+        var waypoint = await _waypointsService.GetAsync(waypointSymbol);
+        SessionHelper.Set(HttpContext, SessionEnum.CurrentWaypoint, waypoint);
+        return Redirect($"/ships/{ship.Symbol}");
+    }
+
+    [Route("/waypoints/{waypointSymbol}/jump")]
+    public async Task<IActionResult> Jump(string waypointSymbol)
+    {
+        var ship = SessionHelper.Get<Ship?>(HttpContext, SessionEnum.CurrentShip);
+        ArgumentException.ThrowIfNullOrWhiteSpace(ship?.Symbol);
+        var nav = await _shipsService.JumpAsync(waypointSymbol, ship.Symbol);
         return RedirectToAction("Index", "Ships");
     }
 }

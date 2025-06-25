@@ -11,7 +11,7 @@ namespace SpaceTraders.Models;
     public record Engine(
  string Symbol,
  string Name,
- int Condition,
+ decimal Condition,
  int Integrity,
  string Description,
  int Speed,
@@ -22,7 +22,7 @@ namespace SpaceTraders.Models;
     public record Frame(
  string Symbol,
  string Name,
- int Condition,
+ decimal Condition,
  int Integrity,
  string Description,
  int ModuleSlots,
@@ -53,7 +53,7 @@ namespace SpaceTraders.Models;
     public record Reactor(
  string Symbol,
  string Name,
- int Condition,
+ decimal Condition,
  int Integrity,
  string Description,
  int PowerOutput,
@@ -64,7 +64,7 @@ namespace SpaceTraders.Models;
     public record Requirements(
  int Power,
  int Crew,
- int Slots
+ int? Slots
     );
 
 public record Shipyard(

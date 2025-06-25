@@ -1,0 +1,55 @@
+@using SpaceTraders.Models
+@using SpaceTraders.Mvc.Services
+@model Ship
+
+@{
+    var currentShipSymbol = ViewBag.CurrentShip?.Symbol ?? string.Empty;
+}
+
+<h6>Ship @Model.Symbol</h6>
+<ul>
+    <li><b>Registration Name:</b> @Model.Registration.Name</li>
+    <li><b>Registration Faction:</b> @Model.Registration.FactionSymbol</li>
+    <li><b>Registration Role:</b> @Model.Registration.Role</li>
+    <li><b>Nav System:</b> <a href="/systems/@Model.Nav.SystemSymbol">@Model.Nav.SystemSymbol</a></li>
+    <li><b>Waypoint Symbol:</b> <a href="/waypoints/@Model.Nav.WaypointSymbol">@Model.Nav.WaypointSymbol</a></li>
+    <li><b>Destination:</b> @Model.Nav.Route.Destination.Symbol</li>
+    <li><b>Nav Status:</b> @Model.Nav.Status</li>
+    <li><b>FlightMode:</b> @Model.Nav.FlightMode</li>
+    <li><b>Crew Capacity:</b> @Model.Crew.Capacity</li>
+    <li><b>Crew Required:</b> @Model.Crew.Required</li>
+    <li><b>Frame:</b> @Model.Frame.Symbol</li>
+    <li><b>Reactor:</b> @Model.Reactor.Symbol</li>
+    <li><b>Engine:</b> @Model.Engine.Symbol</li>
+    <li><b>Models:</b> @string.Join(",", Model.Modules.Select(m => m.Symbol))</li>
+    <li><b>Mounts:</b> @string.Join(",", Model.Mounts.Select(m => m.Symbol))</li>
+    <li><b>Cargo:</b> @Model.Cargo.Units/@Model.Cargo.Capacity</li>
+    <ul>
+        @foreach (var inventory in Model.Cargo.Inventory)
+        {
+            <li>@inventory.Name (@inventory.Units/@Model.Cargo.Capacity) <a href="/ships/@Model.Symbol/jettison/@inventory.Symbol">Jettison</a></li>
+        }
+    </ul>
+    <li><b>Fuel:</b> @Model.Fuel.Current (@Model.Fuel.Capacity)</li>
+    @if (Model.Cooldown.RemainingSeconds > 0)
+    {
+        <li><b>Cooldown:</b> @ViewHelperService.MinimalHumanReadableTimeSpan(Model.Cooldown.Expiration - DateTime.UtcNow)</li>
+    }
+    else
+    {
+        <li><b>Cooldown:</b> Ready</li>
+    }
+    @if (currentShipSymbol != Model.Symbol)
+    {
+        <li><a href="/ships/@Model.Symbol/active">Set as Active</a></li>
+    }
+    @if (Model.Nav.Status != NavStatusEnum.IN_ORBIT.ToString())
+    {
+        <li><a href="/ships/@Model.Symbol/orbit">Travel To Orbit</a></li>
+    }
+    @if (Model.Nav.Status != NavStatusEnum.DOCKED.ToString())
+    {
+        <li><a href="/ships/@Model.Symbol/dock">Dock To Current Waypoint</a></li>
+    }
+    <li><a href="/systems/withinrange">Waypoints Within Range</a></li>
+</ul>

@@ -1,9 +1,15 @@
 @using SpaceTraders.Models;
 @using SpaceTraders.Models.Enums
+@using SpaceTraders.Mvc.Services
 @using SpaceTraders.Services.Systems
 @using SpaceTraders.Services.Waypoints
 @using SpaceTraders.Services.Waypoints.Interfaces
 @model Waypoint
+
+@{
+    var currentShip = (Ship?)ViewBag.CurrentShip;
+    var currentWaypoint = (Waypoint?)ViewBag.CurrentWaypoint;
+}
 
 <h6 style="margin-top:20px; margin-bottom: 0px;">Waypoint <a href="/waypoints/@Model.Symbol">@Model.Symbol</a></h6>
 <ul>
@@ -24,7 +30,19 @@
     {
         <li><a href="/systems/@WaypointsService.ExtractSystemFromWaypoint(Model.Symbol)/waypoints/@Model.Symbol/shipyard">Shipyard</a></li>
     }
-    <li><a href="/waypoints/@Model.Symbol/navigate">Navigate To</a></li>
+    @if (currentShip is not null && currentWaypoint is not null)
+    {
+        <li><a href="/waypoints/@Model.Symbol/navigate">Navigate To (@Math.Ceiling(ViewHelperService.CalculateDistance(currentWaypoint.X, currentWaypoint.Y, Model.X, Model.Y))/@currentShip.Fuel.Current)</a></li>
+    }
+    @if (Model.Type == WaypointTypesEnum.ASTEROID.ToString() 
+        || Model.Type == WaypointTypesEnum.ENGINEERED_ASTEROID.ToString())
+    {
+        <li><a href="/ships/extract">Extract</a></li>
+    }
+    @if (Model.Traits?.Any(t => t.Symbol == WaypointTypesEnum.MARKETPLACE.ToString()) == true)
+    {
+        <li><a href="/marketplaces/@Model.Symbol">Marketplace</a></li>
+    }
 </ul>
 
 @if (Model.Shipyard is not null)

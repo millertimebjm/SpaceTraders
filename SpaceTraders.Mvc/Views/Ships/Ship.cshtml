@@ -1,12 +1,10 @@
 ﻿@using SpaceTraders.Models
 @using SpaceTraders.Mvc.Services
-@model IEnumerable<Ship>
+@model Ship
 @{
     ViewData["Title"] = "Home Page";
 }
 
-@foreach (var ship in Model)
-{
-    await Html.RenderPartialAsync("_Ship", ship);
-}
+@await Html.PartialAsync("_Ship", Model)
+
 

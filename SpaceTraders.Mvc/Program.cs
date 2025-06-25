@@ -4,6 +4,8 @@ using SpaceTraders.Services.Agents;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Contracts;
 using SpaceTraders.Services.Contracts.Interfaces;
+using SpaceTraders.Services.Marketplaces;
+using SpaceTraders.Services.Marketplaces.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Shipyards.Interfaces;
@@ -20,7 +22,7 @@ builder.Services.AddControllersWithViews();
 builder.Services.AddDistributedMemoryCache();
 builder.Services.AddSession(options =>
 {
-    options.IdleTimeout = TimeSpan.FromSeconds(10);
+    options.IdleTimeout = TimeSpan.FromHours(1);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
 });
@@ -32,6 +34,7 @@ builder.Services.AddScoped<IContractsService, ContractsService>();
 builder.Services.AddScoped<IShipyardsService, ShipyardsService>();
 builder.Services.AddScoped<IShipsService, ShipsService>();
 builder.Services.AddScoped<IWaypointsService, WaypointsService>();
+builder.Services.AddScoped<IMarketplacesService, MarketplacesService>();
 
 builder.Services.AddLogging();
 Log.Logger = new LoggerConfiguration()

@@ -1,0 +1,9 @@
+@using SpaceTraders.Models
+@model Marketplace
+@{
+    ViewData["Title"] = "Home Page";
+}
+
+<div>
+    @await Html.PartialAsync("_Marketplace", Model)
+</div>

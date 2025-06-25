@@ -34,4 +34,19 @@ public static class HttpHelperService
         if (data is null) throw new HttpRequestException("HttpPost returned null data.");
         return data;
     }
+
+    internal static async Task<string> HttpPostHelper(
+        string url,
+        HttpClient httpClient,
+        HttpContent? content,
+        ILogger logger)
+    {
+        logger.LogInformation("{url}", url);
+        var response = await httpClient.PostAsync(url, content);
+        logger.LogInformation("{responseString}", await response.Content.ReadAsStringAsync());
+        response.EnsureSuccessStatusCode();
+        var data = await response.Content.ReadAsStringAsync();
+        if (data is null) throw new HttpRequestException("HttpPost returned null data.");
+        return data;
+    }
 }

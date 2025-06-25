@@ -41,11 +41,6 @@ public class SystemsService : ISystemsService
             url.ToString(),
             _httpClient,
             _logger);
-        // var systemsDataString = await _httpClient.GetAsync(url.ToString());
-        // _logger.LogInformation("{systemsDataString}", await systemsDataString.Content.ReadAsStringAsync());
-        // systemsDataString.EnsureSuccessStatusCode();
-        // var systemsData = await systemsDataString.Content.ReadFromJsonAsync<DataSingle<STSystem>>();
-        // if (systemsData is null) throw new HttpRequestException("System Data not retrieved.");
         if (data.Datum is null) throw new HttpRequestException("System not retrieved");
         return data.Datum;
     }

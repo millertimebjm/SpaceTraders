@@ -28,8 +28,24 @@
                             <a class="nav-link text-dark" asp-area="" asp-controller="Contracts" asp-action="Index">Contracts</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Ships" asp-action="Index"><b>@(ViewBag.CurrentShipSymbol ?? "No Ship")</b></a>
+                            @if (ViewBag.CurrentShip is null)
+                            {
+                                <a class="nav-link text-dark" href="/ships"><b>No Ship</b></a>
+                            }
+                            else 
+                            {
+                                <text><a class="nav-link text-dark" href="/ships/@(ViewBag.CurrentShip.Symbol)"><b>@(ViewBag.CurrentShip.Symbol)</b></a></text>
+                            }
                         </li>
+                        @if (ViewBag.CurrentShip is not null)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" href="/waypoints/@ViewBag.CurrentShip.Nav.WaypointSymbol">at <b>@ViewBag.CurrentShip.Nav.WaypointSymbol</b></a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" href="/ships/deactivate">Deactivate</a>
+                            </li>
+                        }
                     </ul>
                 </div>
             </div>
@@ -55,3 +71,4 @@
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
+
