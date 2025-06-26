@@ -81,4 +81,18 @@ public class WaypointsService : IWaypointsService
     {
         return waypointSymbol[..waypointSymbol.IndexOf('-', 3)];
     }
+
+    public static IOrderedEnumerable<Waypoint> SortWaypoints(IReadOnlyList<Waypoint> waypoints, int currentX, int currentY)
+    {
+        return waypoints.OrderBy(w => CalculateDistance(w.X, w.Y, currentX, currentY));
+    }
+
+    public static double CalculateDistance(double x1, double y1, double x2, double y2)
+    {
+        // Using the distance formula: sqrt((x2 - x1)^2 + (y2 - y1)^2)
+        double deltaX = x2 - x1;
+        double deltaY = y2 - y1;
+
+        return Math.Sqrt((deltaX * deltaX) + (deltaY * deltaY));
+    }
 }

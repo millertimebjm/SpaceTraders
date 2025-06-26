@@ -32,7 +32,7 @@
     }
     @if (currentShip is not null && currentWaypoint is not null)
     {
-        <li><a href="/waypoints/@Model.Symbol/navigate">Navigate To (@Math.Ceiling(ViewHelperService.CalculateDistance(currentWaypoint.X, currentWaypoint.Y, Model.X, Model.Y))/@currentShip.Fuel.Current)</a></li>
+        <li><a href="/waypoints/@Model.Symbol/navigate">Navigate To (@Math.Ceiling(WaypointsService.CalculateDistance(currentWaypoint.X, currentWaypoint.Y, Model.X, Model.Y))/@currentShip.Fuel.Current)</a></li>
     }
     @if (Model.Type == WaypointTypesEnum.ASTEROID.ToString() 
         || Model.Type == WaypointTypesEnum.ENGINEERED_ASTEROID.ToString())

@@ -48,21 +48,24 @@ public class MarketplacesService : IMarketplacesService
         return data.Datum;
     }
 
-    // public async Task BuyAsync(string shipSymbol, string inventory)
-    // {
-    //     var url = new UriBuilder(_apiUrl)
-    //     {
-    //         Path = $"/v2/my/ships/{shipSymbol}/purchase"
-    //     };
-    //     _httpClient.DefaultRequestHeaders.Authorization =
-    //         new AuthenticationHeaderValue("Bearer", _token);
-    //     var content = JsonContent.Create(new { symbol = inventory, units = 60 });
-    //     var data = await HttpHelperService.HttpPostHelper<DataSingle<Ship>>(
-    //         url.ToString(),
-    //         _httpClient,
-    //         content,
-    //         _logger);
-    //     // if (data.Datum is null) throw new HttpRequestException("Shipyard not retrieved");
-    //     // return data.Datum;
-    // }
+    public async Task RefuelAsync(
+        string shipSymbol,
+        InventoryEnum inventory,
+        int units)
+    {
+        var url = new UriBuilder(_apiUrl)
+        {
+            Path = $"/v2/my/ships/{shipSymbol}/refuel"
+        };
+        _httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _token);
+        var content = JsonContent.Create(new { symbol = inventory.ToString(), units });
+        var data = await HttpHelperService.HttpPostHelper(
+            url.ToString(),
+            _httpClient,
+            content,
+            _logger);
+        // if (data.Datum is null) throw new HttpRequestException("Shipyard not retrieved");
+        // return data.Datum;
+    }
 }

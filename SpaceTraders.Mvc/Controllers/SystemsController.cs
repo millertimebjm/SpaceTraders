@@ -2,7 +2,9 @@ using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using SpaceTraders.Models;
 using SpaceTraders.Mvc.Services;
+using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Systems.Interfaces;
+using SpaceTraders.Services.Waypoints;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Mvc.Controllers;
@@ -12,15 +14,18 @@ public class SystemsController : BaseController
     private readonly ILogger<SystemsController> _logger;
     private readonly ISystemsService _systemsService;
     private readonly IWaypointsService _waypointsService;
+    private readonly IAgentsService _agentsService;
 
     public SystemsController(
         ILogger<SystemsController> logger,
-        ISystemsService agentsService,
-        IWaypointsService waypointsService)
+        ISystemsService systemsService,
+        IWaypointsService waypointsService,
+        IAgentsService agentsService) : base(agentsService)
     {
         _logger = logger;
-        _systemsService = agentsService;
+        _systemsService = systemsService;
         _waypointsService = waypointsService;
+        _agentsService = agentsService;
     }
 
     [Route("/systems/{systemSymbol}")]
@@ -44,7 +49,7 @@ public class SystemsController : BaseController
         var currentWaypoint = SessionHelper.Get<Waypoint>(HttpContext, SessionEnum.CurrentWaypoint);
         if (currentWaypoint is not null)
         {
-            system = system with { Waypoints = ViewHelperService.SortWaypoints(system.Waypoints, currentWaypoint.X, currentWaypoint.Y) };
+            system = system with { Waypoints = WaypointsService.SortWaypoints(system.Waypoints, currentWaypoint.X, currentWaypoint.Y).ToList() };
         }
 
         return View(system);
@@ -62,9 +67,9 @@ public class SystemsController : BaseController
 
         var waypointsFiltered = system
             .Waypoints
-            .Where(w => ViewHelperService.CalculateDistance(currentWaypoint.X, currentWaypoint.Y, w.X, w.Y) < fuelAvailable)
+            .Where(w => WaypointsService.CalculateDistance(currentWaypoint.X, currentWaypoint.Y, w.X, w.Y) < fuelAvailable)
             .ToList();
-        system = system with { Waypoints = ViewHelperService.SortWaypoints(waypointsFiltered, currentWaypoint.X, currentWaypoint.Y) };
+        system = system with { Waypoints = WaypointsService.SortWaypoints(waypointsFiltered, currentWaypoint.X, currentWaypoint.Y).ToList() };
 
         return View("~/Views/Systems/Index.cshtml", system);
     }

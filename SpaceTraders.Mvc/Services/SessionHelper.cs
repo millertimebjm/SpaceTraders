@@ -6,6 +6,7 @@ public enum SessionEnum
 {
     CurrentShip,
     CurrentWaypoint,
+    CurrentCredits,
 }
 
 public static class SessionHelper

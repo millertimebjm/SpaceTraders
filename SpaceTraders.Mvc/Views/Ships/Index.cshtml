@@ -1,12 +1,14 @@
 ﻿@using SpaceTraders.Models
 @using SpaceTraders.Mvc.Services
-@model IEnumerable<Ship>
+@model ShipsViewModel
 @{
     ViewData["Title"] = "Home Page";
 }
 
-@foreach (var ship in Model)
+@foreach (var ship in await Model.ShipsTask)
 {
-    await Html.RenderPartialAsync("_Ship", ship);
+    //ShipViewModel shipViewModel = new(ship, Model.ContractTask);
+    ShipViewModel model = new(Task.FromResult(ship), Model.ContractTask);
+    await Html.RenderPartialAsync("_Ship", model);
 }
 

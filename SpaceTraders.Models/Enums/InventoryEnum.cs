@@ -1,4 +1,6 @@
-public static class InventoryEnum
+public enum InventoryEnum
 {
-    public static IReadOnlyList<string> Items => ["ALUMINUM_ORE"];
+    ALUMINUM_ORE,
+    FUEL,
+    AMMONIA_ICE,
 }

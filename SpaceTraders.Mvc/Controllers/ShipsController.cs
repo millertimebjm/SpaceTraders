@@ -1,5 +1,9 @@
 using Microsoft.AspNetCore.Mvc;
 using SpaceTraders.Models;
+using SpaceTraders.Mvc.Models;
+using SpaceTraders.Services.Agents.Interfaces;
+using SpaceTraders.Services.Contracts.Interfaces;
+using SpaceTraders.Services.Marketplaces.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
@@ -10,22 +14,33 @@ public class ShipsController : BaseController
     private readonly ILogger<ShipsController> _logger;
     private readonly IShipsService _shipsService;
     private readonly IWaypointsService _waypointsService;
+    private readonly IMarketplacesService _marketplacesService;
+    private readonly IAgentsService _agentsService;
+    private readonly IContractsService _contractsService;
 
     public ShipsController(
         ILogger<ShipsController> logger,
         IShipsService shipsService,
-        IWaypointsService waypointsService)
+        IWaypointsService waypointsService,
+        IMarketplacesService marketplacesService,
+        IAgentsService agentsService,
+        IContractsService contractsService) : base(agentsService)
     {
         _logger = logger;
         _shipsService = shipsService;
         _waypointsService = waypointsService;
+        _marketplacesService = marketplacesService;
+        _agentsService = agentsService;
+        _contractsService = contractsService;
     }
 
     [Route("/ships")]
-    public async Task<IActionResult> Index()
+    public IActionResult Index()
     {
-        var ships = await _shipsService.GetAsync();
-        return View(ships);
+        ShipsViewModel model = new(
+            _shipsService.GetAsync(),
+            _contractsService.GetActiveAsync());
+        return View(model);
     }
 
     [Route("/ships/{shipSymbol}/active")]
@@ -67,10 +82,12 @@ public class ShipsController : BaseController
     }
 
     [Route("/ships/{shipSymbol}")]
-    public async Task<IActionResult> Ship(string shipSymbol)
+    public IActionResult Ship(string shipSymbol)
     {
-        var ship = await _shipsService.GetAsync(shipSymbol);
-        return View(ship);
+        ShipViewModel model = new(
+            _shipsService.GetAsync(shipSymbol),
+            _contractsService.GetActiveAsync());
+        return View(model);
     }
 
     [Route("/ships/{shipSymbol}/jettison/{inventorySymbol}")]
@@ -88,5 +105,21 @@ public class ShipsController : BaseController
         SessionHelper.Unset(HttpContext, SessionEnum.CurrentShip);
         SessionHelper.Unset(HttpContext, SessionEnum.CurrentWaypoint);
         return RedirectToAction("Index");
+    }
+
+    [Route("/ships/{shipSymbol}/fuel")]
+    public async Task<IActionResult> Refuel(string shipSymbol)
+    {
+        var ship = await _shipsService.GetAsync(shipSymbol);
+        var neededFuel = (ship.Fuel.Capacity - ship.Fuel.Current) / 100 + 1;
+        await _marketplacesService.RefuelAsync(shipSymbol, InventoryEnum.FUEL, neededFuel);
+        var agent = await _agentsService.GetAsync();
+        SessionHelper.Set(HttpContext, SessionEnum.CurrentCredits, agent.Credits);
+        return RedirectToRoute(new
+        {
+            controller = "Ships",
+            action = "Ship",
+            shipSymbol
+        });
     }
 }

@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using SpaceTraders.Services.Contracts;
+using SpaceTraders.Services.Contracts.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.Shipyards;
 
@@ -30,11 +32,20 @@ public class Program
             configuration,
             loggerFactory.CreateLogger<ShipsService>());
 
-        await AutomatedMining(shipsService, loggerFactory.CreateLogger<Program>());
+        IContractsService contractsService = new ContractsService(
+            loggerFactory.CreateLogger<ContractsService>(),
+            configuration,
+            httpClient);
+
+        await AutomatedMining(
+            shipsService,
+            contractsService,
+            loggerFactory.CreateLogger<Program>());
     }
 
     public static async Task AutomatedMining(
             IShipsService shipsService,
+            IContractsService contractsService,
             ILogger<Program> logger)
     {
         Console.WriteLine("Please enter ship symbol:");
@@ -43,35 +54,33 @@ public class Program
         var ship = await shipsService.GetAsync(shipSymbol);
         ArgumentException.ThrowIfNullOrWhiteSpace(ship.Symbol);
 
-        Console.WriteLine("Please enter Inventory item:");
-        var inventoryName = Console.ReadLine();
-        ArgumentException.ThrowIfNullOrWhiteSpace(inventoryName);
-        if (!InventoryEnum.Items.Contains(inventoryName)) throw new ArgumentException("Inventory name is unknown.");
+        Console.WriteLine("Please enter Contract Id:");
+        var contractId = Console.ReadLine();
+        ArgumentException.ThrowIfNullOrWhiteSpace(contractId);
+        var contract = await contractsService.GetAsync(contractId);
+        ArgumentException.ThrowIfNullOrWhiteSpace(contract.Id);
 
-        Console.WriteLine("Please enter Inventory Units:");
-        var inventoryUnitsString = Console.ReadLine();
-        ArgumentException.ThrowIfNullOrWhiteSpace(inventoryUnitsString);
-        var unitCount = int.Parse(inventoryUnitsString);
+        
 
-        do
-        {
-            var unwantedInventory = ship.Cargo.Inventory.Where(i => !InventoryEnum.Items.ToList().Contains(i.Symbol));
-            foreach (var unwantedItem in unwantedInventory)
-            {
-                await shipsService.JettisonAsync(shipSymbol, unwantedItem.Symbol, unwantedItem.Units);
-            }
-            if (ship.Cooldown.RemainingSeconds > 0)
-            {
-                await Task.Delay((ship.Cooldown.RemainingSeconds + 1) * 1000);
-            }
-            await shipsService.ExtractAsync(shipSymbol);
-            ship = await shipsService.GetAsync(shipSymbol);
-            logger.LogInformation("{shipSymbol} ship is harvesting {inventoryName} and is at {units}/{unitCount}",
-                shipSymbol,
-                inventoryName,
-                ship.Cargo.Inventory.SingleOrDefault(i => i.Symbol == inventoryName)?.Units ?? 0,
-                unitCount);
-        } while ((ship.Cargo.Inventory.SingleOrDefault(i => i.Symbol == inventoryName)?.Units ?? 0) < unitCount);
+        // do
+        // {
+        //     var unwantedInventory = ship.Cargo.Inventory.Where(i => i.Symbol != inventorySymbol);
+        //     foreach (var unwantedItem in unwantedInventory)
+        //     {
+        //         await shipsService.JettisonAsync(shipSymbol, unwantedItem.Symbol, unwantedItem.Units);
+        //     }
+        //     if (ship.Cooldown.RemainingSeconds > 0)
+        //     {
+        //         await Task.Delay((ship.Cooldown.RemainingSeconds + 1) * 1000);
+        //     }
+        //     await shipsService.ExtractAsync(shipSymbol);
+        //     ship = await shipsService.GetAsync(shipSymbol);
+        //     logger.LogInformation("{shipSymbol} ship is harvesting {inventoryName} and is at {units}/{unitCount}",
+        //         shipSymbol,
+        //         inventorySymbol,
+        //         ship.Cargo.Inventory.SingleOrDefault(i => i.Symbol == inventorySymbol)?.Units ?? 0,
+        //         unitCount);
+        // } while ((ship.Cargo.Inventory.SingleOrDefault(i => i.Symbol == inventorySymbol)?.Units ?? 0) < unitCount);
     }
 }
 

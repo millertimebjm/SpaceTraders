@@ -13,7 +13,7 @@ public class AgentsController : BaseController
 
     public AgentsController(
         ILogger<AgentsController> logger,
-        IAgentsService agentsService)
+        IAgentsService agentsService) : base(agentsService)
     {
         _logger = logger;
         _agentsService = agentsService;

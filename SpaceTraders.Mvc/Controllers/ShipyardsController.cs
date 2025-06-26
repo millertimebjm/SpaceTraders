@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Shipyards.Interfaces;
 
 namespace SpaceTraders.Mvc.Controllers;
@@ -7,10 +8,11 @@ public class ShipyardsController : BaseController
 {
     private readonly ILogger<ShipyardsController> _logger;
     private readonly IShipyardsService _shipyardsService;
-
+    
     public ShipyardsController(
         ILogger<ShipyardsController> logger,
-        IShipyardsService shipyardsService)
+        IShipyardsService shipyardsService,
+        IAgentsService agentsService) : base(agentsService)
     {
         _logger = logger;
         _shipyardsService = shipyardsService;

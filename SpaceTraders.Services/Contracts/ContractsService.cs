@@ -44,6 +44,20 @@ public class ContractsService : IContractsService
         return data.DataList;
     }
 
+    public async Task<STContract?> GetActiveAsync()
+    {
+        var url = new UriBuilder(_apiUrl);
+        url.Path = DIRECTORY_PATH;
+        _httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _token);
+        var data = await HttpHelperService.HttpGetHelper<Data<STContract>>(
+            url.ToString(),
+            _httpClient,
+            _logger);
+        if (data.DataList is null) throw new HttpRequestException("Contracts not retrieved");
+        return data.DataList.OrderByDescending(c => c.Accepted && !c.Fulfilled).FirstOrDefault();
+    }
+
     public async Task<STContract> GetAsync(string contractId)
     {
         var url = new UriBuilder(_apiUrl);
@@ -75,6 +89,21 @@ public class ContractsService : IContractsService
         return data.Datum;
     }
 
+    public async Task FulfillAsync(string contractId)
+    {
+        var url = new UriBuilder(_apiUrl)
+        {
+            Path = DIRECTORY_PATH + $"/{contractId}/" + "fulfill"
+        };
+        _httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _token);
+        var data = await HttpHelperService.HttpPostHelper(
+            url.ToString(),
+            _httpClient,
+            null,
+            _logger);
+    }
+
     public async Task DeliverAsync(
         string contractId,
         string shipSymbol,
@@ -92,6 +121,22 @@ public class ContractsService : IContractsService
             url.ToString(),
             _httpClient,
             content,
+            _logger);
+    }
+
+    public async Task NegotiateAsync(
+        string shipSymbol)
+    {
+        var url = new UriBuilder(_apiUrl)
+        {
+            Path = $"/my/ships/{shipSymbol}/negotiate/contract"
+        };
+        _httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _token);
+        var data = await HttpHelperService.HttpPostHelper(
+            url.ToString(),
+            _httpClient,
+            null,
             _logger);
     }
 }

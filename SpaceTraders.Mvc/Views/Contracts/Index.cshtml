@@ -5,7 +5,7 @@
     ViewData["Title"] = "Home Page";
 }
 
-@foreach (var contract in Model)
+@foreach (var contract in Model.OrderByDescending(c => c.DeadlineToAccept))
 {
     <h6>Contract @contract.Id</h6>
     <ul>
@@ -17,13 +17,20 @@
         @foreach (var deliver in contract.Terms.Deliver)
         {
             <div style="margin-left:10px; border-left-style: solid; border-left-width: 1px; padding-left: 10px;  margin-bottom: 0px;">
-                @* <h6 style="margin-top:20px; margin-bottom: 0px;">Deliver</h6> *@
                 <ul>
                     <li><b>Deliver Trade Symbol:</b> @deliver.TradeSymbol</li>
                     <li><b>Deliver Destination:</b> <a href="/waypoints/@deliver.DestinationSymbol">@deliver.DestinationSymbol</a></li>
                     <li><b>Deliver Units Required:</b> @deliver.UnitsRequired</li>
                     <li><b>Deliver Units Fulfilled:</b> @deliver.UnitsFulfilled</li>
-                    <li><a href="/contracts/@contract.Id/deliver">Deliver</a></li>
+                    @if (deliver.UnitsFulfilled < deliver.UnitsRequired)
+                    {
+                        <li><a href="/contracts/@contract.Id/deliver">Deliver</a></li>
+                    }
+                    else if (deliver.UnitsFulfilled == deliver.UnitsRequired
+                        && !contract.Fulfilled)
+                    {
+                        <li><a href="/contracts/@contract.Id/fulfill">Fulfill</a></li>
+                    }
                 </ul>
             </div>
         }

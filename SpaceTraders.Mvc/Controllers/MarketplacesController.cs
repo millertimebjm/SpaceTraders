@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Marketplaces.Interfaces;
 
 namespace SpaceTraders.Mvc.Controllers;
@@ -10,7 +11,8 @@ public class MarketplacesController : BaseController
 
     public MarketplacesController(
         ILogger<MarketplacesController> logger,
-        IMarketplacesService marketplacesService)
+        IMarketplacesService marketplacesService,
+        IAgentsService agentsService) : base(agentsService)
     {
         _logger = logger;
         _marketplacesService = marketplacesService;

@@ -1,10 +1,8 @@
 ﻿@using SpaceTraders.Models
 @using SpaceTraders.Mvc.Services
-@model Ship
+@model ShipViewModel
 @{
     ViewData["Title"] = "Home Page";
 }
 
 @await Html.PartialAsync("_Ship", Model)
-
-
