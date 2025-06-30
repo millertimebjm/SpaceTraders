@@ -157,12 +157,25 @@ public class ShipsService : IShipsService
         };
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);
-        var content = JsonContent.Create(new {symbol = inventorySymbol, units});
+        var content = JsonContent.Create(new { symbol = inventorySymbol, units });
         var response = await HttpHelperService.HttpPostHelper(
             url.ToString(),
             _httpClient,
             content,
             _logger);
         _logger.LogInformation("Data returned from Jettison: {response}", response);
+    }
+
+    public static TimeSpan? GetShipCooldown(Ship ship)
+    {
+        if (ship.Nav.Route.Arrival > DateTime.UtcNow)
+        {
+            return ship.Nav.Route.Arrival - DateTime.UtcNow;
+        }
+        if (ship.Cooldown.RemainingSeconds > 0)
+        {
+            return ship.Cooldown.Expiration - DateTime.UtcNow;
+        }
+        return null;
     }
 }

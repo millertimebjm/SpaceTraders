@@ -111,8 +111,7 @@ public class ShipsController : BaseController
     public async Task<IActionResult> Refuel(string shipSymbol)
     {
         var ship = await _shipsService.GetAsync(shipSymbol);
-        var neededFuel = (ship.Fuel.Capacity - ship.Fuel.Current) / 100 + 1;
-        await _marketplacesService.RefuelAsync(shipSymbol, InventoryEnum.FUEL, neededFuel);
+        await _marketplacesService.RefuelAsync(shipSymbol);
         var agent = await _agentsService.GetAsync();
         SessionHelper.Set(HttpContext, SessionEnum.CurrentCredits, agent.Credits);
         return RedirectToRoute(new

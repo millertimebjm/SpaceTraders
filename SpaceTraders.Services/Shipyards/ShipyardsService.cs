@@ -7,6 +7,7 @@ using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.HttpHelpers;
 using SpaceTraders.Services.Shipyards.Interfaces;
+using SpaceTraders.Services.Waypoints;
 
 namespace SpaceTraders.Services.Shipyards;
 
@@ -30,11 +31,11 @@ public class ShipyardsService : IShipyardsService
         ArgumentException.ThrowIfNullOrWhiteSpace(_token);
     }
 
-    public async Task<Shipyard> GetAsync(string systemSymbol, string shipyardWaypointSymbol)
+    public async Task<Shipyard> GetAsync(string shipyardWaypointSymbol)
     {
         var url = new UriBuilder(_apiUrl)
         {
-            Path = $"/systems/{systemSymbol}/waypoints/{shipyardWaypointSymbol}/shipyard"
+            Path = $"/systems/{WaypointsService.ExtractSystemFromWaypoint(shipyardWaypointSymbol)}/waypoints/{shipyardWaypointSymbol}/shipyard"
         };
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);

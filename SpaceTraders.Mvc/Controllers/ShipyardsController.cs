@@ -21,7 +21,7 @@ public class ShipyardsController : BaseController
     [Route("/systems/{systemSymbol}/waypoints/{shipyardWaypointSymbol}/shipyard")]
     public async Task<IActionResult> Index(string systemSymbol, string shipyardWaypointSymbol)
     {
-        var shipyards = await _shipyardsService.GetAsync(systemSymbol, shipyardWaypointSymbol);
+        var shipyards = await _shipyardsService.GetAsync(shipyardWaypointSymbol);
         return View(shipyards);
     }
 

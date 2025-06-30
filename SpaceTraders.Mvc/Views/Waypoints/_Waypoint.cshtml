@@ -4,58 +4,61 @@
 @using SpaceTraders.Services.Systems
 @using SpaceTraders.Services.Waypoints
 @using SpaceTraders.Services.Waypoints.Interfaces
-@model Waypoint
+@model WaypointViewModel
 
 @{
-    var currentShip = (Ship?)ViewBag.CurrentShip;
-    var currentWaypoint = (Waypoint?)ViewBag.CurrentWaypoint;
+    var currentShip = await Model.CurrentShip;
+    var currentWaypoint = await Model.CurrentWaypoint;
+    var waypoint = await Model.Waypoint;
 }
 
-<h6 style="margin-top:20px; margin-bottom: 0px;">Waypoint <a href="/waypoints/@Model.Symbol">@Model.Symbol</a></h6>
+<h6 style="margin-top:20px; margin-bottom: 0px;">Waypoint <a href="/waypoints/@waypoint.Symbol">@waypoint.Symbol</a> (<a href="/waypoints/@waypoint.Symbol/reset">reset</a>)</h6>
 <ul>
-    <li><b>System:</b> <a href="/systems/@WaypointsService.ExtractSystemFromWaypoint(Model.Symbol)">@WaypointsService.ExtractSystemFromWaypoint(Model.Symbol)</a></li>
-    <li><b>Type: </b> @Model.Type</li>
-    <li><b>X:</b> @Model.X</li>
-    <li><b>Y:</b> @Model.Y</li>
-    @if (Model.Traits?.Any() == true)
+    <li><b>System:</b> <a href="/systems/@WaypointsService.ExtractSystemFromWaypoint(waypoint.Symbol)">@WaypointsService.ExtractSystemFromWaypoint(waypoint.Symbol)</a></li>
+    <li><b>Type: </b> @waypoint.Type</li>
+    <li><b>X:</b> @waypoint.X</li>
+    <li><b>Y:</b> @waypoint.Y</li>
+    @if (waypoint.Traits?.Any() == true)
     {
-        <li><b>Traits: </b> @string.Join(",", Model.Traits.Select(t => t.Name))</li>
+        <li><b>Traits: </b> @string.Join(",", waypoint.Traits.Select(t => t.Name))</li>
     }
-    @if (!string.IsNullOrWhiteSpace(Model.Orbits))
+    @if (!string.IsNullOrWhiteSpace(waypoint.Orbits))
     {
-        <li><b>Orbits:</b> @Model.Orbits</li>
+        <li><b>Orbits:</b> @waypoint.Orbits</li>
     }
-    @if (Model.Traits?.Any() == true 
-        && Model.Traits.Select(t => t.Name.ToUpper()).ToList().Contains(WaypointTypesEnum.SHIPYARD.ToString()))
+    @if (waypoint.Traits?.Any() == true 
+        && waypoint.Traits.Select(t => t.Name.ToUpper()).ToList().Contains(WaypointTypesEnum.SHIPYARD.ToString()))
     {
-        <li><a href="/systems/@WaypointsService.ExtractSystemFromWaypoint(Model.Symbol)/waypoints/@Model.Symbol/shipyard">Shipyard</a></li>
+        <li><a href="/systems/@WaypointsService.ExtractSystemFromWaypoint(waypoint.Symbol)/waypoints/@waypoint.Symbol/shipyard">Shipyard</a></li>
     }
     @if (currentShip is not null && currentWaypoint is not null)
     {
-        <li><a href="/waypoints/@Model.Symbol/navigate">Navigate To (@Math.Ceiling(WaypointsService.CalculateDistance(currentWaypoint.X, currentWaypoint.Y, Model.X, Model.Y))/@currentShip.Fuel.Current)</a></li>
+        <li><a href="/waypoints/@waypoint.Symbol/navigate">Navigate To (@Math.Ceiling(WaypointsService.CalculateDistance(currentWaypoint.X, currentWaypoint.Y, waypoint.X, waypoint.Y))/@currentShip.Fuel.Current)</a></li>
     }
-    @if (Model.Type == WaypointTypesEnum.ASTEROID.ToString() 
-        || Model.Type == WaypointTypesEnum.ENGINEERED_ASTEROID.ToString())
+    @if (waypoint.Type == WaypointTypesEnum.ASTEROID.ToString() 
+        || waypoint.Type == WaypointTypesEnum.ENGINEERED_ASTEROID.ToString())
     {
         <li><a href="/ships/extract">Extract</a></li>
     }
-    @if (Model.Traits?.Any(t => t.Symbol == WaypointTypesEnum.MARKETPLACE.ToString()) == true)
+    @if (waypoint.Marketplace is not null
+        && waypoint.Traits?.Any(t => t.Symbol == WaypointTypesEnum.MARKETPLACE.ToString()) == true)
     {
-        <li><a href="/marketplaces/@Model.Symbol">Marketplace</a></li>
+        @* <li><a href="/marketplaces/@waypoint.Symbol">Marketplace</a></li> *@
+        <li>@await Html.PartialAsync("/Views/Marketplaces/_Marketplace.cshtml", waypoint.Marketplace)</li>
     }
 </ul>
 
-@if (Model.Shipyard is not null)
+@if (waypoint.Shipyard is not null)
 {
     <div style="margin-left:10px; border-left-style: solid; border-left-width: 1px; padding-left: 10px;">
         @{
-            await Html.RenderPartialAsync("~/Views/Shipyards/_Shipyard.cshtml", Model.Shipyard);
+            await Html.RenderPartialAsync("~/Views/Shipyards/_Shipyard.cshtml", waypoint.Shipyard);
         }
     </div>
 }
 
 <div style="margin-left:10px; border-left-style: solid; border-left-width: 1px; padding-left: 10px;">
-    @foreach (var orbital in Model.Orbitals)
+    @foreach (var orbital in waypoint.Orbitals)
     {
         await Html.RenderPartialAsync("~/Views/Orbitals/_Orbital.cshtml", orbital);
     }

@@ -5,7 +5,7 @@
  IReadOnlyList<Import> Imports,
  IReadOnlyList<Exchange> Exchange,
  IReadOnlyList<Transaction> Transactions,
- IReadOnlyList<TradeGood> TradeGoods
+ IReadOnlyList<TradeGood>? TradeGoods
     );
 
     public record Exchange(

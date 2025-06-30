@@ -1,5 +1,6 @@
 using Serilog;
 using SpaceTraders.Models.Enums;
+using SpaceTraders.Services;
 using SpaceTraders.Services.Agents;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Contracts;
@@ -35,6 +36,12 @@ builder.Services.AddScoped<IShipyardsService, ShipyardsService>();
 builder.Services.AddScoped<IShipsService, ShipsService>();
 builder.Services.AddScoped<IWaypointsService, WaypointsService>();
 builder.Services.AddScoped<IMarketplacesService, MarketplacesService>();
+builder.Services.AddScoped<IWaypointsApiService, WaypointsApiService>();
+builder.Services.AddScoped<IWaypointsCacheService, WaypointsCacheService>();
+builder.Services.AddScoped<IMongoCollectionFactory, MongoCollectionFactory>();
+builder.Services.AddScoped<ISystemsApiService, SystemsApiService>();
+builder.Services.AddScoped<ISystemsCacheService, SystemsCacheService>();
+builder.Services.AddScoped<ISystemsAsyncRefreshService, SystemsAsyncRefreshService>();
 
 builder.Services.AddLogging();
 Log.Logger = new LoggerConfiguration()

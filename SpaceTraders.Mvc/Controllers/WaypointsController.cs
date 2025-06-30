@@ -1,5 +1,7 @@
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using SpaceTraders.Models;
+using SpaceTraders.Mvc.Models;
 using SpaceTraders.Mvc.Services;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
@@ -27,10 +29,21 @@ public class WaypointsController : BaseController
     }
 
     [Route("/waypoints/{waypointSymbol}")]
-    public async Task<IActionResult> Index(string waypointSymbol)
+    public IActionResult Index(string waypointSymbol)
     {
-        var waypoint = await _waypointsService.GetAsync(waypointSymbol);
-        return View(waypoint);
+        WaypointViewModel model = new(
+            _waypointsService.GetAsync(waypointSymbol),
+            Task.FromResult(SessionHelper.Get<Waypoint>(HttpContext, SessionEnum.CurrentWaypoint)),
+            Task.FromResult(SessionHelper.Get<Ship>(HttpContext, SessionEnum.CurrentShip))
+        );
+        return View(model);
+    }
+
+    [Route("/waypoints/{waypointSymbol}/reset")]
+    public async Task<IActionResult> Reset(string waypointSymbol)
+    {
+        var waypoint = await _waypointsService.GetAsync(waypointSymbol, refresh: true);
+        return Redirect($"/waypoints/{waypointSymbol}");
     }
 
     [Route("/waypoints/{waypointSymbol}/navigate")]

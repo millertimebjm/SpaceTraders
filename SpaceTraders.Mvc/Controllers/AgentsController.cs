@@ -24,4 +24,12 @@ public class AgentsController : BaseController
         var agents = await _agentsService.GetAsync();
         return View(agents);
     }
+
+    [Route("/agents/refresh")]
+    public async Task<IActionResult> Refresh()
+    {
+        var agent = await _agentsService.GetAsync();
+        SessionHelper.Set(HttpContext, SessionEnum.CurrentCredits, agent.Credits);
+        return Redirect(HttpContext.Request.Headers.Referer.FirstOrDefault() ?? "/");
+    }
 }

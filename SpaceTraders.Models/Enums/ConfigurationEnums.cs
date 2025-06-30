@@ -5,4 +5,6 @@ public enum ConfigurationEnums
     ApiUrl,
     AccountToken,
     AgentToken,
+    CacheConnectionString,
+    CacheDatabaseName,
 }

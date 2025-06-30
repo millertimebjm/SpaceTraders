@@ -1,5 +1,6 @@
 @using SpaceTraders.Models
 @using SpaceTraders.Mvc.Services
+@using SpaceTraders.Services.Shipyards
 @model ShipViewModel
 
 @{
@@ -33,13 +34,13 @@
         }
     </ul>
     <li><b>Fuel:</b> @ship.Fuel.Current (@ship.Fuel.Capacity)</li>
-    @if (ship.Cooldown.RemainingSeconds > 0)
-    {
-        <li><b>Cooldown:</b> @ViewHelperService.MinimalHumanReadableTimeSpan(ship.Cooldown.Expiration - DateTime.UtcNow)</li>
+
+    @{
+        var shipCooldown = ShipsService.GetShipCooldown(ship);
     }
-    else if (ship.Nav.Route.Arrival > DateTime.UtcNow)
+    @if (shipCooldown.HasValue && shipCooldown.Value.TotalSeconds > 0)
     {
-        <li><b>Cooldown:</b> @ViewHelperService.MinimalHumanReadableTimeSpan(ship.Nav.Route.Arrival - DateTime.UtcNow)</li>
+        <li><b>Cooldown:</b> @ViewHelperService.MinimalHumanReadableTimeSpan(shipCooldown.Value)</li>
     }
     else
     {

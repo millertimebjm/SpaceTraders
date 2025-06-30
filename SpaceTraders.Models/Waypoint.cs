@@ -9,5 +9,6 @@ public record Waypoint(
     IReadOnlyList<Orbital> Orbitals,
     string Orbits,
     IReadOnlyList<Trait> Traits,
-    Shipyard? Shipyard
+    Shipyard? Shipyard,
+    Marketplace? Marketplace
 );

@@ -1,47 +1,36 @@
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SpaceTraders.Models;
-using SpaceTraders.Models.Enums;
-using SpaceTraders.Services.HttpHelpers;
 using SpaceTraders.Services.Systems.Interfaces;
 
 namespace SpaceTraders.Services.Systems;
 
 public class SystemsService : ISystemsService
 {
-    //private const string DIRECTORY_PATH = "/v2/systems/";
-    private const string DIRECTORY_PATH = "/v2/systems/";
-    private readonly string _apiUrl;
-    private readonly HttpClient _httpClient;
-    private readonly string _token;
+    private readonly ISystemsApiService _systemsApiService;
+    private readonly ISystemsCacheService _systemsCacheService;
     private readonly ILogger<SystemsService> _logger;
 
     public SystemsService(
-        HttpClient httpClient,
-        IConfiguration configuration,
+        ISystemsApiService systemsApiService,
+        ISystemsCacheService systemsCacheService,
         ILogger<SystemsService> logger)
     {
+        _systemsApiService = systemsApiService;
+        _systemsCacheService = systemsCacheService;
         _logger = logger;
-        _httpClient = httpClient;
-        _apiUrl = configuration[ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
-        ArgumentException.ThrowIfNullOrWhiteSpace(_apiUrl);
-        _token = configuration[ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
-        ArgumentException.ThrowIfNullOrWhiteSpace(_token);
     }
 
-    public async Task<STSystem> GetAsync(string systemSymbol)
+    public async Task<STSystem> GetAsync(string systemSymbol, bool refresh = false)
     {
-        var url = new UriBuilder(_apiUrl);
-        url.Path = DIRECTORY_PATH + systemSymbol;
-        _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
-        var data = await HttpHelperService.HttpGetHelper<DataSingle<STSystem>>(
-            url.ToString(),
-            _httpClient,
-            _logger);
-        if (data.Datum is null) throw new HttpRequestException("System not retrieved");
-        return data.Datum;
+        STSystem? system;
+        if (!refresh)
+        {
+            system = await _systemsCacheService.GetAsync(systemSymbol, refresh);
+            if (system is not null) return system;
+            _logger.LogInformation("Cache miss: {type}: {id}", nameof(STSystem), systemSymbol);
+        }
+        system = await _systemsApiService.GetAsync(systemSymbol);
+        await _systemsCacheService.SetAsync(system);
+        return system;
     }
 }

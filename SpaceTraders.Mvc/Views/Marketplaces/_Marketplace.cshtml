@@ -4,8 +4,47 @@
 
 <h6><u>Marketplace @Model.Symbol</u></h6>
 <ul>
-    @foreach (var tradeGood in Model.TradeGoods)
+    @if (Model.TradeGoods?.Any() == true)
     {
-        <li>@tradeGood.Symbol @tradeGood.Type (@tradeGood.SellPrice) <a href="/marketplaces/@Model.Symbol/buy/@tradeGood.Symbol"></a></li>
+        <li>Trade Goods</li>
+        <ul>
+            @{
+                IEnumerable<TradeGood>? tradeGoods = Model.TradeGoods?.OrderBy(tg => tg.Type);
+                if (tradeGoods is null) tradeGoods = new List<TradeGood>();
+            }
+            @foreach (var tradeGood in tradeGoods)
+            {
+                <text><li>@tradeGood.Symbol @tradeGood.Type (Sell @tradeGood.SellPrice, Buy @tradeGood.PurchasePrice, Supply @tradeGood.Supply, Volume @tradeGood.TradeVolume) <a href="/marketplaces/@Model.Symbol/buy/@tradeGood.Symbol"></a></li></text>
+            }
+        </ul>
     }
+    
+    <li>Imports</li>
+    <li>
+        <ul>
+            @foreach (var import in Model.Imports)
+            {
+                <li>@import.Symbol <a href="/marketplaces/@Model.Symbol/buy/@import.Symbol"></a></li>
+            }
+        </ul>
+    </li>
+    
+    <li>Exports</li>
+    <ul>
+        @foreach (var export in Model.Exports)
+        {
+            <li>@export.Symbol <a href="/marketplaces/@Model.Symbol/buy/@export.Symbol"></a></li>
+        }
+    </ul>
+
+    <li>Exchange</li>
+    <li>
+        <ul>
+            @foreach (var exchange in Model.Exchange)
+            {
+                <li>@exchange.Symbol <a href="/marketplaces/@Model.Symbol/buy/@exchange.Symbol"></a></li>
+            }
+        </ul>
+    </li>
+    
 </ul>

@@ -1,33 +1,39 @@
 @using SpaceTraders.Models
 @using SpaceTraders.Models.Enums
 @using SpaceTraders.Services.Waypoints
-@model STSystem
+@model SystemViewModel
 @{
-    IEnumerable<Waypoint> sortedWaypoints = Model.Waypoints;
-    var currentWaypoint = (Waypoint?)ViewBag.CurrentWaypoint;
+    var system = await Model.SystemTask;
+    IEnumerable<Waypoint> sortedWaypoints = system.Waypoints;
+    var currentWaypoint = await Model.WaypointTask;
     if (currentWaypoint is not null)
     {
         sortedWaypoints = WaypointsService.SortWaypoints(sortedWaypoints.ToList(), currentWaypoint.X, currentWaypoint.Y);
     }
 }
 
-<h6><u>System @Model.Symbol</u></h6>
+<h6><u>System @system.Symbol</u> (<a href="/systems/@system.Symbol/reset" target="_blank">reset</a>)</h6>
 <ul>
-    <li><b>AccountId:</b> @Model.Constellation</li>
-    <li><b>SectorSymbol:</b> @Model.SectorSymbol</li>
-    <li><b>Type:</b> @Model.Type</li>
-    <li><b>X:</b> @Model.X</li>
-    <li><b>Y:</b> @Model.Y</li>
-    <li><b>Name:</b> @Model.Name</li>
-    <li><a href="/systems/@Model.Symbol?traits=@WaypointTypesEnum.SHIPYARD">Get Shipyards</a></li>
-    <li><a href="/systems/@Model.Symbol?type=@WaypointTypesEnum.JUMP_GATE">Get Jump Gates</a></li>
-    <li><a href="/systems/@Model.Symbol?type=@WaypointTypesEnum.ASTEROID">Get Asteroids</a></li>
-    <li><a href="/systems/@Model.Symbol?traits=@WaypointTypesEnum.MARKETPLACE">Get Marketplaces</a></li>
-    <li><a href="/systems/@Model.Symbol?type=@WaypointTypesEnum.FUEL_STATION">Get Fuel Stations</a></li>
+    <li><b>AccountId:</b> @system.Constellation</li>
+    <li><b>SectorSymbol:</b> @system.SectorSymbol</li>
+    <li><b>Type:</b> @system.Type</li>
+    <li><b>X:</b> @system.X</li>
+    <li><b>Y:</b> @system.Y</li>
+    <li><b>Name:</b> @system.Name</li>
+    <li><a href="/systems/@system.Symbol?traits=@WaypointTypesEnum.SHIPYARD">Get Shipyards</a></li>
+    <li><a href="/systems/@system.Symbol?type=@WaypointTypesEnum.JUMP_GATE">Get Jump Gates</a></li>
+    <li><a href="/systems/@system.Symbol?type=@WaypointTypesEnum.ASTEROID">Get Asteroids</a></li>
+    <li><a href="/systems/@system.Symbol?traits=@WaypointTypesEnum.MARKETPLACE">Get Marketplaces</a></li>
+    <li><a href="/systems/@system.Symbol?type=@WaypointTypesEnum.FUEL_STATION">Get Fuel Stations</a></li>
 </ul>
 <div style="margin-left:10px; border-left-style: solid; border-left-width: 1px; padding-left: 10px;  margin-bottom: 0px;">
     @foreach (var waypoint in sortedWaypoints)
     {
-        await Html.RenderPartialAsync("~/Views/Waypoints/_Waypoint.cshtml", waypoint);
+        WaypointViewModel waypointViewModel = new (
+            Task.FromResult(waypoint),
+            Model.WaypointTask,
+            Model.ShipTask
+        );
+        await Html.RenderPartialAsync("~/Views/Waypoints/_Waypoint.cshtml", waypointViewModel);
     }
 </div>

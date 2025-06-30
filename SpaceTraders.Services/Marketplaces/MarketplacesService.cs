@@ -49,13 +49,53 @@ public class MarketplacesService : IMarketplacesService
     }
 
     public async Task RefuelAsync(
+        string shipSymbol)
+    {
+        var url = new UriBuilder(_apiUrl)
+        {
+            Path = $"/v2/my/ships/{shipSymbol}/refuel"
+        };
+        _httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _token);
+        var content = JsonContent.Create(new { symbol = InventoryEnum.FUEL.ToString() });
+        var data = await HttpHelperService.HttpPostHelper(
+            url.ToString(),
+            _httpClient,
+            content,
+            _logger);
+        // if (data.Datum is null) throw new HttpRequestException("Shipyard not retrieved");
+        // return data.Datum;
+    }
+
+    public async Task SellAsync(
+        string shipSymbol,
+        string inventory,
+        int units)
+    {
+        var url = new UriBuilder(_apiUrl)
+        {
+            Path = $"/v2/my/ships/{shipSymbol}/sell"
+        };
+        _httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _token);
+        var content = JsonContent.Create(new { symbol = inventory, units });
+        var data = await HttpHelperService.HttpPostHelper(
+            url.ToString(),
+            _httpClient,
+            content,
+            _logger);
+        // if (data.Datum is null) throw new HttpRequestException("Shipyard not retrieved");
+        // return data.Datum;
+    }
+
+    public async Task SellAsync(
         string shipSymbol,
         InventoryEnum inventory,
         int units)
     {
         var url = new UriBuilder(_apiUrl)
         {
-            Path = $"/v2/my/ships/{shipSymbol}/refuel"
+            Path = $"/v2/my/ships/{shipSymbol}/sell"
         };
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);

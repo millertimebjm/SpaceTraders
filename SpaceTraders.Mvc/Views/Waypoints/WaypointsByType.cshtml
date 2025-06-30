@@ -1,21 +1,27 @@
 ﻿@using SpaceTraders.Models
 @using SpaceTraders.Mvc.Services
-@model IEnumerable<Waypoint>
+@model WaypointsViewModel
 @{
     ViewData["Title"] = "Home Page";
+    var waypoints = await Model.Waypoints;
 }
 
-@if (!Model.Any())
+@if (!waypoints.Any())
 {
     <h6>No Waypoints</h6>
 }
 else
 {
-    <h6>System @Model.First().SystemSymbol</h6>
+    <h6>System @waypoints.First().SystemSymbol</h6>
     <div style="margin-left:10px; border-left-style: solid; border-left-width: 1px; padding-left: 10px;  margin-bottom: 0px;">
-        @foreach (var waypoint in Model)
+        @foreach (var waypoint in waypoints)
         {
-            await Html.RenderPartialAsync("~/Views/Waypoints/_Waypoint.cshtml", waypoint);
+            WaypointViewModel waypointViewModel = new (
+                Task.FromResult(waypoint),
+                Model.CurrentWaypoint,
+                Model.CurrentShip
+            );
+            await Html.RenderPartialAsync("~/Views/Waypoints/_Waypoint.cshtml", waypointViewModel);
         }
     </div>
 }

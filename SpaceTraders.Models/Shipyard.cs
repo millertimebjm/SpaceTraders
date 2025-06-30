@@ -88,11 +88,13 @@ public record Shipyard(
  Engine Engine,
  IReadOnlyList<Module> Modules,
  IReadOnlyList<Mount> Mounts,
- Crew Crew
+ Crew Crew,
+ string WaypointSymbol
     );
 
     public record ShipType(
- string Type
+ string Type,
+ string Waypoint
     );
 
     public record Transaction(
