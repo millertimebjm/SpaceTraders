@@ -32,7 +32,8 @@
         WaypointViewModel waypointViewModel = new (
             Task.FromResult(waypoint),
             Model.WaypointTask,
-            Model.ShipTask
+            Model.ShipTask,
+            Model.SystemTask
         );
         await Html.RenderPartialAsync("~/Views/Waypoints/_Waypoint.cshtml", waypointViewModel);
     }

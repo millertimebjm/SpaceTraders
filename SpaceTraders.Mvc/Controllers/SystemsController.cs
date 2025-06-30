@@ -42,13 +42,15 @@ public class SystemsController : BaseController
     {
         var currentWaypoint = SessionHelper.Get<Waypoint>(HttpContext, SessionEnum.CurrentWaypoint);
         var currentShip = SessionHelper.Get<Ship>(HttpContext, SessionEnum.CurrentShip);
+        var systemTask = _systemsService.GetAsync(systemSymbol);
 
         if (!string.IsNullOrWhiteSpace(type))
         {
             WaypointsViewModel model = new(
                 _waypointsService.GetByTypeAsync(systemSymbol, type),
                 Task.FromResult(currentWaypoint),
-                Task.FromResult(currentShip)
+                Task.FromResult(currentShip),
+                systemTask
             );
             return View("~/Views/Waypoints/WaypointsByType.cshtml", model);
         }
@@ -57,12 +59,13 @@ public class SystemsController : BaseController
             WaypointsViewModel model = new(
                 _waypointsService.GetByTraitAsync(systemSymbol, traits),
                 Task.FromResult(currentWaypoint),
-                Task.FromResult(currentShip)
+                Task.FromResult(currentShip),
+                systemTask
             );
             return View("~/Views/Waypoints/WaypointsByType.cshtml", model);
         }
-        var system = await _systemsService.GetAsync(systemSymbol);
 
+        var system = await systemTask;
         if (currentWaypoint is not null)
         {
             system = system with { Waypoints = WaypointsService.SortWaypoints(system.Waypoints, currentWaypoint.X, currentWaypoint.Y).ToList() };

@@ -1,3 +1,4 @@
+using System.Linq;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SpaceTraders.Models;
@@ -7,24 +8,10 @@ using SpaceTraders.Services.Waypoints;
 
 namespace SpaceTraders.Services.Paths;
 
-public static class PathsService// : IPathsService
+public static class PathsService
 {
-    // private readonly ILogger<PathsService> _logger;
-    // private readonly HttpClient _httpClient;
-    // private readonly IConfiguration _configuration;
-
-    // public PathsService(
-    //     ILogger<PathsService> logger,
-    //     HttpClient httpClient,
-    //     IConfiguration configuration)
-    // {
-    //     _logger = logger;
-    //     _httpClient = httpClient;
-    //     _configuration = configuration;
-    // }
-
-    public static HashSet<Waypoint>? GetPathAsync(
-        IEnumerable<Waypoint> waypoints,
+    public static IEnumerable<Waypoint>? GetPath(
+        Dictionary<Waypoint, (List<Waypoint>, bool, int, int)> waypoints,
         Waypoint origin,
         Waypoint destination,
         int fuelMax)
@@ -43,64 +30,52 @@ public static class PathsService// : IPathsService
         }
         if (fuelMax <= 0)
         {
-            throw new ArgumentOutOfRangeException(nameof(fuelMax), "Fuel capacity must be greater than zero.");
+            return null;
         }
 
-        var shortestPath = FindShortestPath(
-            WaypointsService.SortWaypoints(waypoints.ToList(), origin.X, origin.Y),
-            origin,
-            destination,
-            fuelMax,
-            (0, new HashSet<Waypoint>() { origin }),
-            fuelMax,
-            0);
-
-        return shortestPath?.Item2;
+        return waypoints[destination].Item1;
     }
 
-    internal static (int, HashSet<Waypoint>)? FindShortestPath(
-        IOrderedEnumerable<Waypoint> waypoints,
-        Waypoint currentWaypoint,
-        Waypoint destination,
-        int fuelMax,
-        (int, HashSet<Waypoint>) visitedWithFuel,
-        int currentFuel,
-        int usedFuel)
+    public static Dictionary<Waypoint, (List<Waypoint>, bool, int, int)> BuildDijkstraPath(
+        IEnumerable<Waypoint> waypoints,
+        Waypoint origin,
+        int fuelMax)
     {
-        if (currentWaypoint.Symbol == destination.Symbol) return visitedWithFuel;
-        if (currentWaypoint.Type == WaypointTypesEnum.FUEL_STATION.ToString()) currentFuel = fuelMax;
-
-        var allSolutions = new List<(int, HashSet<Waypoint>)>();
-        foreach (var waypoint in waypoints)
+        var currentWaypoint = origin;
+        var totalFuelUsage = 0;
+        var currentFuel = fuelMax;
+        // Waypoint, Path, TotalFuel, RemainingFuel
+        Dictionary<Waypoint, (List<Waypoint>, bool, int, int)> bestPath = new()
         {
-            if (currentWaypoint.Symbol == waypoint.Symbol) continue;
-            if (!visitedWithFuel.Item2.Any(v => v.Symbol == waypoint.Symbol))
+            { origin, ([origin], false, 0, 0) }
+        };
+        while (bestPath.Values.Any(bp => !bp.Item2))
+        {
+            // find all waypoints that haven't been searched
+            var waypointsToSearch = bestPath.Where(p => !p.Value.Item2);
+
+            // from those waypoints that haven't been searched, find the least paths and then minimum fuel
+            var waypointToSearch = waypointsToSearch.Where(w => w.Value.Item1.Count == waypointsToSearch.Min(wts => wts.Value.Item1.Count())).OrderBy(wts => wts.Value.Item3).FirstOrDefault();
+            var currentPath = waypointToSearch.Value.Item1;
+            var waypointsWithinRange = waypoints.Where(w => WaypointsService.CalculateDistance(waypointToSearch.Key.X, waypointToSearch.Key.Y, w.X, w.Y) <= currentFuel);
+            var waypointsWithinRangeNotReviewed = waypointsWithinRange.Where(wwr => !bestPath.Keys.Select(bp => bp.Symbol).Contains(wwr.Symbol));
+            foreach (var waypoint in waypointsWithinRangeNotReviewed)
             {
-                var requiredFuel = (int)Math.Ceiling(
-                    WaypointsService.CalculateDistance(
-                        currentWaypoint.X,
-                        currentWaypoint.Y,
-                        waypoint.X,
-                        waypoint.Y));
-                if (requiredFuel <= currentFuel)
+                var lastWaypoint = currentPath.Last();
+                var tempPath = currentPath.ToList();
+                tempPath.Add(waypoint);
+                var tempFuelUsage = (int)Math.Ceiling(WaypointsService.CalculateDistance(lastWaypoint.X, lastWaypoint.Y, waypoint.X, waypoint.Y));
+                if (waypoint.Marketplace?.Exchange.ToList().Any(e => e.Symbol == InventoryEnum.FUEL.ToString()) == true)
                 {
-                    var newVisitedWithFuel = (visitedWithFuel.Item1 + requiredFuel, visitedWithFuel.Item2.ToHashSet());
-                    newVisitedWithFuel.Item2.Add(waypoint);
-                    var solution = FindShortestPath(waypoints,
-                        waypoint,
-                        destination,
-                        fuelMax,
-                        newVisitedWithFuel,
-                        currentFuel - requiredFuel,
-                        usedFuel + requiredFuel);
-                    if (solution.HasValue)
-                    {
-                        allSolutions.Add(solution.Value);
-                    }
+                    bestPath[waypoint] = (tempPath, false, totalFuelUsage + tempFuelUsage, fuelMax);
+                }
+                else
+                {
+                    bestPath[waypoint] = (tempPath, false, totalFuelUsage + tempFuelUsage, currentFuel - tempFuelUsage);
                 }
             }
+            bestPath[waypointToSearch.Key] = (waypointToSearch.Value.Item1, true, waypointToSearch.Value.Item3, waypointToSearch.Value.Item4);
         }
-
-        return allSolutions.OrderBy(s => s.Item1).FirstOrDefault();
+        return bestPath;
     }
 }

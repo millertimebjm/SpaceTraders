@@ -1,6 +1,7 @@
 @using SpaceTraders.Models;
 @using SpaceTraders.Models.Enums
 @using SpaceTraders.Mvc.Services
+@using SpaceTraders.Services.Paths
 @using SpaceTraders.Services.Systems
 @using SpaceTraders.Services.Waypoints
 @using SpaceTraders.Services.Waypoints.Interfaces
@@ -10,6 +11,7 @@
     var currentShip = await Model.CurrentShip;
     var currentWaypoint = await Model.CurrentWaypoint;
     var waypoint = await Model.Waypoint;
+    var system = await Model.System;
 }
 
 <h6 style="margin-top:20px; margin-bottom: 0px;">Waypoint <a href="/waypoints/@waypoint.Symbol">@waypoint.Symbol</a> (<a href="/waypoints/@waypoint.Symbol/reset">reset</a>)</h6>
@@ -33,7 +35,29 @@
     }
     @if (currentShip is not null && currentWaypoint is not null)
     {
-        <li><a href="/waypoints/@waypoint.Symbol/navigate">Navigate To (@Math.Ceiling(WaypointsService.CalculateDistance(currentWaypoint.X, currentWaypoint.Y, waypoint.X, waypoint.Y))/@currentShip.Fuel.Current)</a></li>
+        var path = PathsService.BuildDijkstraPath(
+            system.Waypoints, 
+            currentWaypoint,
+            currentShip.Fuel.Current);
+        if (path.Any(p => p.Key.Symbol == waypoint.Symbol))
+        {
+            var waypointPath = path.Single(p => p.Key.Symbol == waypoint.Symbol).Value;
+            if (waypointPath.Item1.Count() == 1)
+            {
+                <li>Current waypoint.</li>
+            }
+            else if (waypointPath.Item1.Count() == 2)
+            {
+                <li>Path has direct route.</li>
+                <li><a href="/waypoints/@waypoint.Symbol/navigate">Navigate To (@Math.Ceiling(WaypointsService.CalculateDistance(currentWaypoint.X, currentWaypoint.Y, waypoint.X, waypoint.Y))/@currentShip.Fuel.Current)</a></li>
+
+            }
+            else
+            {
+                <li>Path has @(waypointPath.Item1.Count()-1) navigates</li>
+                <li><a href="/waypoints/@waypointPath.Item1[1].Symbol/navigate">Navigate To (@Math.Ceiling(WaypointsService.CalculateDistance(currentWaypoint.X, currentWaypoint.Y, waypoint.X, waypoint.Y))/@currentShip.Fuel.Current)</a></li>
+            }
+        }
     }
     @if (waypoint.Type == WaypointTypesEnum.ASTEROID.ToString() 
         || waypoint.Type == WaypointTypesEnum.ENGINEERED_ASTEROID.ToString())
@@ -57,9 +81,11 @@
     </div>
 }
 
-<div style="margin-left:10px; border-left-style: solid; border-left-width: 1px; padding-left: 10px;">
-    @foreach (var orbital in waypoint.Orbitals)
-    {
+@* <div style="margin-left:10px; border-left-style: solid; border-left-width: 1px; padding-left: 10px;">
+    using SpaceTraders.Services.Paths;
+#line default
+{
         await Html.RenderPartialAsync("~/Views/Orbitals/_Orbital.cshtml", orbital);
     }
-</div>
+</diusing System.Runtime.InteropServices;
+#line default *@
