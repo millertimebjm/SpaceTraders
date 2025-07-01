@@ -20,17 +20,6 @@ public class WaypointsCacheService : IWaypointsCacheService
 
     public async Task<Waypoint?> GetAsync(string waypointSymbol)
     {
-        // var filter = Builders<Waypoint>
-        //     .Filter
-        //     .Eq(w => w.Symbol, waypointSymbol);
-        // var collection = _mongoCollectionFactory.GetCollection<Waypoint>();
-
-        // var projection = Builders<Waypoint>
-        //     .Projection
-        //     .Exclude("_id");
-
-        // return await collection.Find(filter).Project(projection).FirstOrDefaultAsync();
-
         var filter = Builders<Waypoint>
             .Filter
             .Eq(w => w.Symbol, waypointSymbol);

@@ -28,19 +28,19 @@
                             <a class="nav-link text-dark" asp-area="" asp-controller="Contracts" asp-action="Index">Contracts</a>
                         </li>
                         <li class="nav-item">
-                            @if (ViewBag.CurrentShip is null)
+                            @if (ViewBag.CurrentShipSymbol is null)
                             {
                                 <a class="nav-link text-dark" href="/ships"><b>No Ship</b></a>
                             }
                             else 
                             {
-                                <text><a class="nav-link text-dark" href="/ships/@(ViewBag.CurrentShip.Symbol)"><b>@(ViewBag.CurrentShip.Symbol)</b></a></text>
+                                <text><a class="nav-link text-dark" href="/ships/@(ViewBag.CurrentShipSymbol)"><b>@(ViewBag.CurrentShipSymbol)</b></a></text>
                             }
                         </li>
-                        @if (ViewBag.CurrentShip is not null)
+                        @if (ViewBag.CurrentWaypointSymbol is not null)
                         {
                             <li class="nav-item">
-                                <a class="nav-link text-dark" href="/waypoints/@ViewBag.CurrentShip.Nav.WaypointSymbol">at <b>@ViewBag.CurrentShip.Nav.WaypointSymbol</b></a>
+                                <a class="nav-link text-dark" href="/waypoints/@ViewBag.CurrentWaypointSymbol">at <b>@ViewBag.CurrentWaypointSymbol</b></a>
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link text-dark" href="/ships/deactivate">Deactivate</a>

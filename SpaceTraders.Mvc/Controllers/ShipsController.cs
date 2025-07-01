@@ -47,9 +47,9 @@ public class ShipsController : BaseController
     public async Task<IActionResult> SetActive(string shipSymbol)
     {
         var ship = await _shipsService.GetAsync(shipSymbol);
-        SessionHelper.Set(HttpContext, SessionEnum.CurrentShip, ship);
+        SessionHelper.Set(HttpContext, SessionEnum.CurrentShipSymbol, ship.Symbol);
         var waypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol);
-        SessionHelper.Set(HttpContext, SessionEnum.CurrentWaypoint, waypoint);
+        SessionHelper.Set(HttpContext, SessionEnum.CurrentWaypointSymbol, waypoint.Symbol);
         return RedirectToRoute(new
         {
             controller = "Ships",
@@ -75,10 +75,10 @@ public class ShipsController : BaseController
     [Route("/ships/extract")]
     public async Task<IActionResult> Extract()
     {
-        var ship = SessionHelper.Get<Ship>(HttpContext, SessionEnum.CurrentShip);
-        ArgumentException.ThrowIfNullOrWhiteSpace(ship?.Symbol);
-        await _shipsService.ExtractAsync(ship.Symbol);
-        return Redirect($"/ships/{ship.Symbol}");
+        var shipSymbol = SessionHelper.Get<string>(HttpContext, SessionEnum.CurrentShipSymbol);
+        ArgumentException.ThrowIfNullOrWhiteSpace(shipSymbol);
+        await _shipsService.ExtractAsync(shipSymbol);
+        return Redirect($"/ships/{shipSymbol}");
     }
 
     [Route("/ships/{shipSymbol}")]
@@ -102,8 +102,8 @@ public class ShipsController : BaseController
     [Route("/ships/deactivate")]
     public IActionResult Deactivate()
     {
-        SessionHelper.Unset(HttpContext, SessionEnum.CurrentShip);
-        SessionHelper.Unset(HttpContext, SessionEnum.CurrentWaypoint);
+        SessionHelper.Unset(HttpContext, SessionEnum.CurrentShipSymbol);
+        SessionHelper.Unset(HttpContext, SessionEnum.CurrentWaypointSymbol);
         return RedirectToAction("Index");
     }
 

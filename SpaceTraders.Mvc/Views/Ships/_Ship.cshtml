@@ -4,7 +4,7 @@
 @model ShipViewModel
 
 @{
-    var currentShipSymbol = ViewBag.CurrentShip?.Symbol ?? string.Empty;
+    var currentShipSymbol = ViewBag.CurrentShipSymbol ?? string.Empty;
     var ship = await Model.ShipTask;
     var contract = await Model.ContractTask;
 }

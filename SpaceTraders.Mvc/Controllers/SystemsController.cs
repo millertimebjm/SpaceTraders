@@ -1,10 +1,8 @@
-using System.Linq;
 using Microsoft.AspNetCore.Mvc;
 using SpaceTraders.Models;
 using SpaceTraders.Mvc.Models;
-using SpaceTraders.Mvc.Services;
 using SpaceTraders.Services.Agents.Interfaces;
-using SpaceTraders.Services.Systems;
+using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Waypoints;
 using SpaceTraders.Services.Waypoints.Interfaces;
@@ -18,6 +16,7 @@ public class SystemsController : BaseController
     private readonly IWaypointsService _waypointsService;
     private readonly ISystemsAsyncRefreshService _systemsAsyncRefreshService;
     private readonly ISystemsApiService _systemsApiService;
+    private readonly IShipsService _shipsService;
 
     public SystemsController(
         ILogger<SystemsController> logger,
@@ -25,13 +24,15 @@ public class SystemsController : BaseController
         IWaypointsService waypointsService,
         IAgentsService agentsService,
         ISystemsAsyncRefreshService systemsAsyncRefreshService,
-        ISystemsApiService systemsApiService) : base(agentsService)
+        ISystemsApiService systemsApiService,
+        IShipsService shipsService) : base(agentsService)
     {
         _logger = logger;
         _systemsService = systemsService;
         _waypointsService = waypointsService;
         _systemsAsyncRefreshService = systemsAsyncRefreshService;
         _systemsApiService = systemsApiService;
+        _shipsService = shipsService;
     }
 
     [Route("/systems/{systemSymbol}")]
@@ -40,16 +41,24 @@ public class SystemsController : BaseController
         [FromQuery] string type,
         [FromQuery] string traits)
     {
-        var currentWaypoint = SessionHelper.Get<Waypoint>(HttpContext, SessionEnum.CurrentWaypoint);
-        var currentShip = SessionHelper.Get<Ship>(HttpContext, SessionEnum.CurrentShip);
+        var currentWaypointSymbol = SessionHelper.Get<string>(HttpContext, SessionEnum.CurrentWaypointSymbol);
+        Task<Waypoint?> currentWaypointTask =
+            string.IsNullOrWhiteSpace(currentWaypointSymbol)
+            ? Task.FromResult<Waypoint?>(null)
+            : _waypointsService.GetAsync(currentWaypointSymbol);
+        var currentShipSymbol = SessionHelper.Get<string>(HttpContext, SessionEnum.CurrentShipSymbol);
+        Task<Ship?> currentShipTask =
+            string.IsNullOrWhiteSpace(currentShipSymbol)
+            ? Task.FromResult<Ship?>(null)
+            : _shipsService.GetAsync(currentShipSymbol);
         var systemTask = _systemsService.GetAsync(systemSymbol);
 
         if (!string.IsNullOrWhiteSpace(type))
         {
             WaypointsViewModel model = new(
                 _waypointsService.GetByTypeAsync(systemSymbol, type),
-                Task.FromResult(currentWaypoint),
-                Task.FromResult(currentShip),
+                currentWaypointTask,
+                currentShipTask,
                 systemTask
             );
             return View("~/Views/Waypoints/WaypointsByType.cshtml", model);
@@ -58,22 +67,23 @@ public class SystemsController : BaseController
         {
             WaypointsViewModel model = new(
                 _waypointsService.GetByTraitAsync(systemSymbol, traits),
-                Task.FromResult(currentWaypoint),
-                Task.FromResult(currentShip),
+                currentWaypointTask,
+                currentShipTask,
                 systemTask
             );
             return View("~/Views/Waypoints/WaypointsByType.cshtml", model);
         }
 
         var system = await systemTask;
+        var currentWaypoint = await currentWaypointTask;
         if (currentWaypoint is not null)
         {
             system = system with { Waypoints = WaypointsService.SortWaypoints(system.Waypoints, currentWaypoint.X, currentWaypoint.Y).ToList() };
         }
         SystemViewModel systemModel = new(
-            Task.FromResult(system),
-            Task.FromResult(currentShip),
-            Task.FromResult(currentWaypoint));
+            systemTask,
+            currentShipTask,
+            currentWaypointTask);
 
         return View(systemModel);
     }
@@ -89,11 +99,18 @@ public class SystemsController : BaseController
     [Route("/systems/withinrange")]
     public async Task<IActionResult> WithinRange()
     {
-        var currentShip = SessionHelper.Get<Ship>(HttpContext, SessionEnum.CurrentShip);
-        ArgumentException.ThrowIfNullOrWhiteSpace(currentShip?.Symbol);
-        var systemSymbol = currentShip.Nav.SystemSymbol;
-        var system = await _systemsService.GetAsync(systemSymbol);
-        var currentWaypoint = await _waypointsService.GetAsync(currentShip.Nav.WaypointSymbol);
+        var currentShipSymbol = SessionHelper.Get<string>(HttpContext, SessionEnum.CurrentShipSymbol);
+        ArgumentException.ThrowIfNullOrWhiteSpace(currentShipSymbol);
+        var currentWaypointSymbol = SessionHelper.Get<string>(HttpContext, SessionEnum.CurrentWaypointSymbol);
+        ArgumentException.ThrowIfNullOrWhiteSpace(currentWaypointSymbol);
+        var systemSymbol = WaypointsService.ExtractSystemFromWaypoint(currentWaypointSymbol);
+
+        var systemTask = _systemsService.GetAsync(systemSymbol);
+        var currentWaypointTask = _waypointsService.GetAsync(currentWaypointSymbol);
+        var currentShipTask = _shipsService.GetAsync(currentShipSymbol);
+        await Task.WhenAll(systemTask, currentWaypointTask, currentShipTask);
+        (STSystem system, Waypoint currentWaypoint, Ship currentShip) = (await systemTask, await currentWaypointTask, await currentShipTask);
+
         var fuelAvailable = currentShip.Fuel.Current;
 
         var waypointsFiltered = system

@@ -45,6 +45,7 @@ builder.Services.AddScoped<ISystemsAsyncRefreshService, SystemsAsyncRefreshServi
 
 builder.Services.AddLogging();
 Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Warning()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
     .Enrich.WithProperty("Application", "Companion.ChatFrontendBackend")

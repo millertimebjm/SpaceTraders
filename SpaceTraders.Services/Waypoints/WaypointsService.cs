@@ -53,7 +53,7 @@ public class WaypointsService : IWaypointsService
         {
             waypoint = await _waypointsCacheService.GetAsync(waypointSymbol);
             if (waypoint is not null) return waypoint;
-            _logger.LogInformation("Cache miss: {waypointName}:{waypointSymbol}", nameof(Waypoint), waypointSymbol);
+            _logger.LogWarning("Cache miss: {waypointName}:{waypointSymbol}", nameof(Waypoint), waypointSymbol);
         }
         waypoint = await _waypointsApiService.GetAsync(waypointSymbol);
         await _waypointsCacheService.SetAsync(waypoint);
@@ -66,7 +66,7 @@ public class WaypointsService : IWaypointsService
     {
         var waypoints = await _waypointsCacheService.GetByTypeAsync(systemSymbol, type);
         if (waypoints is not null) return waypoints;
-        _logger.LogInformation("Cache miss GetByType: {type}:{systemSymbol} {waypointType}", nameof(STSystem), systemSymbol, type);
+        _logger.LogWarning("Cache miss GetByType: {type}:{systemSymbol} {waypointType}", nameof(STSystem), systemSymbol, type);
     
         waypoints = await _waypointsApiService.GetByTypeAsync(systemSymbol, type);
         return waypoints;
@@ -78,7 +78,7 @@ public class WaypointsService : IWaypointsService
     {
         var waypoints = await _waypointsCacheService.GetByTraitAsync(systemSymbol, trait);
         if (waypoints is not null) return waypoints;
-        _logger.LogInformation("Cache miss GetByTrait: {type}:{systemSymbol} {waypointTrait}", nameof(STSystem), systemSymbol, trait);
+        _logger.LogWarning("Cache miss GetByTrait: {type}:{systemSymbol} {waypointTrait}", nameof(STSystem), systemSymbol, trait);
     
         waypoints = await _waypointsApiService.GetByTypeAsync(systemSymbol, trait);
         return waypoints;

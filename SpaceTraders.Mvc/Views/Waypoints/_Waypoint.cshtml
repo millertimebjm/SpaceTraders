@@ -54,8 +54,10 @@
             }
             else
             {
+                var nextHop = waypointPath.Item1[1];
+                var nextHopFuel = @Math.Ceiling(WaypointsService.CalculateDistance(nextHop.X, nextHop.Y, currentWaypoint.X, currentWaypoint.Y));
                 <li>Path has @(waypointPath.Item1.Count()-1) navigates</li>
-                <li><a href="/waypoints/@waypointPath.Item1[1].Symbol/navigate">Navigate To (@Math.Ceiling(WaypointsService.CalculateDistance(currentWaypoint.X, currentWaypoint.Y, waypoint.X, waypoint.Y))/@currentShip.Fuel.Current)</a></li>
+                <li><a href="/waypoints/@waypointPath.Item1[1].Symbol/navigate">Navigate To (@nextHopFuel/@currentShip.Fuel.Current) (@waypointPath.Item3)</a></li>
             }
         }
     }

@@ -36,10 +36,22 @@ public class WaypointsController : BaseController
     [Route("/waypoints/{waypointSymbol}")]
     public IActionResult Index(string waypointSymbol)
     {
+        var currentWaypointSymbol = SessionHelper.Get<string>(HttpContext, SessionEnum.CurrentWaypointSymbol);
+        var currentWaypointTask = Task.FromResult<Waypoint?>(null);
+        if (string.IsNullOrWhiteSpace(currentWaypointSymbol))
+        {
+            currentWaypointTask = _waypointsService.GetAsync(currentWaypointSymbol);
+        }
+        var currentShipSymbol = SessionHelper.Get<string>(HttpContext, SessionEnum.CurrentShipSymbol);
+        var currentShipTask = Task.FromResult<Ship?>(null);
+        if (string.IsNullOrWhiteSpace(currentShipSymbol))
+        {
+            currentShipTask = _shipsService.GetAsync(currentShipSymbol);
+        }
         WaypointViewModel model = new(
             _waypointsService.GetAsync(waypointSymbol),
-            Task.FromResult(SessionHelper.Get<Waypoint>(HttpContext, SessionEnum.CurrentWaypoint)),
-            Task.FromResult(SessionHelper.Get<Ship>(HttpContext, SessionEnum.CurrentShip)),
+            currentWaypointTask,
+            currentShipTask,
             _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(waypointSymbol))
         );
         return View(model);
@@ -55,20 +67,20 @@ public class WaypointsController : BaseController
     [Route("/waypoints/{waypointSymbol}/navigate")]
     public async Task<IActionResult> Navigate(string waypointSymbol)
     {
-        var ship = SessionHelper.Get<Ship>(HttpContext, SessionEnum.CurrentShip);
-        ArgumentException.ThrowIfNullOrWhiteSpace(ship?.Symbol);
-        await _shipsService.NavigateAsync(waypointSymbol, ship.Symbol);
+        var shipSymbol = SessionHelper.Get<string>(HttpContext, SessionEnum.CurrentShipSymbol);
+        ArgumentException.ThrowIfNullOrWhiteSpace(shipSymbol);
+        await _shipsService.NavigateAsync(waypointSymbol, shipSymbol);
         var waypoint = await _waypointsService.GetAsync(waypointSymbol);
-        SessionHelper.Set(HttpContext, SessionEnum.CurrentWaypoint, waypoint);
-        return Redirect($"/ships/{ship.Symbol}");
+        SessionHelper.Set(HttpContext, SessionEnum.CurrentWaypointSymbol, waypointSymbol);
+        return Redirect($"/ships/{shipSymbol}");
     }
 
     [Route("/waypoints/{waypointSymbol}/jump")]
     public async Task<IActionResult> Jump(string waypointSymbol)
     {
-        var ship = SessionHelper.Get<Ship?>(HttpContext, SessionEnum.CurrentShip);
-        ArgumentException.ThrowIfNullOrWhiteSpace(ship?.Symbol);
-        var nav = await _shipsService.JumpAsync(waypointSymbol, ship.Symbol);
+        var shipSymbol = SessionHelper.Get<string?>(HttpContext, SessionEnum.CurrentShipSymbol);
+        ArgumentException.ThrowIfNullOrWhiteSpace(shipSymbol);
+        var nav = await _shipsService.JumpAsync(waypointSymbol, shipSymbol);
         return RedirectToAction("Index", "Ships");
     }
 }

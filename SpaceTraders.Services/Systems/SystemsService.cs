@@ -27,7 +27,7 @@ public class SystemsService : ISystemsService
         {
             system = await _systemsCacheService.GetAsync(systemSymbol, refresh);
             if (system is not null) return system;
-            _logger.LogInformation("Cache miss: {type}: {id}", nameof(STSystem), systemSymbol);
+            _logger.LogWarning("Cache miss: {type}: {id}", nameof(STSystem), systemSymbol);
         }
         system = await _systemsApiService.GetAsync(systemSymbol);
         await _systemsCacheService.SetAsync(system);

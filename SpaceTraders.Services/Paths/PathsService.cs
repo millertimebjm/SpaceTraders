@@ -42,7 +42,6 @@ public static class PathsService
         int fuelMax)
     {
         var currentWaypoint = origin;
-        var totalFuelUsage = 0;
         var currentFuel = fuelMax;
         // Waypoint, Path, TotalFuel, RemainingFuel
         Dictionary<Waypoint, (List<Waypoint>, bool, int, int)> bestPath = new()
@@ -67,11 +66,11 @@ public static class PathsService
                 var tempFuelUsage = (int)Math.Ceiling(WaypointsService.CalculateDistance(lastWaypoint.X, lastWaypoint.Y, waypoint.X, waypoint.Y));
                 if (waypoint.Marketplace?.Exchange.ToList().Any(e => e.Symbol == InventoryEnum.FUEL.ToString()) == true)
                 {
-                    bestPath[waypoint] = (tempPath, false, totalFuelUsage + tempFuelUsage, fuelMax);
+                    bestPath[waypoint] = (tempPath, false, waypointToSearch.Value.Item3 + tempFuelUsage, fuelMax);
                 }
                 else
                 {
-                    bestPath[waypoint] = (tempPath, false, totalFuelUsage + tempFuelUsage, currentFuel - tempFuelUsage);
+                    bestPath[waypoint] = (tempPath, false, waypointToSearch.Value.Item3 + tempFuelUsage, currentFuel - tempFuelUsage);
                 }
             }
             bestPath[waypointToSearch.Key] = (waypointToSearch.Value.Item1, true, waypointToSearch.Value.Item3, waypointToSearch.Value.Item4);

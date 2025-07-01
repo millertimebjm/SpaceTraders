@@ -37,7 +37,6 @@ public class AgentsService : IAgentsService
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);
         var agentsDataString = await _httpClient.GetAsync(url.ToString());
-        _logger.LogInformation("{agentsDataString}", await agentsDataString.Content.ReadAsStringAsync());
         agentsDataString.EnsureSuccessStatusCode();
         var agentsData = await agentsDataString.Content.ReadFromJsonAsync<DataSingle<Agent>>();
         if (agentsData is null) throw new HttpRequestException("Agent Data not retrieved.");

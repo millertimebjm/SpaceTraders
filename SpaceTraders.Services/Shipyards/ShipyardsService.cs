@@ -56,8 +56,6 @@ public class ShipyardsService : IShipyardsService
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);
         var content = JsonContent.Create(new { shipType, waypointSymbol });
-        //var content = new StringContent(JsonSerializer.Serialize(new { shipType, waypointSymbol }));
-        _logger.LogInformation("Content passed to buy ship {content}.", JsonSerializer.Serialize(new { shipType, waypointSymbol }));
         var data = await HttpHelperService.HttpPostHelper<DataSingle<Ship>>(
             url.ToString(),
             _httpClient,

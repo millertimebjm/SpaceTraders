@@ -45,7 +45,6 @@ public class WaypointsApiService : IWaypointsApiService
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);
         var waypointsDataString = await _httpClient.GetAsync(url.ToString());
-        _logger.LogInformation("{WaypointsDataString}", await waypointsDataString.Content.ReadAsStringAsync());
         waypointsDataString.EnsureSuccessStatusCode();
         var waypointsData = await waypointsDataString.Content.ReadFromJsonAsync<DataSingle<Waypoint>>();
         if (waypointsData is null) throw new HttpRequestException("System Data not retrieved.");

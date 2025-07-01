@@ -4,8 +4,8 @@ namespace SpaceTraders.Mvc;
 
 public enum SessionEnum
 {
-    CurrentShip,
-    CurrentWaypoint,
+    CurrentShipSymbol,
+    CurrentWaypointSymbol,
     CurrentCredits,
     SystemWaypoints,
     Waypoint,
