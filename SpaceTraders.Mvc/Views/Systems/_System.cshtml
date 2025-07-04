@@ -8,7 +8,7 @@
     var currentWaypoint = await Model.WaypointTask;
     if (currentWaypoint is not null)
     {
-        sortedWaypoints = WaypointsService.SortWaypoints(sortedWaypoints.ToList(), currentWaypoint.X, currentWaypoint.Y);
+        sortedWaypoints = WaypointsService.SortWaypoints(sortedWaypoints.ToList(), currentWaypoint.X, currentWaypoint.Y, currentWaypoint.Symbol);
     }
 }
 

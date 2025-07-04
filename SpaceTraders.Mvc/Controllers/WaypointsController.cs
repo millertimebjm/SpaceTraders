@@ -38,13 +38,13 @@ public class WaypointsController : BaseController
     {
         var currentWaypointSymbol = SessionHelper.Get<string>(HttpContext, SessionEnum.CurrentWaypointSymbol);
         var currentWaypointTask = Task.FromResult<Waypoint?>(null);
-        if (string.IsNullOrWhiteSpace(currentWaypointSymbol))
+        if (!string.IsNullOrWhiteSpace(currentWaypointSymbol))
         {
             currentWaypointTask = _waypointsService.GetAsync(currentWaypointSymbol);
         }
         var currentShipSymbol = SessionHelper.Get<string>(HttpContext, SessionEnum.CurrentShipSymbol);
         var currentShipTask = Task.FromResult<Ship?>(null);
-        if (string.IsNullOrWhiteSpace(currentShipSymbol))
+        if (!string.IsNullOrWhiteSpace(currentShipSymbol))
         {
             currentShipTask = _shipsService.GetAsync(currentShipSymbol);
         }

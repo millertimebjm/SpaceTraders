@@ -1,0 +1,13 @@
+{
+    "AccountToken": "",
+    "AgentToken": "",
+    "ApiUrl": "https://api.spacetraders.io",
+    "ShipCommands":[
+        {
+            "ShipSymbol": "",
+            "ShipCommandEnum": "",
+            "StartWaypointSymbol": "",
+            "EndWaypointSymbol": ""
+        }
+    ]
+}

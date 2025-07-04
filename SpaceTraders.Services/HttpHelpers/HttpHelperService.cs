@@ -1,6 +1,5 @@
 using System.Net.Http.Json;
 using Microsoft.Extensions.Logging;
-using SpaceTraders.Services.Contracts;
 
 namespace SpaceTraders.Services.HttpHelpers;
 

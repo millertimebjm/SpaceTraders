@@ -20,6 +20,6 @@ public class MongoCollectionFactory : IMongoCollectionFactory
     {
         var client = new MongoClient(_mongoConnectionString);
         var database = client.GetDatabase(_mongoDatabase);
-        return database.GetCollection<T>(nameof(T));
+        return database.GetCollection<T>(typeof(T).Name);
     }
 }

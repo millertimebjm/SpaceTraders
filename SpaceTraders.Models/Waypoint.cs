@@ -10,5 +10,8 @@ public record Waypoint(
     string Orbits,
     IReadOnlyList<Trait> Traits,
     Shipyard? Shipyard,
-    Marketplace? Marketplace
+    Marketplace? Marketplace,
+    JumpGate? JumpGate,
+    bool IsUnderConstruction,
+    Construction? Construction
 );

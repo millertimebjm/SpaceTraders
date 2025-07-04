@@ -18,14 +18,12 @@ public class SystemsApiService : ISystemsApiService
     private readonly string _token;
     private readonly ILogger<SystemsService> _logger;
     private readonly IWaypointsService _waypointsService;
-    private readonly ISystemsAsyncRefreshService _systemsAsyncRefreshService;
 
     public SystemsApiService(
         HttpClient httpClient,
         IConfiguration configuration,
         ILogger<SystemsService> logger,
-        IWaypointsService waypointsService,
-        ISystemsAsyncRefreshService systemsAsyncRefreshService)
+        IWaypointsService waypointsService)
     {
         _logger = logger;
         _httpClient = httpClient;
@@ -34,7 +32,6 @@ public class SystemsApiService : ISystemsApiService
         _token = configuration[ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
         ArgumentException.ThrowIfNullOrWhiteSpace(_token);
         _waypointsService = waypointsService;
-        _systemsAsyncRefreshService = systemsAsyncRefreshService;
     }
 
     public async Task<STSystem> GetAsync(string systemSymbol)

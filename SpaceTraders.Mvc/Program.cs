@@ -3,11 +3,16 @@ using SpaceTraders.Models.Enums;
 using SpaceTraders.Services;
 using SpaceTraders.Services.Agents;
 using SpaceTraders.Services.Agents.Interfaces;
+using SpaceTraders.Services.Constructions;
+using SpaceTraders.Services.Constructions.Interfaces;
 using SpaceTraders.Services.Contracts;
 using SpaceTraders.Services.Contracts.Interfaces;
+using SpaceTraders.Services.JumpGates;
+using SpaceTraders.Services.JumpGates.Interfaces;
 using SpaceTraders.Services.Marketplaces;
 using SpaceTraders.Services.Marketplaces.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
+using SpaceTraders.Services.ShipStatuses;
 using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Shipyards.Interfaces;
 using SpaceTraders.Services.Systems;
@@ -41,11 +46,13 @@ builder.Services.AddScoped<IWaypointsCacheService, WaypointsCacheService>();
 builder.Services.AddScoped<IMongoCollectionFactory, MongoCollectionFactory>();
 builder.Services.AddScoped<ISystemsApiService, SystemsApiService>();
 builder.Services.AddScoped<ISystemsCacheService, SystemsCacheService>();
-builder.Services.AddScoped<ISystemsAsyncRefreshService, SystemsAsyncRefreshService>();
+builder.Services.AddScoped<IJumpGatesServices, JumpGatesServices>();
+builder.Services.AddScoped<IConstructionsService, ConstructionsService>();
+builder.Services.AddScoped<IShipStatusesCacheService, ShipStatusesCacheService>();
 
 builder.Services.AddLogging();
 Log.Logger = new LoggerConfiguration()
-    .MinimumLevel.Warning()
+    .MinimumLevel.Information()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
     .Enrich.WithProperty("Application", "Companion.ChatFrontendBackend")

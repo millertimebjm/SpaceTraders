@@ -1,3 +1,4 @@
+using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using SpaceTraders.Models;
 using SpaceTraders.Mvc.Models;
@@ -14,25 +15,28 @@ public class SystemsController : BaseController
     private readonly ILogger<SystemsController> _logger;
     private readonly ISystemsService _systemsService;
     private readonly IWaypointsService _waypointsService;
-    private readonly ISystemsAsyncRefreshService _systemsAsyncRefreshService;
     private readonly ISystemsApiService _systemsApiService;
     private readonly IShipsService _shipsService;
+    private readonly IWaypointsApiService _waypointsApiService;
+    private readonly ISystemsCacheService _systemsCacheService;
 
     public SystemsController(
         ILogger<SystemsController> logger,
         ISystemsService systemsService,
         IWaypointsService waypointsService,
         IAgentsService agentsService,
-        ISystemsAsyncRefreshService systemsAsyncRefreshService,
         ISystemsApiService systemsApiService,
-        IShipsService shipsService) : base(agentsService)
+        IShipsService shipsService,
+        IWaypointsApiService waypointsApiService,
+        ISystemsCacheService systemsCacheService) : base(agentsService)
     {
         _logger = logger;
         _systemsService = systemsService;
         _waypointsService = waypointsService;
-        _systemsAsyncRefreshService = systemsAsyncRefreshService;
         _systemsApiService = systemsApiService;
         _shipsService = shipsService;
+        _waypointsApiService = waypointsApiService;
+        _systemsCacheService = systemsCacheService;
     }
 
     [Route("/systems/{systemSymbol}")]
@@ -78,7 +82,7 @@ public class SystemsController : BaseController
         var currentWaypoint = await currentWaypointTask;
         if (currentWaypoint is not null)
         {
-            system = system with { Waypoints = WaypointsService.SortWaypoints(system.Waypoints, currentWaypoint.X, currentWaypoint.Y).ToList() };
+            system = system with { Waypoints = WaypointsService.SortWaypoints(system.Waypoints, currentWaypoint.X, currentWaypoint.Y, currentWaypoint.Symbol).ToList() };
         }
         SystemViewModel systemModel = new(
             systemTask,
@@ -89,11 +93,59 @@ public class SystemsController : BaseController
     }
 
     [Route("/systems/{systemSymbol}/reset")]
-    public async Task<IActionResult> Reset(string systemSymbol)
+    public async Task Reset(string systemSymbol)
     {
+        Response.ContentType = "text/plain";
+        HttpContext.Response.Headers.Add("X-Content-Type-Options", "nosniff");
+
+        // force immediate rendering
+        var padding = new string(' ', 1024) + "\n";
+        var paddingBytes = Encoding.UTF8.GetBytes(padding);
+        await Response.Body.WriteAsync(paddingBytes, 0, paddingBytes.Length);
+        await Response.Body.FlushAsync();
+
         var system = await _systemsApiService.GetAsync(systemSymbol);
-        await _systemsAsyncRefreshService.RefreshWaypointsAsync(system);
-        return Content("System caching completed.");
+        var message = $"{DateTime.Now} - System has been retrieved.\n";
+        var buffer = Encoding.UTF8.GetBytes(message);
+        await Response.Body.WriteAsync(buffer, 0, buffer.Length);
+        await Response.Body.FlushAsync();
+
+        List<Waypoint> waypointsHydrated = new();
+        var index = 1;
+        var systemWaypointsCount = system.Waypoints.Count();
+        foreach (var waypointSkeleton in system.Waypoints)
+        {
+            var completed = false;
+            while (!completed)
+            {
+                try
+                {
+                    var waypointHydrated = await _waypointsApiService.GetAsync(waypointSkeleton.Symbol);
+                    waypointsHydrated.Add(waypointHydrated);
+                    completed = true;
+                    message = $"{DateTime.Now} - Waypoint retrieved ({index}/{systemWaypointsCount}).\n";
+                    buffer = Encoding.UTF8.GetBytes(message);
+                    await Response.Body.WriteAsync(buffer, 0, buffer.Length);
+                    await Response.Body.FlushAsync();
+                }
+                catch (HttpRequestException)
+                {
+                    _logger.LogError("Waypoint/Shipyard/Marketplace Rate Limit error in {type} SystemsController RefreshSystem", nameof(SystemsController));
+                    await Task.Delay(5000);
+                }
+            }
+
+            // Wait one second for 429-Rate Limit issues
+            await Task.Delay(1000);
+            index++;
+        }
+        system = system with { Waypoints = waypointsHydrated };
+        await _systemsCacheService.SetAsync(system);
+
+        message = "Process complete.\n";
+        buffer = Encoding.UTF8.GetBytes(message);
+        await Response.Body.WriteAsync(buffer, 0, buffer.Length);
+        await Response.Body.FlushAsync();
     }
 
     [Route("/systems/withinrange")]
@@ -117,7 +169,7 @@ public class SystemsController : BaseController
             .Waypoints
             .Where(w => WaypointsService.CalculateDistance(currentWaypoint.X, currentWaypoint.Y, w.X, w.Y) < fuelAvailable)
             .ToList();
-        system = system with { Waypoints = WaypointsService.SortWaypoints(waypointsFiltered, currentWaypoint.X, currentWaypoint.Y).ToList() };
+        system = system with { Waypoints = WaypointsService.SortWaypoints(waypointsFiltered, currentWaypoint.X, currentWaypoint.Y, currentWaypoint?.Symbol).ToList() };
 
         SystemViewModel model = new(
             Task.FromResult(system),

@@ -38,28 +38,58 @@
         var path = PathsService.BuildDijkstraPath(
             system.Waypoints, 
             currentWaypoint,
+            currentShip.Fuel.Capacity,
             currentShip.Fuel.Current);
-        if (path.Any(p => p.Key.Symbol == waypoint.Symbol))
+        if (path.Any(p => p.Key.Symbol == waypoint.Symbol) || currentShip.Nav.FlightMode == NavFlightModeEnum.DRIFT.ToString())
         {
-            var waypointPath = path.Single(p => p.Key.Symbol == waypoint.Symbol).Value;
-            if (waypointPath.Item1.Count() == 1)
+            var waypointPath = path.SingleOrDefault(p => p.Key.Symbol == waypoint.Symbol).Value;
+            if (waypointPath.Item1?.Count() == 1)
             {
                 <li>Current waypoint.</li>
             }
-            else if (waypointPath.Item1.Count() == 2)
+            else if (waypointPath.Item1?.Count() == 2 || currentShip.Nav.FlightMode == NavFlightModeEnum.DRIFT.ToString())
             {
                 <li>Path has direct route.</li>
-                <li><a href="/waypoints/@waypoint.Symbol/navigate">Navigate To (@Math.Ceiling(WaypointsService.CalculateDistance(currentWaypoint.X, currentWaypoint.Y, waypoint.X, waypoint.Y))/@currentShip.Fuel.Current)</a></li>
-
+                @if (currentShip.Nav.Status == NavStatusEnum.IN_ORBIT.ToString())
+                {
+                    <li><a href="/waypoints/@waypoint.Symbol/navigate">Navigate To (@Math.Ceiling(WaypointsService.CalculateDistance(currentWaypoint.X, currentWaypoint.Y, waypoint.X, waypoint.Y))/@currentShip.Fuel.Current)</a></li>
+                } 
+                else
+                {
+                    <li>Can't Navigate - not in orbit (@Math.Ceiling(WaypointsService.CalculateDistance(currentWaypoint.X, currentWaypoint.Y, waypoint.X, waypoint.Y))/@currentShip.Fuel.Current)</li>
+                }
             }
             else
             {
                 var nextHop = waypointPath.Item1[1];
                 var nextHopFuel = @Math.Ceiling(WaypointsService.CalculateDistance(nextHop.X, nextHop.Y, currentWaypoint.X, currentWaypoint.Y));
                 <li>Path has @(waypointPath.Item1.Count()-1) navigates</li>
-                <li><a href="/waypoints/@waypointPath.Item1[1].Symbol/navigate">Navigate To (@nextHopFuel/@currentShip.Fuel.Current) (@waypointPath.Item3)</a></li>
+                @if (currentShip.Nav.Status == NavStatusEnum.IN_ORBIT.ToString())
+                {
+                    <li><a href="/waypoints/@waypointPath.Item1[1].Symbol/navigate">Navigate To (@nextHopFuel/@currentShip.Fuel.Current) (@waypointPath.Item3)</a></li>
+                }
+                else
+                {
+                    <li>Can't Navigate - not in orbit (@Math.Ceiling(WaypointsService.CalculateDistance(currentWaypoint.X, currentWaypoint.Y, waypoint.X, waypoint.Y))/@currentShip.Fuel.Current)</li>
+                }
             }
         }
+    }
+    @if (waypoint.Type == WaypointTypesEnum.JUMP_GATE.ToString()
+        && waypoint.JumpGate is not null)
+    {
+        <li><b>Jump Gate:</b> @string.Join(", ", waypoint.JumpGate.Connections)</li>
+    }
+    @if (waypoint.IsUnderConstruction
+        && waypoint.Construction is not null)
+    {
+        <li><b>Construction Materials:</b></li>
+        <ul>
+            @foreach (var material in waypoint.Construction.Materials)
+            {
+                <li>@material.TradeSymbol (@material.Fulfilled/@material.Required)</li>
+            }
+        </ul>
     }
     @if (waypoint.Type == WaypointTypesEnum.ASTEROID.ToString() 
         || waypoint.Type == WaypointTypesEnum.ENGINEERED_ASTEROID.ToString())

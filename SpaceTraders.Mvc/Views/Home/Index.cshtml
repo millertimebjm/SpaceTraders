@@ -1,14 +1,28 @@
-﻿@{
+﻿@using SpaceTraders.Models
+@model IEnumerable<ShipStatus>
+@{
     ViewData["Title"] = "Home Page";
 }
 
-@* <div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
-</div> *@
-
-<div>
-    <p><a href="/agents">Get Agents</a></p>
-    <p><a href="/contracts">Get Contracts</a></p>
-    <p><a href="/ships">Get Ships</a></p>
-</div>
+<main>
+<section class="text-center container">
+    <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
+        @foreach (var shipStatus in Model.OrderBy(ss => ss.Symbol))
+        {
+            <div class="shadow-lg p-3 bg-white rounded" style="width: 250px; margin: 10px; position: relative;">
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 150px;">
+                    <span>@shipStatus.Symbol</span>
+                    <span>@shipStatus.ShipCommandEnum</span>
+                    
+                    @foreach (var inventory in shipStatus.Cargo.Inventory)
+                    {
+                        <span>@inventory.Symbol (@inventory.Units)</span>
+                    }
+                    
+                    <span>@shipStatus.LastMessage</span>
+                </div>
+            </div>
+        }
+    </div>
+</section>
+</main>

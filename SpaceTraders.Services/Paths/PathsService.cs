@@ -39,14 +39,15 @@ public static class PathsService
     public static Dictionary<Waypoint, (List<Waypoint>, bool, int, int)> BuildDijkstraPath(
         IEnumerable<Waypoint> waypoints,
         Waypoint origin,
-        int fuelMax)
+        int fuelMax,
+        int fuelCurrent)
     {
         var currentWaypoint = origin;
         var currentFuel = fuelMax;
         // Waypoint, Path, TotalFuel, RemainingFuel
         Dictionary<Waypoint, (List<Waypoint>, bool, int, int)> bestPath = new()
         {
-            { origin, ([origin], false, 0, 0) }
+            { origin, ([origin], false, 0, fuelCurrent) }
         };
         while (bestPath.Values.Any(bp => !bp.Item2))
         {
@@ -55,6 +56,7 @@ public static class PathsService
 
             // from those waypoints that haven't been searched, find the least paths and then minimum fuel
             var waypointToSearch = waypointsToSearch.Where(w => w.Value.Item1.Count == waypointsToSearch.Min(wts => wts.Value.Item1.Count())).OrderBy(wts => wts.Value.Item3).FirstOrDefault();
+            currentFuel = waypointToSearch.Value.Item4;
             var currentPath = waypointToSearch.Value.Item1;
             var waypointsWithinRange = waypoints.Where(w => WaypointsService.CalculateDistance(waypointToSearch.Key.X, waypointToSearch.Key.Y, w.X, w.Y) <= currentFuel);
             var waypointsWithinRangeNotReviewed = waypointsWithinRange.Where(wwr => !bestPath.Keys.Select(bp => bp.Symbol).Contains(wwr.Symbol));

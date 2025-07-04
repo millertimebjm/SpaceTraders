@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.VisualBasic;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.HttpHelpers;
@@ -106,13 +107,21 @@ public class ShipsService : IShipsService
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);
         var content = JsonContent.Create(new { waypointSymbol });
-        var data = await HttpHelperService.HttpPostHelper<DataSingle<Nav>>(
+        // var data = await HttpHelperService.HttpPostHelper<DataSingle<Nav>>(
+        //     url.ToString(),
+        //     _httpClient,
+        //     content,
+        //     _logger);
+        var response = await HttpHelperService.HttpPostHelper(
             url.ToString(),
             _httpClient,
             content,
             _logger);
-        if (data.Datum is null) throw new HttpRequestException("Navigate Nav not retrieved");
-        return data.Datum;
+        if (response is null) throw new HttpRequestException("Navigate Nav not retrieved");
+        var data = JsonSerializer.Deserialize<DataSingle<NavigateResponse>>(response, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
+
+        if (data is null) throw new HttpRequestException("Nav error");
+        return data.Datum.Nav;
     }
 
     public async Task<Nav> JumpAsync(string waypointSymbol, string shipSymbol)
@@ -133,7 +142,7 @@ public class ShipsService : IShipsService
         return data.Datum;
     }
 
-    public async Task ExtractAsync(string shipSymbol)
+    public async Task<ExtractionResult> ExtractAsync(string shipSymbol)
     {
         var url = new UriBuilder(_apiUrl)
         {
@@ -141,12 +150,13 @@ public class ShipsService : IShipsService
         };
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);
-        var content = await HttpHelperService.HttpPostHelper(
+        var data = await HttpHelperService.HttpPostHelper<DataSingle<ExtractionResult>>(
             url.ToString(),
             _httpClient,
             null,
             _logger);
-        _logger.LogInformation("Data returned from Extract: {content}", content);
+        if (data.Datum is null) throw new HttpRequestException("Jump Nav not retrieved");
+        return data.Datum;
     }
 
     public async Task JettisonAsync(string shipSymbol, string inventorySymbol, int units)

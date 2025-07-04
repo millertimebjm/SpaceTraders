@@ -4,7 +4,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
+using SpaceTraders.Services.Constructions.Interfaces;
 using SpaceTraders.Services.HttpHelpers;
+using SpaceTraders.Services.JumpGates.Interfaces;
 using SpaceTraders.Services.Marketplaces.Interfaces;
 using SpaceTraders.Services.Shipyards.Interfaces;
 using SpaceTraders.Services.Waypoints.Interfaces;
@@ -19,13 +21,17 @@ public class WaypointsApiService : IWaypointsApiService
     private readonly ILogger<WaypointsApiService> _logger;
     private readonly IShipyardsService _shipyardsService;
     private readonly IMarketplacesService _marketplacesService;
+    private readonly IJumpGatesServices _jumpGatesService;
+    private readonly IConstructionsService _constructionsService;
 
     public WaypointsApiService(
         HttpClient httpClient,
         IConfiguration configuration,
         ILogger<WaypointsApiService> logger,
         IShipyardsService shipyardsService,
-        IMarketplacesService marketplacesService
+        IMarketplacesService marketplacesService,
+        IJumpGatesServices jumpGatesServices,
+        IConstructionsService constructionsService
     )
     {
         _logger = logger;
@@ -36,6 +42,8 @@ public class WaypointsApiService : IWaypointsApiService
         ArgumentException.ThrowIfNullOrWhiteSpace(_token);
         _shipyardsService = shipyardsService;
         _marketplacesService = marketplacesService;
+        _jumpGatesService = jumpGatesServices;
+        _constructionsService = constructionsService;
     }
 
     public async Task<Waypoint> GetAsync(string waypointSymbol)
@@ -52,17 +60,36 @@ public class WaypointsApiService : IWaypointsApiService
         var waypoint = waypointsData.Datum;
 
         Task<Marketplace?> marketplaceTask = Task.FromResult<Marketplace?>(null);
-        Task<Shipyard?> shipyardTask = Task.FromResult<Shipyard?>(null);
         if (waypoint.Traits.Select(t => t.Symbol).Contains(WaypointTypesEnum.MARKETPLACE.ToString()))
         {
             marketplaceTask = _marketplacesService.GetAsync(waypointSymbol);
         }
+        
+        Task<Shipyard?> shipyardTask = Task.FromResult<Shipyard?>(null);
         if (waypoint.Traits.Select(t => t.Symbol).Contains(WaypointTypesEnum.SHIPYARD.ToString()))
         {
             shipyardTask = _shipyardsService.GetAsync(waypointSymbol);
         }
-        waypoint = waypoint with { Marketplace = await marketplaceTask, Shipyard = await shipyardTask };
 
+        Task<JumpGate?> jumpGateTask = Task.FromResult<JumpGate?>(null);
+        if (waypoint.Type == WaypointTypesEnum.JUMP_GATE.ToString())
+        {
+            jumpGateTask = _jumpGatesService.GetAsync(waypointSymbol);
+        }
+
+        Task<Construction?> constructionTask = Task.FromResult<Construction?>(null);
+        if (waypoint.IsUnderConstruction)
+        {
+            constructionTask = _constructionsService.GetAsync(waypointSymbol);
+        }
+
+        waypoint = waypoint with
+        {
+            Marketplace = await marketplaceTask,
+            Shipyard = await shipyardTask,
+            JumpGate = await jumpGateTask,
+            Construction = await constructionTask
+        };
         return waypoint;
     }
 

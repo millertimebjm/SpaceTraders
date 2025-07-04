@@ -89,8 +89,12 @@ public class WaypointsService : IWaypointsService
         return waypointSymbol[..waypointSymbol.IndexOf('-', 3)];
     }
 
-    public static IOrderedEnumerable<Waypoint> SortWaypoints(IReadOnlyList<Waypoint> waypoints, int currentX, int currentY)
+    public static IOrderedEnumerable<Waypoint> SortWaypoints(IReadOnlyList<Waypoint> waypoints, int currentX, int currentY, string? currentWaypoint = null)
     {
+        if (!string.IsNullOrWhiteSpace(currentWaypoint))
+        {
+            return waypoints.OrderByDescending(w => w.Symbol == currentWaypoint).ThenBy(w => CalculateDistance(w.X, w.Y, currentX, currentY));
+        }
         return waypoints.OrderBy(w => CalculateDistance(w.X, w.Y, currentX, currentY));
     }
 

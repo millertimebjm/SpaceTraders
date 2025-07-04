@@ -30,7 +30,7 @@
     <ul>
         @foreach (var inventory in ship.Cargo.Inventory)
         {
-            <li>@inventory.Name (@inventory.Units/@ship.Cargo.Capacity) <a href="/ships/@ship.Symbol/jettison/@inventory.Symbol">Jettison</a></li>
+            <li>@inventory.Symbol (@inventory.Units/@ship.Cargo.Capacity) <a href="/ships/@ship.Symbol/jettison/@inventory.Symbol">Jettison</a></li>
         }
     </ul>
     <li><b>Fuel:</b> @ship.Fuel.Current (@ship.Fuel.Capacity)</li>
@@ -40,7 +40,8 @@
     }
     @if (shipCooldown.HasValue && shipCooldown.Value.TotalSeconds > 0)
     {
-        <li><b>Cooldown:</b> @ViewHelperService.MinimalHumanReadableTimeSpan(shipCooldown.Value)</li>
+        <li><b>Cooldown:</b> <span class="countdown" data-countdown="@((DateTime.UtcNow + shipCooldown.Value).ToString("o"))">@ViewHelperService.MinimalHumanReadableTimeSpan(shipCooldown.Value)</span></li>
+        @* <li><b>Cooldown:</b> <span class="countdown" data-countdown="@((DateTime.UtcNow + TimeSpan.FromSeconds(30)).ToString("o"))">@ViewHelperService.MinimalHumanReadableTimeSpan(TimeSpan.FromSeconds(30))</span></li>  *@
     }
     else
     {

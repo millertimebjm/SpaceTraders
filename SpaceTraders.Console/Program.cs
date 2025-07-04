@@ -1,15 +1,29 @@
-﻿using System.Linq;
+﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
-using SpaceTraders.Console;
 using SpaceTraders.Models;
+using SpaceTraders.Services;
+using SpaceTraders.Services.Agents;
+using SpaceTraders.Services.Agents.Interfaces;
+using SpaceTraders.Services.Constructions;
+using SpaceTraders.Services.Constructions.Interfaces;
 using SpaceTraders.Services.Contracts;
 using SpaceTraders.Services.Contracts.Interfaces;
+using SpaceTraders.Services.JumpGates;
+using SpaceTraders.Services.JumpGates.Interfaces;
 using SpaceTraders.Services.Marketplaces;
 using SpaceTraders.Services.Marketplaces.Interfaces;
+using SpaceTraders.Services.ShipCommands;
+using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
+using SpaceTraders.Services.ShipStatuses;
 using SpaceTraders.Services.Shipyards;
+using SpaceTraders.Services.Shipyards.Interfaces;
+using SpaceTraders.Services.Systems;
+using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Waypoints;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
@@ -17,179 +31,109 @@ public class Program
 {
     public static async Task Main(string[] args)
     {
+        var host = Host.CreateDefaultBuilder(args);
+        host.ConfigureAppConfiguration((context, config) =>
+        {
+            config.AddJsonFile("local.settings.json", optional: true, reloadOnChange: true);
+        });
+        host.ConfigureServices((context, services) =>
+        {
+            services.AddHttpClient();
+            services.AddScoped<IAgentsService, AgentsService>();
+            services.AddScoped<ISystemsService, SystemsService>();
+            services.AddScoped<IContractsService, ContractsService>();
+            services.AddScoped<IShipyardsService, ShipyardsService>();
+            services.AddScoped<IShipsService, ShipsService>();
+            services.AddScoped<IWaypointsService, WaypointsService>();
+            services.AddScoped<IMarketplacesService, MarketplacesService>();
+            services.AddScoped<IWaypointsApiService, WaypointsApiService>();
+            services.AddScoped<IWaypointsCacheService, WaypointsCacheService>();
+            services.AddScoped<IMongoCollectionFactory, MongoCollectionFactory>();
+            services.AddScoped<ISystemsApiService, SystemsApiService>();
+            services.AddScoped<ISystemsCacheService, SystemsCacheService>();
+            services.AddScoped<IJumpGatesServices, JumpGatesServices>();
+            services.AddScoped<IConstructionsService, ConstructionsService>();
+            services.AddScoped<IShipCommandsHelperService, ShipCommandsHelperService>();
+            services.AddScoped<MiningToSellAnywhereCommand>();
+            services.AddScoped<BuyAndSellCommand>();
+            services.AddScoped<IShipCommandsServiceFactory, ShipCommandsServiceFactory>();
+            services.AddScoped<IShipStatusesCacheService, ShipStatusesCacheService>();
+
+        });
+        var serviceBuilder = host.Build();
+
+        var waypointsCacheService = serviceBuilder.Services.GetRequiredService<IWaypointsCacheService>();
+        var waypointsApiService = serviceBuilder.Services.GetRequiredService<IWaypointsApiService>();
+        var marketplacesService = serviceBuilder.Services.GetRequiredService<IMarketplacesService>();
+        var shipyardsService = serviceBuilder.Services.GetRequiredService<IShipyardsService>();
+        var shipsService = serviceBuilder.Services.GetRequiredService<IShipsService>();
+        var contractsService = serviceBuilder.Services.GetRequiredService<IContractsService>();
+        var waypointsService = serviceBuilder.Services.GetRequiredService<IWaypointsService>();
+        var shipCommandsServiceFactory = serviceBuilder.Services.GetRequiredService<IShipCommandsServiceFactory>();
+        var shipStatusesCacheService = serviceBuilder.Services.GetRequiredService<IShipStatusesCacheService>();
+
         Log.Logger = new LoggerConfiguration()
             .Enrich.FromLogContext()
             .Enrich.WithProperty("Application", "Companion.ChatFrontendBackend")
             .WriteTo.Console() // Default to console logging
             .CreateLogger();
 
-          IConfiguration configuration = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
-            .AddCommandLine(args)
-            .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
-            .Build();
+        IConfiguration configuration = new ConfigurationBuilder()
+          .SetBasePath(Directory.GetCurrentDirectory())
+          .AddCommandLine(args)
+          .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
+          .Build();
 
-        var httpClient = new HttpClient();
         ILoggerFactory loggerFactory = LoggerFactory.Create(builder =>
         {
             builder.AddSerilog();
         });
-
-        IShipsService shipsService = new ShipsService(
-            httpClient,
-            configuration,
-            loggerFactory.CreateLogger<ShipsService>());
-
-        IContractsService contractsService = new ContractsService(
-            loggerFactory.CreateLogger<ContractsService>(),
-            configuration,
-            httpClient);
-
-        IWaypointsService waypointsService = new WaypointsService(
-            httpClient,
-            configuration,
-            loggerFactory.CreateLogger<WaypointsService>()
-        );
-
-        IMarketplacesService marketplacesService = new MarketplacesService(
-            httpClient,
-            configuration,
-            loggerFactory.CreateLogger<MarketplacesService>()
-        );
-
-        await AutomatedMining(
-            shipsService,
-            contractsService,
-            waypointsService,
-            marketplacesService,
-            loggerFactory.CreateLogger<Program>(),
-            configuration);
-    }
-
-    public static async Task AutomatedMining(
-            IShipsService shipsService,
-            IContractsService contractsService,
-            IWaypointsService waypointsService,
-            IMarketplacesService marketplacesService,
-            ILogger<Program> logger,
-            IConfiguration configuration)
-    {
-        var shipSymbol = configuration[EnvironmentVariablesEnum.ShipSymbol.ToString()];
-        Ship? ship = null;
-        if (string.IsNullOrWhiteSpace(shipSymbol))
+        var ships = await shipsService.GetAsync();
+        var shipCommands = configuration.GetSection("ShipCommands").Get<List<ShipCommand>>();
+        await shipStatusesCacheService.DeleteAsync();
+        foreach (var ship in ships)
         {
-            Console.WriteLine("Please enter ship symbol:");
-            shipSymbol = Console.ReadLine();
+            var shipCommand = shipCommands.SingleOrDefault(sc => sc.ShipSymbol == ship.Symbol);
+            await shipStatusesCacheService.SetAsync(new ShipStatus(ship.Symbol, shipCommand?.ShipCommandEnum, ship.Cargo, "No instructions set."));
         }
-        ArgumentException.ThrowIfNullOrWhiteSpace(shipSymbol);
-        ship = await shipsService.GetAsync(shipSymbol);
-        ArgumentException.ThrowIfNullOrWhiteSpace(ship.Symbol);
-        logger.LogInformation("ShipSymbol is {shipSymbol}", ship.Symbol);
-
-        var miningWaypointSymbol= configuration[EnvironmentVariablesEnum.MiningWaypointSymbol.ToString()];
-        if (string.IsNullOrWhiteSpace(miningWaypointSymbol))
-        {
-            Console.WriteLine("Mining Waypoint Symbol:");
-            miningWaypointSymbol = Console.ReadLine();
-        }
-        ArgumentException.ThrowIfNullOrWhiteSpace(miningWaypointSymbol);
-        var miningWaypoint = await waypointsService.GetAsync(miningWaypointSymbol);
-        ArgumentException.ThrowIfNullOrWhiteSpace(miningWaypoint.Symbol);
-        logger.LogInformation("MiningWaypointSymbol is {miningWaypointSymbol}", miningWaypoint.Symbol);
-
-        var marketWaypointSymbol = configuration[EnvironmentVariablesEnum.MarketWaypointSymbol.ToString()];
-        if (string.IsNullOrWhiteSpace(marketWaypointSymbol))
-        {
-            Console.WriteLine("Market Waypoint Symbol:");
-            marketWaypointSymbol = Console.ReadLine();
-        }
-        ArgumentException.ThrowIfNullOrWhiteSpace(marketWaypointSymbol);
-        var marketWaypoint = await waypointsService.GetAsync(marketWaypointSymbol);
-        ArgumentException.ThrowIfNullOrWhiteSpace(marketWaypoint.Symbol);
-        logger.LogInformation("MarketWaypointSymbol is {marketWaypointSymbol}", marketWaypoint.Symbol);
-
-
+        ArgumentNullException.ThrowIfNull(shipCommands);
         while (true)
         {
-            if (ship.Nav.WaypointSymbol == marketWaypoint.Symbol
-                && ship.Cargo.Units > 0
-                && ship.Nav.Status == NavStatusEnum.IN_ORBIT.ToString())
+            DateTime? minimumDelay = null;
+            
+            foreach (var shipCommand in shipCommands)
             {
-                var marketplace = await marketplacesService.GetAsync(marketWaypoint.Symbol);
-                foreach (var inventory in ship.Cargo.Inventory)
-                {
-                    if (!marketplace.TradeGoods.Select(tg => tg.Symbol).Contains(inventory.Symbol))
-                    {
-                        await shipsService.JettisonAsync(ship.Symbol, inventory.Symbol, inventory.Units);
-                    }
-                }
+                ArgumentException.ThrowIfNullOrWhiteSpace(shipCommand.StartWaypointSymbol);
+                var startWaypoint = await waypointsService.GetAsync(shipCommand.StartWaypointSymbol);
+                var endWaypoint =
+                    string.IsNullOrWhiteSpace(shipCommand.EndWaypointSymbol)
+                    ? null
+                    : await waypointsService.GetAsync(shipCommand.EndWaypointSymbol);
+                var shipCommandService = shipCommandsServiceFactory.Get(shipCommand.ShipCommandEnum.ToString());
+                var tempDelay = await shipCommandService.Run(
+                    shipCommand.ShipSymbol,
+                    startWaypoint,
+                    endWaypoint);
+
+                minimumDelay = MinimumDate(minimumDelay, tempDelay);
+
+                await Task.Delay(2000);
             }
 
-            if (ship.Nav.WaypointSymbol == marketWaypoint.Symbol
-                && (ship.Fuel.Current < ship.Fuel.Capacity
-                    || ship.Cargo.Capacity == ship.Cargo.Units)
-                && ship.Nav.Status == NavStatusEnum.IN_ORBIT.ToString())
+            if (minimumDelay is not null && minimumDelay > DateTime.UtcNow)
             {
-                await shipsService.DockAsync(ship.Symbol);
-            }
-
-            if (ship.Nav.WaypointSymbol == marketWaypoint.Symbol
-                && ship.Fuel.Current < ship.Fuel.Capacity
-                && ship.Nav.Status == NavStatusEnum.DOCKED.ToString())
-            {
-                await marketplacesService.RefuelAsync(ship.Symbol);
-            }
-
-            if (ship.Nav.WaypointSymbol == marketWaypoint.Symbol
-                && ship.Cargo.Units > 0
-                && ship.Nav.Status == NavStatusEnum.DOCKED.ToString())
-            {
-                var marketplace = await marketplacesService.GetAsync(marketWaypoint.Symbol);
-                foreach (var inventory in ship.Cargo.Inventory)
-                {
-                    if (marketplace.TradeGoods?.Select(tg => tg.Symbol).Contains(inventory.Symbol) == true)
-                    {
-                        await marketplacesService.SellAsync(ship.Symbol, inventory.Symbol, inventory.Units);
-                    }
-                }
-            }
-
-            // Must be after Sell and Jettison
-            if (ship.Nav.WaypointSymbol == marketWaypoint.Symbol
-                && ship.Fuel.Current == ship.Fuel.Capacity
-                && ship.Nav.Status == NavStatusEnum.DOCKED.ToString())
-            {
-                await shipsService.OrbitAsync(ship.Symbol);
-            }
-
-            // Must be after Sell and Jettison
-            if (ship.Nav.WaypointSymbol == marketWaypoint.Symbol
-                && ship.Fuel.Current == ship.Fuel.Capacity
-                && ship.Nav.Status == NavStatusEnum.IN_ORBIT.ToString())
-            {
-                await shipsService.NavigateAsync(miningWaypoint.Symbol, ship.Symbol);
-            }
-
-            if (ship.Nav.WaypointSymbol == miningWaypoint.Symbol
-                && ship.Cargo.Units < ship.Cargo.Capacity)
-            {
-                await shipsService.ExtractAsync(ship.Symbol);
-            }
-
-            if (ship.Nav.WaypointSymbol == miningWaypoint.Symbol
-                && ship.Cargo.Units == ship.Cargo.Capacity)
-            {
-                await shipsService.NavigateAsync(marketWaypoint.Symbol, ship.Symbol);
-            }
-
-            ship = await shipsService.GetAsync(ship.Symbol);
-            var shipCooldown = ShipsService.GetShipCooldown(ship);
-            if (shipCooldown.HasValue && shipCooldown.Value.TotalSeconds > 0)
-            {
-                shipCooldown.Value.Add(TimeSpan.FromSeconds(1));
-                await Task.Delay(shipCooldown.Value);
+                TimeSpan minimumTimeSpan = minimumDelay.Value - DateTime.UtcNow;
+                await Task.Delay((int)minimumTimeSpan.TotalMilliseconds);
             }
         }
+    }
+
+    public static DateTime? MinimumDate(DateTime? d1, DateTime? d2)
+    {
+        if (d1 is null) return d2;
+        if (d2 is null) return d1;
+        if (d1 < d2) return d1;
+        return d2;
     }
 }
 

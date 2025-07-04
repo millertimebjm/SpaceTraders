@@ -1,6 +1,5 @@
 ﻿using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SpaceTraders.Models;
@@ -84,8 +83,6 @@ public class MarketplacesService : IMarketplacesService
             _httpClient,
             content,
             _logger);
-        // if (data.Datum is null) throw new HttpRequestException("Shipyard not retrieved");
-        // return data.Datum;
     }
 
     public async Task SellAsync(
@@ -105,7 +102,24 @@ public class MarketplacesService : IMarketplacesService
             _httpClient,
             content,
             _logger);
-        // if (data.Datum is null) throw new HttpRequestException("Shipyard not retrieved");
-        // return data.Datum;
+    }
+
+    public async Task PurchaseAsync(
+        string shipSymbol,
+        string inventory,
+        int units)
+    {
+        var url = new UriBuilder(_apiUrl)
+        {
+            Path = $"/v2/my/ships/{shipSymbol}/purchase"
+        };
+        _httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _token);
+        var content = JsonContent.Create(new { symbol = inventory, units });
+        var data = await HttpHelperService.HttpPostHelper(
+            url.ToString(),
+            _httpClient,
+            content,
+            _logger);
     }
 }
