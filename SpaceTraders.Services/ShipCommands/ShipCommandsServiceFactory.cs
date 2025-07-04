@@ -18,6 +18,7 @@ public class ShipCommandsServiceFactory : IShipCommandsServiceFactory
         {
             "MiningToSellAnywhere" => _serviceProvider.GetRequiredService<MiningToSellAnywhereCommand>(),
             "BuyToSell" => _serviceProvider.GetRequiredService<BuyAndSellCommand>(),
+            "SupplyConstruction" => _serviceProvider.GetRequiredService<SupplyConstructionCommand>(),
             _ => throw new ArgumentException($"Unknown command: {commandName}", nameof(commandName))
         };
     }

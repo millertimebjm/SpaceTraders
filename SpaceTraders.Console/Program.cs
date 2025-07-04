@@ -56,6 +56,7 @@ public class Program
             services.AddScoped<IShipCommandsHelperService, ShipCommandsHelperService>();
             services.AddScoped<MiningToSellAnywhereCommand>();
             services.AddScoped<BuyAndSellCommand>();
+            services.AddScoped<SupplyConstructionCommand>();
             services.AddScoped<IShipCommandsServiceFactory, ShipCommandsServiceFactory>();
             services.AddScoped<IShipStatusesCacheService, ShipStatusesCacheService>();
 
@@ -94,7 +95,7 @@ public class Program
         foreach (var ship in ships)
         {
             var shipCommand = shipCommands.SingleOrDefault(sc => sc.ShipSymbol == ship.Symbol);
-            await shipStatusesCacheService.SetAsync(new ShipStatus(ship.Symbol, shipCommand?.ShipCommandEnum, ship.Cargo, "No instructions set."));
+            await shipStatusesCacheService.SetAsync(new ShipStatus(ship.Symbol, shipCommand?.ShipCommandEnum, ship.Cargo, "No instructions set.", DateTime.UtcNow));
         }
         ArgumentNullException.ThrowIfNull(shipCommands);
         while (true)
@@ -105,15 +106,10 @@ public class Program
             {
                 ArgumentException.ThrowIfNullOrWhiteSpace(shipCommand.StartWaypointSymbol);
                 var startWaypoint = await waypointsService.GetAsync(shipCommand.StartWaypointSymbol);
-                var endWaypoint =
-                    string.IsNullOrWhiteSpace(shipCommand.EndWaypointSymbol)
-                    ? null
-                    : await waypointsService.GetAsync(shipCommand.EndWaypointSymbol);
                 var shipCommandService = shipCommandsServiceFactory.Get(shipCommand.ShipCommandEnum.ToString());
                 var tempDelay = await shipCommandService.Run(
                     shipCommand.ShipSymbol,
-                    startWaypoint,
-                    endWaypoint);
+                    startWaypoint);
 
                 minimumDelay = MinimumDate(minimumDelay, tempDelay);
 

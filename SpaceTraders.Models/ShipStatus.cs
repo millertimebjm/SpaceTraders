@@ -6,5 +6,6 @@ public record ShipStatus(
     string Symbol,
     ShipCommandEnum? ShipCommandEnum,
     Cargo Cargo,
-    string LastMessage
+    string LastMessage,
+    DateTime DateTimeOfLastInstruction
 );

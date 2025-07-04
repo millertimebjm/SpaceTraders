@@ -1,4 +1,6 @@
 ﻿@using SpaceTraders.Models
+@using SpaceTraders.Mvc.Services
+@using SpaceTraders.Models.Enums
 @model IEnumerable<ShipStatus>
 @{
     ViewData["Title"] = "Home Page";
@@ -7,7 +9,7 @@
 <main>
 <section class="text-center container">
     <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
-        @foreach (var shipStatus in Model.OrderBy(ss => ss.Symbol))
+        @foreach (var shipStatus in Model.Where(ss => ss.ShipCommandEnum is not null && ss.ShipCommandEnum == ShipCommandEnum.BuyToSell).OrderBy(ss => ss.Symbol))
         {
             <div class="shadow-lg p-3 bg-white rounded" style="width: 250px; margin: 10px; position: relative;">
                 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 150px;">
@@ -20,6 +22,45 @@
                     }
                     
                     <span>@shipStatus.LastMessage</span>
+                    <span>@ViewHelperService.HumanReadableTimeSpan(DateTime.UtcNow - shipStatus.DateTimeOfLastInstruction)</span>
+                </div>
+            </div>
+        }
+    </div>
+<div style="display: flex; flex-wrap: wrap; justify-content: space-around">
+        @foreach (var shipStatus in Model.Where(ss => ss.ShipCommandEnum is not null && ss.ShipCommandEnum == ShipCommandEnum.MiningToSellAnywhere).OrderBy(ss => ss.Symbol))
+        {
+            <div class="shadow-lg p-3 bg-white rounded" style="width: 250px; margin: 10px; position: relative;">
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 150px;">
+                    <span>@shipStatus.Symbol</span>
+                    <span>@shipStatus.ShipCommandEnum</span>
+                    
+                    @foreach (var inventory in shipStatus.Cargo.Inventory)
+                    {
+                        <span>@inventory.Symbol (@inventory.Units)</span>
+                    }
+                    
+                    <span>@shipStatus.LastMessage</span>
+                    <span>@ViewHelperService.HumanReadableTimeSpan(DateTime.UtcNow - shipStatus.DateTimeOfLastInstruction)</span>
+                </div>
+            </div>
+        }
+</div>
+<div style="display: flex; flex-wrap: wrap; justify-content: space-around">
+        @foreach (var shipStatus in Model.Where(ss => ss.ShipCommandEnum is null).OrderBy(ss => ss.Symbol))
+        {
+            <div class="shadow-lg p-3 bg-white rounded" style="width: 250px; margin: 10px; position: relative;">
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 150px;">
+                    <span>@shipStatus.Symbol</span>
+                    <span>@shipStatus.ShipCommandEnum</span>
+                    
+                    @foreach (var inventory in shipStatus.Cargo.Inventory)
+                    {
+                        <span>@inventory.Symbol (@inventory.Units)</span>
+                    }
+                    
+                    <span>@shipStatus.LastMessage</span>
+                    <span>@ViewHelperService.HumanReadableTimeSpan(DateTime.UtcNow - shipStatus.DateTimeOfLastInstruction)</span>
                 </div>
             </div>
         }

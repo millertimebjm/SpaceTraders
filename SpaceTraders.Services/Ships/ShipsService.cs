@@ -72,13 +72,13 @@ public class ShipsService : IShipsService
         };
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);
-        var data = await HttpHelperService.HttpPostHelper<DataSingle<Nav>>(
+        var data = await HttpHelperService.HttpPostHelper<DataSingle<Ship>>(
             url.ToString(),
             _httpClient,
             null,
             _logger);
         if (data.Datum is null) throw new HttpRequestException("Orbit Nav not retrieved");
-        return data.Datum;
+        return data.Datum.Nav;
     }
 
     public async Task<Nav> DockAsync(string shipSymbol)
@@ -89,13 +89,13 @@ public class ShipsService : IShipsService
         };
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);
-        var data = await HttpHelperService.HttpPostHelper<DataSingle<Nav>>(
+        var data = await HttpHelperService.HttpPostHelper<DataSingle<Ship>>(
             url.ToString(),
             _httpClient,
             null,
             _logger);
         if (data.Datum is null) throw new HttpRequestException("Dock Nav not retrieved");
-        return data.Datum;
+        return data.Datum.Nav;
     }
 
     public async Task<Nav> NavigateAsync(string waypointSymbol, string shipSymbol)
@@ -107,18 +107,18 @@ public class ShipsService : IShipsService
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);
         var content = JsonContent.Create(new { waypointSymbol });
-        // var data = await HttpHelperService.HttpPostHelper<DataSingle<Nav>>(
-        //     url.ToString(),
-        //     _httpClient,
-        //     content,
-        //     _logger);
-        var response = await HttpHelperService.HttpPostHelper(
+        var data = await HttpHelperService.HttpPostHelper<DataSingle<Ship>>(
             url.ToString(),
             _httpClient,
             content,
             _logger);
-        if (response is null) throw new HttpRequestException("Navigate Nav not retrieved");
-        var data = JsonSerializer.Deserialize<DataSingle<NavigateResponse>>(response, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
+        // var response = await HttpHelperService.HttpPostHelper(
+        //     url.ToString(),
+        //     _httpClient,
+        //     content,
+        //     _logger);
+        // if (response is null) throw new HttpRequestException("Navigate Nav not retrieved");
+        // var data = JsonSerializer.Deserialize<DataSingle<NavigateResponse>>(response, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
 
         if (data is null) throw new HttpRequestException("Nav error");
         return data.Datum.Nav;
@@ -133,13 +133,13 @@ public class ShipsService : IShipsService
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);
         var content = JsonContent.Create(new { waypointSymbol });
-        var data = await HttpHelperService.HttpPostHelper<DataSingle<Nav>>(
+        var data = await HttpHelperService.HttpPostHelper<DataSingle<Ship>>(
             url.ToString(),
             _httpClient,
             content,
             _logger);
         if (data.Datum is null) throw new HttpRequestException("Jump Nav not retrieved");
-        return data.Datum;
+        return data.Datum.Nav;
     }
 
     public async Task<ExtractionResult> ExtractAsync(string shipSymbol)

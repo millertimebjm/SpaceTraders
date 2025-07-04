@@ -6,7 +6,6 @@ public interface IShipCommandsService
 {
     Task<DateTime?> Run(
         string shipSymbol,
-        Waypoint startWaypoint,
-        Waypoint endWaypoint);
+        Waypoint startWaypoint);
 }
 

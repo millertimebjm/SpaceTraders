@@ -47,7 +47,7 @@ public class MarketplacesService : IMarketplacesService
         return data.Datum;
     }
 
-    public async Task RefuelAsync(
+    public async Task<Fuel> RefuelAsync(
         string shipSymbol)
     {
         var url = new UriBuilder(_apiUrl)
@@ -57,16 +57,16 @@ public class MarketplacesService : IMarketplacesService
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);
         var content = JsonContent.Create(new { symbol = InventoryEnum.FUEL.ToString() });
-        var data = await HttpHelperService.HttpPostHelper(
+        var data = await HttpHelperService.HttpPostHelper<DataSingle<Ship>>(
             url.ToString(),
             _httpClient,
             content,
             _logger);
-        // if (data.Datum is null) throw new HttpRequestException("Shipyard not retrieved");
-        // return data.Datum;
+        if (data.Datum is null) throw new HttpRequestException("Ship not retrieved");
+        return data.Datum.Fuel;
     }
 
-    public async Task SellAsync(
+    public async Task<Cargo> SellAsync(
         string shipSymbol,
         string inventory,
         int units)
@@ -78,14 +78,16 @@ public class MarketplacesService : IMarketplacesService
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);
         var content = JsonContent.Create(new { symbol = inventory, units });
-        var data = await HttpHelperService.HttpPostHelper(
+        var data = await HttpHelperService.HttpPostHelper<DataSingle<Ship>>(
             url.ToString(),
             _httpClient,
             content,
             _logger);
+        if (data.Datum is null) throw new HttpRequestException("Ship not retrieved");
+        return data.Datum.Cargo;
     }
 
-    public async Task SellAsync(
+    public async Task<Cargo> SellAsync(
         string shipSymbol,
         InventoryEnum inventory,
         int units)
@@ -97,14 +99,16 @@ public class MarketplacesService : IMarketplacesService
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);
         var content = JsonContent.Create(new { symbol = inventory.ToString(), units });
-        var data = await HttpHelperService.HttpPostHelper(
+        var data = await HttpHelperService.HttpPostHelper<DataSingle<Ship>>(
             url.ToString(),
             _httpClient,
             content,
             _logger);
+        if (data.Datum is null) throw new HttpRequestException("Ship not retrieved");
+        return data.Datum.Cargo;
     }
 
-    public async Task PurchaseAsync(
+    public async Task<Cargo> PurchaseAsync(
         string shipSymbol,
         string inventory,
         int units)
@@ -116,10 +120,12 @@ public class MarketplacesService : IMarketplacesService
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);
         var content = JsonContent.Create(new { symbol = inventory, units });
-        var data = await HttpHelperService.HttpPostHelper(
+        var data = await HttpHelperService.HttpPostHelper<DataSingle<Ship>>(
             url.ToString(),
             _httpClient,
             content,
             _logger);
+        if (data.Datum is null) throw new HttpRequestException("Ship not retrieved");
+        return data.Datum.Cargo;
     }
 }
