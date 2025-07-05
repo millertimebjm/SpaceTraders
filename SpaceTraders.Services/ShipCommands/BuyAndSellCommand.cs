@@ -32,15 +32,14 @@ public class BuyAndSellCommand : IShipCommandsService
         _shipStatusesCacheService = shipStatusesCacheService;
     }
 
-    public async Task<DateTime?> Run(
-        string shipSymbol,
-        Waypoint miningWaypoint)
+    public async Task<Ship> Run(
+        Ship ship,
+        Waypoint initialMarketWaypoint)
     {
-        var ship = await _shipsService.GetAsync(shipSymbol);
         var currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol, refresh: true);
         while (true)
         {
-            if (ShipsService.GetShipCooldown(ship) is not null) return DateTime.UtcNow + ShipsService.GetShipCooldown(ship);
+            if (ShipsService.GetShipCooldown(ship) is not null) return ship;
             var system = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(currentWaypoint.Symbol));
             var inventorySymbols = ship.Cargo.Inventory.Select(i => i.Symbol).ToHashSet();
 
@@ -62,7 +61,7 @@ public class BuyAndSellCommand : IShipCommandsService
                 continue;
             }
 
-            var nav = await _shipCommandsHelperService.Dock(ship, currentWaypoint);
+            var nav = await _shipCommandsHelperService.DockForBuyAndSell(ship, currentWaypoint);
             if (nav is not null)
             {
                 ship = ship with { Nav = nav };
@@ -90,18 +89,28 @@ public class BuyAndSellCommand : IShipCommandsService
                 continue;
             }
 
-            var delay = await _shipCommandsHelperService.NavigateToStartWaypoint(ship, currentWaypoint, miningWaypoint);
-            if (delay is not null)
+            // (nav, fuel) = await _shipCommandsHelperService.NavigateToStartWaypoint(ship, currentWaypoint, initialMarketWaypoint);
+            // if (nav is not null && fuel is not null)
+            // {
+            //     ship = ship with { Nav = nav, Fuel = fuel };
+            //     await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, _shipCommandEnum, ship.Cargo, $"NavigateToStartWaypoint {initialMarketWaypoint.Symbol}", DateTime.UtcNow));
+            //     return ship;
+            // }
+
+            (nav, fuel) = await _shipCommandsHelperService.NavigateToMarketplaceImport(ship, currentWaypoint, sellingWaypoint);
+            if (nav is not null && fuel is not null)
             {
-                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship.Symbol, _shipCommandEnum, ship.Cargo, $"NavigateToStartWaypoint {miningWaypoint.Symbol}", DateTime.UtcNow));
-                return delay;
+                ship = ship with { Nav = nav, Fuel = fuel };
+                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, _shipCommandEnum, ship.Cargo, $"NavigateToMarketplaceImport {sellingWaypoint.Symbol}", DateTime.UtcNow));
+                return ship;
             }
 
-            delay = await _shipCommandsHelperService.NavigateToMarketplaceImport(ship, currentWaypoint, sellingWaypoint);
-            if (delay is not null)
+            (nav, fuel) = await _shipCommandsHelperService.NavigateToMarketplaceRandomExport(ship, currentWaypoint);
+            if (nav is not null && fuel is not null)
             {
-                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship.Symbol, _shipCommandEnum, ship.Cargo, $"NavigateToMarketplaceImport {sellingWaypoint.Symbol}", DateTime.UtcNow));
-                return delay;
+                ship = ship with { Nav = nav, Fuel = fuel };
+                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, _shipCommandEnum, ship.Cargo, $"NavigateToMarketplaceImport {nav.Route.Destination.Symbol}", DateTime.UtcNow));
+                return ship;
             }
 
             throw new Exception($"Infinite loop, no work planned. {ship.Symbol}, {currentWaypoint.Symbol}, {string.Join(":", ship.Cargo.Inventory.Select(i => $"{i.Name}/{i.Units}"))}, {ship.Fuel.Current}/{ship.Fuel.Capacity}");

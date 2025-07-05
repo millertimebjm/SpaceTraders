@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using SpaceTraders.Models;
+using SpaceTraders.Services.Systems;
+using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.Waypoints;
@@ -9,13 +11,16 @@ public class WaypointsCacheService : IWaypointsCacheService
 {
     private readonly ILogger<WaypointsCacheService> _logger;
     private readonly IMongoCollectionFactory _mongoCollectionFactory;
+    private readonly ISystemsCacheService _systemsCacheService;
 
     public WaypointsCacheService(
         ILogger<WaypointsCacheService> logger,
-        IMongoCollectionFactory mongoCollectionFactory)
+        IMongoCollectionFactory mongoCollectionFactory,
+        ISystemsCacheService systemsCacheService)
     {
         _logger = logger;
         _mongoCollectionFactory = mongoCollectionFactory;
+        _systemsCacheService = systemsCacheService;
     }
 
     public async Task<Waypoint?> GetAsync(string waypointSymbol)
@@ -64,8 +69,9 @@ public class WaypointsCacheService : IWaypointsCacheService
         var filter = Builders<Waypoint>
             .Filter
             .Eq(w => w.Symbol, waypoint.Symbol);
-        var collection = _mongoCollectionFactory.GetCollection<Waypoint>();
-        await collection.DeleteOneAsync(filter, CancellationToken.None);
-        await collection.InsertOneAsync(waypoint);
+        var waypointCollection = _mongoCollectionFactory.GetCollection<Waypoint>();
+        await waypointCollection.DeleteOneAsync(filter, CancellationToken.None);
+        await waypointCollection.InsertOneAsync(waypoint);
+        await _systemsCacheService.SetAsync(waypoint);
     }
 }

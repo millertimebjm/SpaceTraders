@@ -90,35 +90,41 @@ public class Program
             builder.AddSerilog();
         });
         var ships = await shipsService.GetAsync();
+        var shipsDictionary = ships.ToDictionary(k => k.Symbol, v => v);
         var shipCommands = configuration.GetSection("ShipCommands").Get<List<ShipCommand>>();
         await shipStatusesCacheService.DeleteAsync();
         foreach (var ship in ships)
         {
             var shipCommand = shipCommands.SingleOrDefault(sc => sc.ShipSymbol == ship.Symbol);
-            await shipStatusesCacheService.SetAsync(new ShipStatus(ship.Symbol, shipCommand?.ShipCommandEnum, ship.Cargo, "No instructions set.", DateTime.UtcNow));
+            await shipStatusesCacheService.SetAsync(new ShipStatus(ship, shipCommand?.ShipCommandEnum, ship.Cargo, "No instructions set.", DateTime.UtcNow));
         }
         ArgumentNullException.ThrowIfNull(shipCommands);
         while (true)
         {
-            DateTime? minimumDelay = null;
+            DateTime? minimumDate = null;
             
             foreach (var shipCommand in shipCommands)
             {
                 ArgumentException.ThrowIfNullOrWhiteSpace(shipCommand.StartWaypointSymbol);
                 var startWaypoint = await waypointsService.GetAsync(shipCommand.StartWaypointSymbol);
                 var shipCommandService = shipCommandsServiceFactory.Get(shipCommand.ShipCommandEnum.ToString());
-                var tempDelay = await shipCommandService.Run(
-                    shipCommand.ShipSymbol,
+                var shipUpdate = await shipCommandService.Run(
+                    shipsDictionary[shipCommand.ShipSymbol],
                     startWaypoint);
+                shipsDictionary[shipUpdate.Symbol] = shipUpdate;
 
-                minimumDelay = MinimumDate(minimumDelay, tempDelay);
+                var shipUpdateDelay = ShipsService.GetShipCooldown(shipUpdate);
+                if (shipUpdateDelay is not null)
+                {
+                    minimumDate = MinimumDate(minimumDate, DateTime.UtcNow.Add(shipUpdateDelay.Value));
+                }
 
                 await Task.Delay(2000);
             }
 
-            if (minimumDelay is not null && minimumDelay > DateTime.UtcNow)
+            if (minimumDate is not null && minimumDate > DateTime.UtcNow)
             {
-                TimeSpan minimumTimeSpan = minimumDelay.Value - DateTime.UtcNow;
+                TimeSpan minimumTimeSpan = minimumDate.Value - DateTime.UtcNow;
                 await Task.Delay((int)minimumTimeSpan.TotalMilliseconds);
             }
         }

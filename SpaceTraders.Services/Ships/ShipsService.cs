@@ -98,7 +98,7 @@ public class ShipsService : IShipsService
         return data.Datum.Nav;
     }
 
-    public async Task<Nav> NavigateAsync(string waypointSymbol, string shipSymbol)
+    public async Task<(Nav, Fuel)> NavigateAsync(string waypointSymbol, string shipSymbol)
     {
         var url = new UriBuilder(_apiUrl)
         {
@@ -112,16 +112,8 @@ public class ShipsService : IShipsService
             _httpClient,
             content,
             _logger);
-        // var response = await HttpHelperService.HttpPostHelper(
-        //     url.ToString(),
-        //     _httpClient,
-        //     content,
-        //     _logger);
-        // if (response is null) throw new HttpRequestException("Navigate Nav not retrieved");
-        // var data = JsonSerializer.Deserialize<DataSingle<NavigateResponse>>(response, new JsonSerializerOptions() { PropertyNameCaseInsensitive = true });
-
         if (data is null) throw new HttpRequestException("Nav error");
-        return data.Datum.Nav;
+        return (data.Datum.Nav, data.Datum.Fuel);
     }
 
     public async Task<Nav> JumpAsync(string waypointSymbol, string shipSymbol)
@@ -182,7 +174,7 @@ public class ShipsService : IShipsService
         {
             return ship.Nav.Route.Arrival - DateTime.UtcNow;
         }
-        if (ship.Cooldown.RemainingSeconds > 0)
+        if (ship.Cooldown.Expiration > DateTime.UtcNow)
         {
             return ship.Cooldown.Expiration - DateTime.UtcNow;
         }

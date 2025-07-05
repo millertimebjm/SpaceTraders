@@ -36,4 +36,23 @@ public class SystemsCacheService : ISystemsCacheService
         await collection.DeleteOneAsync(filter, CancellationToken.None);
         await collection.InsertOneAsync(system);
     }
+    public async Task SetAsync(Waypoint waypoint)
+    {
+        var filter = Builders<STSystem>
+            .Filter
+            .Eq(s => s.Symbol, waypoint.SystemSymbol);
+        var collection = _collectionFactory.GetCollection<STSystem>();
+        var projection = Builders<STSystem>.Projection.Exclude("_id");
+        var system = await collection
+            .Find(filter)
+            .Project<STSystem>(projection)
+            .FirstOrDefaultAsync();
+
+        var waypoints = system.Waypoints.Where(w => w.Symbol != waypoint.Symbol).ToList();
+        waypoints.Add(waypoint);
+        system = system with { Waypoints = waypoints };
+
+        await collection.DeleteOneAsync(filter, CancellationToken.None);
+        await collection.InsertOneAsync(system);
+    }
 }

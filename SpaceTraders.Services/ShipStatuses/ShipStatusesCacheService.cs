@@ -26,7 +26,7 @@ public class ShipStatusesCacheService : IShipStatusesCacheService
     {
         var filter = Builders<ShipStatus>
             .Filter
-            .Eq(s => s.Symbol, shipStatus.Symbol);
+            .Eq(s => s.Ship.Symbol, shipStatus.Ship.Symbol);
         var collection = _collectionFactory.GetCollection<ShipStatus>();
         await collection.DeleteOneAsync(filter, CancellationToken.None);
         await collection.InsertOneAsync(shipStatus);

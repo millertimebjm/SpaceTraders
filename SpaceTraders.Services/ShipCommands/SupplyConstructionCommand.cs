@@ -32,26 +32,17 @@ public class SupplyConstructionCommand : IShipCommandsService
         _shipStatusesCacheService = shipStatusesCacheService;
     }
 
-    public async Task<DateTime?> Run(
-        string shipSymbol,
+    public async Task<Ship> Run(
+        Ship ship,
         Waypoint constructionWaypoint)
     {
-        var ship = await _shipsService.GetAsync(shipSymbol);
+        //var ship = await _shipsService.GetAsync(shipSymbol);
         var currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol, refresh: true);
         while (true)
         {
-            if (ShipsService.GetShipCooldown(ship) is not null) return DateTime.UtcNow + ShipsService.GetShipCooldown(ship);
+            if (ShipsService.GetShipCooldown(ship) is not null) return ship;
             var system = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(currentWaypoint.Symbol));
-            //var inventorySymbols = ship.Cargo.Inventory.Select(i => i.Symbol).ToHashSet();
-
             var paths = PathsService.BuildDijkstraPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
-
-            // var sellingWaypoint = paths.Select(p => p.Key)
-            //     .Where(w => w.Marketplace is not null
-            //         && w.Marketplace.Imports.Count(i => inventorySymbols.Contains(i.Symbol)) > 0)
-            //     .OrderByDescending(w =>
-            //         w.Marketplace.Imports.Count(i => inventorySymbols.Contains(i.Symbol)))
-            //     .FirstOrDefault();
 
             await Task.Delay(2000);
 
@@ -62,7 +53,7 @@ public class SupplyConstructionCommand : IShipCommandsService
                 continue;
             }
 
-            var nav = await _shipCommandsHelperService.Dock(ship, currentWaypoint);
+            var nav = await _shipCommandsHelperService.DockForSupplyConstruction(ship, currentWaypoint, constructionWaypoint);
             if (nav is not null)
             {
                 ship = ship with { Nav = nav };
@@ -90,18 +81,20 @@ public class SupplyConstructionCommand : IShipCommandsService
                 continue;
             }
 
-            var delay = await _shipCommandsHelperService.NavigateToConstructionWaypoint(ship, currentWaypoint, constructionWaypoint);
-            if (delay is not null)
+            (nav, fuel) = await _shipCommandsHelperService.NavigateToConstructionWaypoint(ship, currentWaypoint, constructionWaypoint);
+            if (nav is not null && fuel is not null)
             {
-                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship.Symbol, _shipCommandEnum, ship.Cargo, $"NavigateToStartWaypoint {constructionWaypoint.Symbol}", DateTime.UtcNow));
-                return delay;
+                ship = ship with { Nav = nav, Fuel = fuel };             
+                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, _shipCommandEnum, ship.Cargo, $"NavigateToStartWaypoint {constructionWaypoint.Symbol}", DateTime.UtcNow));
+                return ship;
             }
 
-            delay = await _shipCommandsHelperService.NavigateToMarketplaceExport(ship, currentWaypoint, constructionWaypoint);
-            if (delay is not null)
+            (nav, fuel) = await _shipCommandsHelperService.NavigateToMarketplaceExport(ship, currentWaypoint, constructionWaypoint);
+            if (nav is not null && fuel is not null)
             {
-                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship.Symbol, _shipCommandEnum, ship.Cargo, $"NavigateToMarketplaceExport", DateTime.UtcNow));
-                return delay;
+                ship = ship with { Nav = nav, Fuel = fuel };
+                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, _shipCommandEnum, ship.Cargo, $"NavigateToMarketplaceExport", DateTime.UtcNow));
+                return ship;
             }
 
             throw new Exception($"Infinite loop, no work planned. {ship.Symbol}, {currentWaypoint.Symbol}, {string.Join(":", ship.Cargo.Inventory.Select(i => $"{i.Name}/{i.Units}"))}, {ship.Fuel.Current}/{ship.Fuel.Capacity}");

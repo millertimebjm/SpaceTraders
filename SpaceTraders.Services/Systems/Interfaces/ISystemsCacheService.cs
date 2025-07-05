@@ -6,4 +6,5 @@ public interface ISystemsCacheService
 {
     Task<STSystem> GetAsync(string systemSymbol, bool refresh = false);
     Task SetAsync(STSystem system);
+    Task SetAsync(Waypoint waypoint);
 }

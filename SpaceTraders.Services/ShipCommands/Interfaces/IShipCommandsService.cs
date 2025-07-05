@@ -4,8 +4,8 @@ namespace SpaceTraders.Services.ShipCommands.Interfaces;
 
 public interface IShipCommandsService
 {
-    Task<DateTime?> Run(
-        string shipSymbol,
+    Task<Ship> Run(
+        Ship ship,
         Waypoint startWaypoint);
 }
 
