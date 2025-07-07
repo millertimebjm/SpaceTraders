@@ -38,11 +38,13 @@ public class WaypointsCacheService : IWaypointsCacheService
             .FirstOrDefaultAsync();
     }
 
-    public async Task<IEnumerable<Waypoint>?> GetByTraitAsync(string waypointSymbol, string trait)
+    public async Task<IEnumerable<Waypoint>?> GetByTraitAsync(string systemSymbol, string trait)
     {
-        var filter = Builders<Waypoint>
-            .Filter
-            .ElemMatch(w => w.Traits, t => t.Symbol == trait);
+        var filter =
+            Builders<Waypoint>.Filter.And(
+                Builders<Waypoint>.Filter.Eq(w => w.SystemSymbol, systemSymbol),
+                Builders<Waypoint>.Filter.ElemMatch(w => w.Traits, t => t.Symbol == trait)
+            );
         var collection = _mongoCollectionFactory.GetCollection<Waypoint>();
         var projection = Builders<Waypoint>.Projection.Exclude("_id");
         return await collection
@@ -51,11 +53,14 @@ public class WaypointsCacheService : IWaypointsCacheService
             .ToListAsync();
     }
 
-    public async Task<IEnumerable<Waypoint>?> GetByTypeAsync(string waypointSymbol, string type)
+    public async Task<IEnumerable<Waypoint>?> GetByTypeAsync(string systemSymbol, string type)
     {
-        var filter = Builders<Waypoint>
-            .Filter
-            .Eq(w => w.Type, type);
+        var filter =
+            Builders<Waypoint>.Filter.And(
+                Builders<Waypoint>.Filter.Eq(w => w.SystemSymbol, systemSymbol),
+                Builders<Waypoint>.Filter.Eq(w => w.Type, type)
+            );
+            
         var collection = _mongoCollectionFactory.GetCollection<Waypoint>();
         var projection = Builders<Waypoint>.Projection.Exclude("_id");
         return await collection
