@@ -73,7 +73,8 @@ namespace SpaceTraders.Models;
  IReadOnlyList<Mount> Mounts,
  Cargo Cargo,
  Fuel Fuel,
- Cooldown Cooldown
+ Cooldown Cooldown,
+ ShipCommand? ShipCommand
     );
 
     public record Route(

@@ -18,12 +18,15 @@ public class ShipsService : IShipsService
     private readonly HttpClient _httpClient;
     private readonly string _token;
     private readonly ILogger<ShipsService> _logger;
+    private readonly IMongoCollectionFactory _collectionFactory;
 
     public ShipsService(
         HttpClient httpClient,
         IConfiguration configuration,
-        ILogger<ShipsService> logger)
+        ILogger<ShipsService> logger,
+        IMongoCollectionFactory collectionFactory)
     {
+        _collectionFactory = collectionFactory;
         _logger = logger;
         _httpClient = httpClient;
         _apiUrl = configuration[ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
@@ -151,6 +154,24 @@ public class ShipsService : IShipsService
         return data.Datum;
     }
 
+    public async Task<ExtractionResult> ExtractAsync(string shipSymbol, Survey survey)
+    {
+        var url = new UriBuilder(_apiUrl)
+        {
+            Path = $"/v2/my/ships/{shipSymbol}/extract/survey"
+        };
+        _httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _token);
+        var content = JsonContent.Create(survey);
+        var data = await HttpHelperService.HttpPostHelper<DataSingle<ExtractionResult>>(
+            url.ToString(),
+            _httpClient,
+            content,
+            _logger);
+        if (data.Datum is null) throw new HttpRequestException("Survey not retrieved");
+        return data.Datum;
+    }
+
     public async Task JettisonAsync(string shipSymbol, string inventorySymbol, int units)
     {
         var url = new UriBuilder(_apiUrl)
@@ -179,5 +200,23 @@ public class ShipsService : IShipsService
             return ship.Cooldown.Expiration - DateTime.UtcNow;
         }
         return null;
+    }
+
+    public async Task<SurveyResult> SurveyAsync(string shipSymbol)
+    {
+        var url = new UriBuilder(_apiUrl)
+        {
+            Path = $"/v2/my/ships/{shipSymbol}/survey"
+        };
+        _httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _token);
+        var data = await HttpHelperService.HttpPostHelper<DataSingle<SurveyResult>>(
+            url.ToString(),
+            _httpClient,
+            null,
+            _logger);
+        if (data is null) throw new HttpRequestException("Survey not retrieved");
+        if (data.Datum is null) throw new HttpRequestException("Survey not retrieved");
+        return data.Datum;
     }
 }

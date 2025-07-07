@@ -2,7 +2,8 @@
 @using SpaceTraders.Mvc.Services
 @model WaypointViewModel
 @{
-    ViewData["Title"] = "Home Page";
+    var waypoint = await Model.Waypoint;
+    ViewData["Title"] = $"W {waypoint.Symbol}";
 }
 
 @await Html.PartialAsync("_Waypoint", Model)

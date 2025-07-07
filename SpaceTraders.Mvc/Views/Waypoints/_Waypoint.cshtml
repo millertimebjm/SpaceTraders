@@ -94,7 +94,18 @@
     @if (waypoint.Type == WaypointTypesEnum.ASTEROID.ToString() 
         || waypoint.Type == WaypointTypesEnum.ENGINEERED_ASTEROID.ToString())
     {
-        <li><a href="/ships/extract">Extract</a></li>
+        if (currentShip is not null
+            && currentShip.Registration.Role == ShipRegistrationRolesEnum.EXCAVATOR.ToString()
+            && currentShip.Nav.Status == NavStatusEnum.IN_ORBIT.ToString())
+        {
+            <li><a href="/ships/extract">Extract</a></li>
+        }
+        if (currentShip is not null 
+            && currentShip.Registration.Role == ShipRegistrationRolesEnum.SURVEYOR.ToString()
+            && currentShip.Nav.Status == NavStatusEnum.IN_ORBIT.ToString())
+        {
+            <li><a href="/ships/survey">Survey</a></li>
+        }
     }
     @if (waypoint.Marketplace is not null
         && waypoint.Traits?.Any(t => t.Symbol == WaypointTypesEnum.MARKETPLACE.ToString()) == true)

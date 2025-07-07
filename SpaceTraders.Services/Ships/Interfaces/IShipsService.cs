@@ -10,6 +10,8 @@ public interface IShipsService
     Task<Nav> DockAsync(string shipSymbol);
     Task<(Nav, Fuel)> NavigateAsync(string waypointSymbol, string shipSymbol);
     Task<ExtractionResult> ExtractAsync(string shipSymbol);
+    Task<ExtractionResult> ExtractAsync(string shipSymbol, Survey survey);
     Task<Nav> JumpAsync(string waypointSymbol, string shipSymbol);
     Task JettisonAsync(string shipSymbol, string inventorySymbol, int units);
+    Task<SurveyResult> SurveyAsync(string shipSymbol);
 }

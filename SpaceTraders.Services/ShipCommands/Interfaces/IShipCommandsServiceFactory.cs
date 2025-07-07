@@ -1,6 +1,8 @@
+using SpaceTraders.Models.Enums;
+
 namespace SpaceTraders.Services.ShipCommands.Interfaces;
 
 public interface IShipCommandsServiceFactory
 {
-    IShipCommandsService Get(string commandName);
+    IShipCommandsService Get(ShipCommandEnum command);
 }

@@ -1,7 +1,8 @@
 ﻿@using SpaceTraders.Models
 @model SystemViewModel
 @{
-    ViewData["Title"] = "Home Page";
+    var system = await Model.SystemTask;
+    ViewData["Title"] = $"Sy {system.Symbol}";
 }
 
 <div>

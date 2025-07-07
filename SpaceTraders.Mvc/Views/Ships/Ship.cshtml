@@ -2,7 +2,8 @@
 @using SpaceTraders.Mvc.Services
 @model ShipViewModel
 @{
-    ViewData["Title"] = "Home Page";
+    var ship = await Model.ShipTask;
+    ViewData["Title"] = $"Sh {ship.Symbol}";
 }
 
 @await Html.PartialAsync("_Ship", Model)

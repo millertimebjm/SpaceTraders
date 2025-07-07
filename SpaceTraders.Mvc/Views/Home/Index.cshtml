@@ -3,11 +3,12 @@
 @using SpaceTraders.Models.Enums
 @model IEnumerable<ShipStatus>
 @{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Fleet Status";
 }
 
-<main>
+
 <section class="text-center container">
+        <h3 style="text-align: center">BuyToSell</h3>
     <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
         @foreach (var shipStatus in Model.Where(ss => ss.ShipCommandEnum is not null && ss.ShipCommandEnum == ShipCommandEnum.BuyToSell).OrderBy(ss => ss.Ship.Symbol))
         {
@@ -31,6 +32,7 @@
             </div>
         }
     </div>
+    <h3 style="text-align: center">MiningToSellAnywhere</h3>
 <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
         @foreach (var shipStatus in Model.Where(ss => ss.ShipCommandEnum is not null && ss.ShipCommandEnum == ShipCommandEnum.MiningToSellAnywhere).OrderBy(ss => ss.Ship.Symbol))
         {
@@ -54,6 +56,7 @@
             </div>
         }
 </div>
+<h3 style="text-align: center">SupplyConstruction</h3>
 <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
         @foreach (var shipStatus in Model.Where(ss => ss.ShipCommandEnum is not null && ss.ShipCommandEnum == ShipCommandEnum.SupplyConstruction).OrderBy(ss => ss.Ship.Symbol))
         {
@@ -77,6 +80,31 @@
             </div>
         }
 </div>
+<h3 style="text-align: center">Survey</h3>
+<div style="display: flex; flex-wrap: wrap; justify-content: space-around">
+        @foreach (var shipStatus in Model.Where(ss => ss.ShipCommandEnum is not null && ss.ShipCommandEnum == ShipCommandEnum.Survey).OrderBy(ss => ss.Ship.Symbol))
+        {
+            <div class="shadow-lg p-3 bg-white rounded" style="width: 250px; margin: 10px; position: relative;">
+                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 150px;">
+                    <span>@shipStatus.Ship.Symbol</span>
+                    <span>@shipStatus.ShipCommandEnum</span>
+                    
+                    @foreach (var inventory in shipStatus.Cargo.Inventory)
+                    {
+                        <span>@inventory.Symbol (@inventory.Units)</span>
+                    }
+                    
+                    <span>@shipStatus.LastMessage</span>
+                    <span>@ViewHelperService.HumanReadableTimeSpan(DateTime.UtcNow - shipStatus.DateTimeOfLastInstruction) ago</span>
+                    @if (SpaceTraders.Services.Shipyards.ShipsService.GetShipCooldown(shipStatus.Ship).HasValue)
+                    {
+                        <span>Available in @ViewHelperService.HumanReadableTimeSpan(SpaceTraders.Services.Shipyards.ShipsService.GetShipCooldown(shipStatus.Ship).Value)</span>
+                    }
+                </div>
+            </div>
+        }
+</div>
+<h3 style="text-align: center">No Command</h3>
 <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
         @foreach (var shipStatus in Model.Where(ss => ss.ShipCommandEnum is null).OrderBy(ss => ss.Ship.Symbol))
         {
@@ -97,4 +125,4 @@
         }
     </div>
 </section>
-</main>
+

@@ -59,7 +59,8 @@
     {
         <li><a href="/ships/@ship.Symbol/dock">Dock To Current Waypoint</a></li>
     }
-    @if (ship.Nav.Status == NavStatusEnum.DOCKED.ToString())
+    @if (ship.Nav.Status == NavStatusEnum.DOCKED.ToString()
+        && ship.Fuel.Current < ship.Fuel.Capacity)
     {
         <li><a href="/ships/@ship.Symbol/fuel">Buy Fuel</a></li>
     }

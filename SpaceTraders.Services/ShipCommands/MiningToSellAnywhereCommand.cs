@@ -2,6 +2,7 @@ using MongoDB.Driver;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.ShipCommands.Interfaces;
+using SpaceTraders.Services.ShipJobs.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Systems.Interfaces;
@@ -17,26 +18,30 @@ public class MiningToSellAnywhereCommand : IShipCommandsService
     private readonly IWaypointsService _waypointsService;
     private readonly ISystemsService _systemsService;
     private readonly IShipStatusesCacheService _shipStatusesCacheService;
+    private readonly IShipJobsFactory _shipJobsFactory;
     private readonly ShipCommandEnum _shipCommandEnum = ShipCommandEnum.MiningToSellAnywhere;
     public MiningToSellAnywhereCommand(
         IShipCommandsHelperService shipCommandsHelperService,
         IShipsService shipsService,
         IWaypointsService waypointsService,
         ISystemsService systemsService,
-        IShipStatusesCacheService shipStatusesCacheService)
+        IShipStatusesCacheService shipStatusesCacheService,
+        IShipJobsFactory shipJobsFactory)
     {
         _shipCommandsHelperService = shipCommandsHelperService;
         _shipsService = shipsService;
         _waypointsService = waypointsService;
         _systemsService = systemsService;
         _shipStatusesCacheService = shipStatusesCacheService;
+        _shipJobsFactory = shipJobsFactory;
     }
 
     public async Task<Ship> Run(
         Ship ship,
-        Waypoint miningWaypoint)
+        Dictionary<string, Ship> shipsDictionary)
     {
         var currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol);
+        var miningWaypoint = await _waypointsService.GetAsync(ship.ShipCommand.StartWaypointSymbol);
         while (true)
         {
             if (ShipsService.GetShipCooldown(ship) is not null) return ship;
@@ -58,6 +63,8 @@ public class MiningToSellAnywhereCommand : IShipCommandsService
             if (nav is not null)
             {
                 ship = ship with { Nav = nav };
+                currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol, refresh: true);
+
                 continue;
             }
 
@@ -65,6 +72,17 @@ public class MiningToSellAnywhereCommand : IShipCommandsService
             if (cargo is not null)
             {
                 ship = ship with { Cargo = cargo };
+                if (cargo.Units == 0)
+                {
+                    var shipJobsService = _shipJobsFactory.Get(ship);
+                    if (shipJobsService is null)
+                    {
+                        ship = ship with { ShipCommand = null };
+                        return ship;
+                    }
+                    ship = ship with { ShipCommand = await shipJobsService.Get(shipsDictionary.Select(sd => sd.Value), ship) };
+                    return ship;
+                }
                 continue;
             }
 
@@ -79,7 +97,7 @@ public class MiningToSellAnywhereCommand : IShipCommandsService
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel };
-                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, _shipCommandEnum, ship.Cargo, $"NavigateToStartWaypoint {miningWaypoint.Symbol}", DateTime.UtcNow));
+                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, _shipCommandEnum, ship.Cargo, $"NavigateToStartWaypoint {ship.ShipCommand.StartWaypointSymbol}", DateTime.UtcNow));
                 return ship;
             }
 

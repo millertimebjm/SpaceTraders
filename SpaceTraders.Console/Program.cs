@@ -1,10 +1,10 @@
-﻿using Microsoft.AspNetCore.Mvc.ModelBinding.Binders;
-using Microsoft.Extensions.Configuration;
+﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using SpaceTraders.Models;
+using SpaceTraders.Models.Enums;
 using SpaceTraders.Services;
 using SpaceTraders.Services.Agents;
 using SpaceTraders.Services.Agents.Interfaces;
@@ -18,10 +18,14 @@ using SpaceTraders.Services.Marketplaces;
 using SpaceTraders.Services.Marketplaces.Interfaces;
 using SpaceTraders.Services.ShipCommands;
 using SpaceTraders.Services.ShipCommands.Interfaces;
+using SpaceTraders.Services.ShipJobs;
+using SpaceTraders.Services.ShipJobs.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.ShipStatuses;
 using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Shipyards.Interfaces;
+using SpaceTraders.Services.Surveys;
+using SpaceTraders.Services.Surveys.Interfaces;
 using SpaceTraders.Services.Systems;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Waypoints;
@@ -54,11 +58,24 @@ public class Program
             services.AddScoped<IJumpGatesServices, JumpGatesServices>();
             services.AddScoped<IConstructionsService, ConstructionsService>();
             services.AddScoped<IShipCommandsHelperService, ShipCommandsHelperService>();
+            services.AddScoped<IShipCommandsServiceFactory, ShipCommandsServiceFactory>();
+            services.AddScoped<IShipStatusesCacheService, ShipStatusesCacheService>();
+            services.AddScoped<IShipJobsFactory, ShipJobsFactory>();
+            services.AddScoped<ISurveysCacheService, SurveysCacheService>();
+
+            // Ship Commands
             services.AddScoped<MiningToSellAnywhereCommand>();
             services.AddScoped<BuyAndSellCommand>();
             services.AddScoped<SupplyConstructionCommand>();
-            services.AddScoped<IShipCommandsServiceFactory, ShipCommandsServiceFactory>();
-            services.AddScoped<IShipStatusesCacheService, ShipStatusesCacheService>();
+            services.AddScoped<SurveyCommand>();
+            services.AddScoped<PurchaseShipCommand>();
+
+            // Ship Jobs
+            services.AddScoped<HaulerShipJobService>();
+            services.AddScoped<MiningShipJobService>();
+            services.AddScoped<CommandShipJobService>();
+            services.AddScoped<SurveyorShipJobService>();
+
 
         });
         var serviceBuilder = host.Build();
@@ -72,6 +89,7 @@ public class Program
         var waypointsService = serviceBuilder.Services.GetRequiredService<IWaypointsService>();
         var shipCommandsServiceFactory = serviceBuilder.Services.GetRequiredService<IShipCommandsServiceFactory>();
         var shipStatusesCacheService = serviceBuilder.Services.GetRequiredService<IShipStatusesCacheService>();
+        var shipJobsFactory = serviceBuilder.Services.GetRequiredService<IShipJobsFactory>();
 
         Log.Logger = new LoggerConfiguration()
             .Enrich.FromLogContext()
@@ -89,28 +107,60 @@ public class Program
         {
             builder.AddSerilog();
         });
-        var ships = await shipsService.GetAsync();
-        var shipsDictionary = ships.ToDictionary(k => k.Symbol, v => v);
-        var shipCommands = configuration.GetSection("ShipCommands").Get<List<ShipCommand>>();
+
         await shipStatusesCacheService.DeleteAsync();
-        foreach (var ship in ships)
+
+        // set ship jobs
+        // recheck and reset ship job at the end of each job (usually after selling)
+        //   if mining ship, do mining
+        //   if hauler, check if there's a supply construction needed
+        //     if supply construction, do construction for lowest percentage, and make sure credits are available for purchase, otherwise buy/sell
+        //     else buy/sell
+        //   if command ship, check for system without ships, then buy/sell
+        var shipsDictionary = (await shipsService.GetAsync()).ToDictionary(s => s.Symbol, s => s);
+        foreach (var shipItem in shipsDictionary)
         {
-            var shipCommand = shipCommands.SingleOrDefault(sc => sc.ShipSymbol == ship.Symbol);
+            var ship = shipItem.Value;
+            var shipJobsService = shipJobsFactory.Get((ShipRegistrationRolesEnum)Enum.Parse(typeof(ShipRegistrationRolesEnum), ship.Registration.Role));
+            if (shipJobsService is null)
+            {
+                await shipStatusesCacheService.SetAsync(new ShipStatus(ship, null, ship.Cargo, "No instructions set.", DateTime.UtcNow));
+                continue;
+            }
+            var shipCommand = await shipJobsService.Get(shipsDictionary.Values, ship);
+            ship = ship with { ShipCommand = shipCommand };
+            shipsDictionary[ship.Symbol] = ship;
             await shipStatusesCacheService.SetAsync(new ShipStatus(ship, shipCommand?.ShipCommandEnum, ship.Cargo, "No instructions set.", DateTime.UtcNow));
         }
-        ArgumentNullException.ThrowIfNull(shipCommands);
+
+        // var shipCommands = configuration.GetSection("ShipCommands").Get<List<ShipCommand>>();
+
+        // foreach (var ship in ships)
+        // {
+        //     var shipCommand = shipCommands.SingleOrDefault(sc => sc.ShipSymbol == ship.Symbol);
+        //     await shipStatusesCacheService.SetAsync(new ShipStatus(ship, shipCommand?.ShipCommandEnum, ship.Cargo, "No instructions set.", DateTime.UtcNow));
+        // }
+
+        //ArgumentNullException.ThrowIfNull(shipCommands);
         while (true)
         {
             DateTime? minimumDate = null;
             
-            foreach (var shipCommand in shipCommands)
+            foreach (var shipItem in shipsDictionary.OrderBy(sd => (ShipRegistrationRolesEnum)Enum.Parse(typeof(ShipRegistrationRolesEnum), sd.Value.Registration.Role)))
             {
-                ArgumentException.ThrowIfNullOrWhiteSpace(shipCommand.StartWaypointSymbol);
-                var startWaypoint = await waypointsService.GetAsync(shipCommand.StartWaypointSymbol);
-                var shipCommandService = shipCommandsServiceFactory.Get(shipCommand.ShipCommandEnum.ToString());
+                var ship = shipItem.Value;
+                if (ship.ShipCommand is not null)
+                {
+                    //ArgumentException.ThrowIfNullOrWhiteSpace(ship.ShipCommand.StartWaypointSymbol);
+                }
+                else
+                {
+                    continue;
+                }
+                var shipCommandService = shipCommandsServiceFactory.Get(ship.ShipCommand.ShipCommandEnum);
                 var shipUpdate = await shipCommandService.Run(
-                    shipsDictionary[shipCommand.ShipSymbol],
-                    startWaypoint);
+                    shipItem.Value,
+                    shipsDictionary);
                 shipsDictionary[shipUpdate.Symbol] = shipUpdate;
 
                 var shipUpdateDelay = ShipsService.GetShipCooldown(shipUpdate);

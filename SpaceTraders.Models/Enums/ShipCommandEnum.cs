@@ -9,6 +9,8 @@ public enum ShipCommandEnum
     // CarryToConstruction,
     BuyToSell,
     SupplyConstruction,
+    Survey,
+    PurchaseShip,
     // BuyToConstruction,
     // BuyToStorage,
 }

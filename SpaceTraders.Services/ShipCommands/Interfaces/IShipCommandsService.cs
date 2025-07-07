@@ -6,6 +6,6 @@ public interface IShipCommandsService
 {
     Task<Ship> Run(
         Ship ship,
-        Waypoint startWaypoint);
+        Dictionary<string, Ship> shipsDictionary);
 }
 

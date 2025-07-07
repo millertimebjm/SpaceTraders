@@ -5,6 +5,7 @@ using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Contracts.Interfaces;
 using SpaceTraders.Services.Marketplaces.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
+using SpaceTraders.Services.Surveys.Interfaces;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Mvc.Controllers;
@@ -17,6 +18,7 @@ public class ShipsController : BaseController
     private readonly IMarketplacesService _marketplacesService;
     private readonly IAgentsService _agentsService;
     private readonly IContractsService _contractsService;
+    private readonly ISurveysCacheService _surveyCacheService;
 
     public ShipsController(
         ILogger<ShipsController> logger,
@@ -24,7 +26,8 @@ public class ShipsController : BaseController
         IWaypointsService waypointsService,
         IMarketplacesService marketplacesService,
         IAgentsService agentsService,
-        IContractsService contractsService) : base(agentsService)
+        IContractsService contractsService,
+        ISurveysCacheService surveysCacheService) : base(agentsService)
     {
         _logger = logger;
         _shipsService = shipsService;
@@ -32,6 +35,7 @@ public class ShipsController : BaseController
         _marketplacesService = marketplacesService;
         _agentsService = agentsService;
         _contractsService = contractsService;
+        _surveyCacheService = surveysCacheService;
     }
 
     [Route("/ships")]
@@ -78,6 +82,19 @@ public class ShipsController : BaseController
         var shipSymbol = SessionHelper.Get<string>(HttpContext, SessionEnum.CurrentShipSymbol);
         ArgumentException.ThrowIfNullOrWhiteSpace(shipSymbol);
         await _shipsService.ExtractAsync(shipSymbol);
+        return Redirect($"/ships/{shipSymbol}");
+    }
+
+    [Route("/ships/survey")]
+    public async Task<IActionResult> Survey()
+    {
+        var shipSymbol = SessionHelper.Get<string>(HttpContext, SessionEnum.CurrentShipSymbol);
+        ArgumentException.ThrowIfNullOrWhiteSpace(shipSymbol);
+        var (_, surveys) = await _shipsService.SurveyAsync(shipSymbol);
+        foreach (var survey in surveys)
+        {
+            await _surveyCacheService.SetAsync(survey);
+        }
         return Redirect($"/ships/{shipSymbol}");
     }
 

@@ -1,4 +1,5 @@
 using Microsoft.Extensions.DependencyInjection;
+using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 
 namespace SpaceTraders.Services.ShipCommands;
@@ -12,14 +13,16 @@ public class ShipCommandsServiceFactory : IShipCommandsServiceFactory
         _serviceProvider = serviceProvider;
     }
 
-    public IShipCommandsService Get(string commandName)
+    public IShipCommandsService Get(ShipCommandEnum command)
     {
-        return commandName switch
+        return command switch
         {
-            "MiningToSellAnywhere" => _serviceProvider.GetRequiredService<MiningToSellAnywhereCommand>(),
-            "BuyToSell" => _serviceProvider.GetRequiredService<BuyAndSellCommand>(),
-            "SupplyConstruction" => _serviceProvider.GetRequiredService<SupplyConstructionCommand>(),
-            _ => throw new ArgumentException($"Unknown command: {commandName}", nameof(commandName))
+            ShipCommandEnum.MiningToSellAnywhere => _serviceProvider.GetRequiredService<MiningToSellAnywhereCommand>(),
+            ShipCommandEnum.BuyToSell => _serviceProvider.GetRequiredService<BuyAndSellCommand>(),
+            ShipCommandEnum.SupplyConstruction => _serviceProvider.GetRequiredService<SupplyConstructionCommand>(),
+            ShipCommandEnum.Survey => _serviceProvider.GetRequiredService<SurveyCommand>(),
+            ShipCommandEnum.PurchaseShip => _serviceProvider.GetRequiredService<PurchaseShipCommand>(),
+            _ => throw new ArgumentException($"Unknown command: {command}", nameof(command))
         };
     }
 }
