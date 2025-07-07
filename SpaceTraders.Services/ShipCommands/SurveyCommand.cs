@@ -72,7 +72,7 @@ public class SurveyCommand : IShipCommandsService
                 continue;
             }
 
-            (nav, fuel) = await _shipCommandsHelperService.NavigateToSurvey(ship);
+            (nav, fuel) = await _shipCommandsHelperService.NavigateToSurvey(ship, currentWaypoint);
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel };

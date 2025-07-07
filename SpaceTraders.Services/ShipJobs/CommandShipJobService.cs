@@ -16,22 +16,23 @@ public class CommandShipJobService : IShipJobService
         _agentsService = agentsService;
     }
 
-    public async Task<ShipCommand> Get(
+    public async Task<ShipCommand?> Get(
         IEnumerable<Ship> ships,
         Ship ship)
     {
-        // var agent = await _agentsService.GetAsync();
-        // if (agent.Credits > 900000)
-        // {
-        //     var shipTypes = ships
-        //         .Where(s => s.Nav.SystemSymbol == ship.Nav.SystemSymbol)
-        //         .GroupBy(s => s.Frame.Symbol);
-        //     if (shipTypes.Count(st => st.Key == ShipTypesEnum.FRAME_DRONE.ToString()) < 5
-        //         && shipTypes.Count(st => st.Key == ShipTypesEnum.FRAME_LIGHT_FREIGHTER.ToString()) < 5)
-        //     {
-        //         return new ShipCommand(ship.Symbol, Models.Enums.ShipCommandEnum.PurchaseShip, "");    
-        //     }
-        // }
-        return new ShipCommand(ship.Symbol, Models.Enums.ShipCommandEnum.BuyToSell, "X1-MD38-H48");
+        var agent = await _agentsService.GetAsync();
+        if (agent.Credits > 900000)
+        {
+            var shipTypesInSystem = ships
+                .Where(s => s.Nav.SystemSymbol == ship.Nav.SystemSymbol)
+                .GroupBy(s => s.Registration.Role);
+            if (shipTypesInSystem.Count(st => st.Key == ShipTypesEnum.SHIP_MINING_DRONE.ToString()) < 5
+                || shipTypesInSystem.Count(st => st.Key == ShipTypesEnum.SHIP_LIGHT_HAULER.ToString()) < 5
+                || shipTypesInSystem.Count(st => st.Key == ShipTypesEnum.SHIP_SURVEYOR.ToString()) == 0)
+            {
+                return new ShipCommand(ship.Symbol, ShipCommandEnum.PurchaseShip);    
+            }
+        }
+        return new ShipCommand(ship.Symbol, ShipCommandEnum.BuyToSell);
     }
 }

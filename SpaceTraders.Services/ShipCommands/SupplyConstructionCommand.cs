@@ -41,11 +41,11 @@ public class SupplyConstructionCommand : IShipCommandsService
         Dictionary<string, Ship> shipsDictionary)
     {
         var currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol);
-        var constructionWaypoint = await _waypointsService.GetAsync(ship.ShipCommand.StartWaypointSymbol);
+        var system = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(ship.Nav.WaypointSymbol));
+        var constructionWaypoint = system.Waypoints.FirstOrDefault(w => w.JumpGate is not null && w.IsUnderConstruction);
         while (true)
         {
             if (ShipsService.GetShipCooldown(ship) is not null) return ship;
-            var system = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(currentWaypoint.Symbol));
             var paths = PathsService.BuildDijkstraPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
 
             await Task.Delay(2000);
@@ -78,14 +78,13 @@ public class SupplyConstructionCommand : IShipCommandsService
                 ship = ship with { Cargo = supplyResult.Cargo };
                 if (supplyResult.Cargo.Units == 0)
                 {
-                    var shipJobsService = _shipJobsFactory.Get(ship);
-                    if (shipJobsService is null)
+                    currentWaypoint = await _waypointsService.GetAsync(currentWaypoint.Symbol, refresh: true);
+                    if (!currentWaypoint.IsUnderConstruction)
                     {
                         ship = ship with { ShipCommand = null };
+                        await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, ship.ShipCommand?.ShipCommandEnum, ship.Cargo, $"Resetting Job.", DateTime.UtcNow));
                         return ship;
                     }
-                    ship = ship with { ShipCommand = await shipJobsService.Get(shipsDictionary.Select(sd => sd.Value), ship) };
-                    return ship;
                 }
                 continue;
             }
@@ -104,7 +103,7 @@ public class SupplyConstructionCommand : IShipCommandsService
                 continue;
             }
 
-            (nav, fuel) = await _shipCommandsHelperService.NavigateToConstructionWaypoint(ship, currentWaypoint, constructionWaypoint);
+            (nav, fuel) = await _shipCommandsHelperService.NavigateToConstructionWaypoint(ship, currentWaypoint);
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel };

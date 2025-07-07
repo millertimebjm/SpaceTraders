@@ -1,27 +1,43 @@
 using SpaceTraders.Models;
+using SpaceTraders.Models.Enums;
+using SpaceTraders.Services.Systems.Interfaces;
 
 namespace SpaceTraders.Services.ShipJobs.Interfaces;
 
 public class SurveyorShipJobService : IShipJobService
 {
+    private readonly ISystemsService _systemsService;
+    public SurveyorShipJobService(
+        ISystemsService systemsService)
+    {
+        _systemsService = systemsService;
+    }
+
     public Task<ShipCommand?> Get(
         IEnumerable<Ship> ships,
         Ship ship)
     {
-        var shipsWithCommands = ships.Where(s => s.ShipCommand is not null);
-        var miningShips = shipsWithCommands.Where(s => s.ShipCommand is not null && s.ShipCommand.ShipCommandEnum == Models.Enums.ShipCommandEnum.MiningToSellAnywhere);
-        var miningWaypoints = miningShips.GroupBy(ms => ms.ShipCommand.StartWaypointSymbol);
+        // var system = await _systemsService.GetAsync(ship.Nav.WaypointSymbol);
+        // var currentWaypoint = system.Waypoints.Single(w => w.Symbol == ship.Nav.WaypointSymbol);
 
-        var surveyShips = shipsWithCommands.Where(s => s.Symbol != ship.Symbol && s.ShipCommand is not null && s.ShipCommand.ShipCommandEnum == Models.Enums.ShipCommandEnum.Survey);
-        var surveyWaypoints = surveyShips.Select(ss => ss.ShipCommand.StartWaypointSymbol);
+        // var shipsWithCommands = ships.Where(s => s.ShipCommand is not null);
+        // var miningShips = shipsWithCommands.Where(s => s.ShipCommand is not null && s.ShipCommand.ShipCommandEnum == Models.Enums.ShipCommandEnum.MiningToSellAnywhere);
+        // var miningWaypoints = system.Waypoints.Where(w => w.Type == WaypointTypesEnum.ASTEROID.ToString()
+        //     || w.Type == WaypointTypesEnum.ENGINEERED_ASTEROID.ToString());
+        // var paths = PathsService.BuildDijkstraPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
+        // var closestPath = paths
+        //     .Where(p => miningWaypoints.Select(w => w.Symbol).Contains(p.Key.Symbol))
+        //     .OrderBy(p => p.Value.Item1.Count())
+        //     .SingleOrDefault();
 
-        var miningWaypointsNotSurveyed = miningWaypoints.Where(mw => !surveyWaypoints.Contains(mw.Key));
-        var surveyWaypoint = miningWaypointsNotSurveyed.OrderByDescending(mw => mw.Count()).FirstOrDefault()?.Key;
+        // if (closestPath is not null)
+        // {
+        //     return Task.FromResult(new ShipCommand(ship.Symbol, Models.Enums.ShipCommandEnum.Survey, surveyWaypoint));
+        // }
+        // return null;
+#pragma warning disable CS8619 // Nullability of reference types in value doesn't match target type.
+        return Task.FromResult(new ShipCommand(ship.Symbol, ShipCommandEnum.Survey));
+#pragma warning restore CS8619 // Nullability of reference types in value doesn't match target type.
 
-        if (surveyWaypoint is not null)
-        {
-            return Task.FromResult(new ShipCommand(ship.Symbol, Models.Enums.ShipCommandEnum.Survey, surveyWaypoint));
-        }
-        return null;
     }
 }

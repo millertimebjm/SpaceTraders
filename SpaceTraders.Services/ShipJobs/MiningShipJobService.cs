@@ -8,6 +8,6 @@ public class MiningShipJobService : IShipJobService
         IEnumerable<Ship> ships,
         Ship ship)
     {
-        return Task.FromResult(new ShipCommand(ship.Symbol, Models.Enums.ShipCommandEnum.MiningToSellAnywhere, "X1-NA85-EB5A"));
+        return Task.FromResult(new ShipCommand(ship.Symbol, Models.Enums.ShipCommandEnum.MiningToSellAnywhere));
     }
 }

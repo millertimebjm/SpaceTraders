@@ -8,7 +8,6 @@ using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.Surveys.Interfaces;
 using SpaceTraders.Services.Systems.Interfaces;
-using SpaceTraders.Services.Waypoints;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.ShipCommands;
@@ -57,7 +56,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             return null;
         }
 
-        var system = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(currentWaypoint.Symbol));
+        var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
         var paths = PathsService.BuildDijkstraPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
         var exports = currentWaypoint.Marketplace.Exports.Select(e => e.Symbol).ToList();
 
@@ -113,7 +112,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             return null;
         }
 
-        var system = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(currentWaypoint.Symbol));
+        var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
         var paths = PathsService.BuildDijkstraPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
         var exports = currentWaypoint.Marketplace.Exports.Select(e => e.Symbol).ToList();
 
@@ -217,7 +216,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         }
         else if (ship.Cargo.Units == 0 && currentWaypoint.Marketplace is not null)
         {
-            var system = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(currentWaypoint.Symbol));
+            var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
             var paths = PathsService.BuildDijkstraPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
             var exports = currentWaypoint.Marketplace.Exports.Select(e => e.Symbol).ToList();
 
@@ -282,10 +281,11 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         return await _shipsService.DockAsync(ship.Symbol);
     }
 
-    public async Task<(Cargo?, Cooldown?)> Extract(Ship ship, Waypoint currentWaypoint, Waypoint miningWaypoint)
+    public async Task<(Cargo?, Cooldown?)> Extract(Ship ship, Waypoint currentWaypoint)
     {
         if (ship.Cargo.Units == ship.Cargo.Capacity
-            || currentWaypoint.Symbol != miningWaypoint.Symbol)
+            || !(currentWaypoint.Type == WaypointTypesEnum.ASTEROID.ToString()
+                || currentWaypoint.Type == WaypointTypesEnum.ENGINEERED_ASTEROID.ToString()))
         {
             return (null, null);
         }
@@ -314,7 +314,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             return (null, null);
         }
 
-        var system = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(currentWaypoint.Symbol));
+        var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
         var pathDictionary = PathsService.BuildDijkstraPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
         var pathItem = pathDictionary.SingleOrDefault(p => p.Key.Symbol == endWaypoint.Symbol);
 
@@ -331,7 +331,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             return (null, null);
         }
 
-        var system = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(currentWaypoint.Symbol));
+        var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
         var pathDictionary = PathsService.BuildDijkstraPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
         var pathItem = pathDictionary.SingleOrDefault(p => p.Key.Symbol == startWaypoint.Symbol);
 
@@ -340,10 +340,29 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         return (nav, fuel);
     }
 
+    public async Task<(Nav?, Fuel?)> NavigateToMiningWaypoint(Ship ship, Waypoint currentWaypoint)
+    {
+        if (ship.Nav.Status != NavStatusEnum.IN_ORBIT.ToString()
+            || ship.Cargo.Units != 0
+            || currentWaypoint.Type == WaypointTypesEnum.ASTEROID.ToString()
+            || currentWaypoint.Type == WaypointTypesEnum.ENGINEERED_ASTEROID.ToString())
+        {
+            return (null, null);
+        }
+
+        var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
+        var paths = PathsService.BuildDijkstraPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
+        var asteroidWaypoints = system.Waypoints.Where(w =>
+            w.Type == WaypointTypesEnum.ASTEROID.ToString()
+            || w.Type == WaypointTypesEnum.ENGINEERED_ASTEROID.ToString()).ToList();
+        var asteroidPaths = paths.Where(p => asteroidWaypoints.Select(w => w.Symbol).Contains(p.Key.Symbol));
+        var closestAsteroidPath = asteroidPaths.OrderBy(p => p.Value.Item1.Count()).FirstOrDefault();
+        return await _shipsService.NavigateAsync(closestAsteroidPath.Value.Item1[1].Symbol, ship.Symbol);
+    }
+
     public async Task<Nav?> Orbit(Ship ship, Waypoint currentWaypoint)
     {
         if (ship.Nav.Status == NavStatusEnum.IN_ORBIT.ToString()
-            || currentWaypoint.Marketplace?.Imports.Any(i => ship.Cargo.Inventory.Select(inv => inv.Symbol).Contains(i.Symbol)) == true
             || ship.Fuel.Current != ship.Fuel.Capacity)
         {
             return null;
@@ -463,7 +482,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             return (null, null);
         }
 
-        var system = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(currentWaypoint.Symbol));
+        var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
         var pathDictionary = PathsService.BuildDijkstraPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
         var pathItem = pathDictionary.SingleOrDefault(p => p.Key.Symbol == endWaypoint.Symbol);
 
@@ -472,19 +491,22 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         return (nav, fuel);
     }
 
-    public async Task<(Nav?, Fuel?)> NavigateToConstructionWaypoint(Ship ship, Waypoint currentWaypoint, Waypoint constructionWaypoint)
+    public async Task<(Nav?, Fuel?)> NavigateToConstructionWaypoint(Ship ship, Waypoint currentWaypoint)
     {
         if (ship.Cargo.Inventory.Count == 0
-            || ship.Nav.WaypointSymbol == constructionWaypoint.Symbol)
+            || (currentWaypoint.JumpGate is not null
+                && currentWaypoint.IsUnderConstruction))
         {
             return (null, null);
         }
 
-        var system = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(constructionWaypoint.Symbol));
+        var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
         var pathDictionary = PathsService.BuildDijkstraPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
-        var pathItem = pathDictionary.SingleOrDefault(p => p.Key.Symbol == constructionWaypoint.Symbol);
+        var jumpGateWaypoints = system.Waypoints.Where(w => w.JumpGate is not null && w.IsUnderConstruction);
+        var paths = pathDictionary.Where(p => jumpGateWaypoints.Select(w => w.Symbol).Contains(p.Key.Symbol));
+        var closestPath = paths.OrderBy(p => p.Value.Item1.Count()).FirstOrDefault();
 
-        var (nav, fuel) = await _shipsService.NavigateAsync(pathItem.Value.Item1[1].Symbol, ship.Symbol);
+        var (nav, fuel) = await _shipsService.NavigateAsync(closestPath.Value.Item1[1].Symbol, ship.Symbol);
 
         return (nav, fuel);
     }
@@ -513,7 +535,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
 
     public async Task<Waypoint?> GetClosestSellingWaypoint(Ship ship, Waypoint currentWaypoint)
     {
-        var system = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(currentWaypoint.Symbol));
+        var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
         var inventorySymbols = ship.Cargo.Inventory.Select(i => i.Symbol).ToHashSet();
         var sellingWaypoints = system.Waypoints
             .Where(w => w.Marketplace is not null
@@ -573,7 +595,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         {
             var pathsToModerateTradeGoods = paths.Where(p => moderateTradeGoodsWithinRange.Select(w => w.Symbol).Contains(p.Key.Symbol)).ToList();
             var shortestPath = pathsToModerateTradeGoods.OrderBy(ptmtg => ptmtg.Value.Item1.Count).ThenBy(ptmtg => ptmtg.Value.Item4).First();
-            return await _shipsService.NavigateAsync(shortestPath.Key.Symbol, ship.Symbol);
+            return await _shipsService.NavigateAsync(shortestPath.Value.Item1[1].Symbol, ship.Symbol);
         }
         else
         {
@@ -581,18 +603,22 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         }
     }
 
-    public async Task<(Nav?, Fuel?)> NavigateToSurvey(Ship ship)
+    public async Task<(Nav?, Fuel?)> NavigateToSurvey(Ship ship, Waypoint currentWaypoint)
     {
-        if (ship.ShipCommand.StartWaypointSymbol == ship.Nav.WaypointSymbol)
+        if (currentWaypoint.Type == WaypointTypesEnum.ASTEROID.ToString()
+            || currentWaypoint.Type == WaypointTypesEnum.ENGINEERED_ASTEROID.ToString())
         {
             return (null, null);
         }
 
-        var system = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(ship.Nav.WaypointSymbol));
-        var currentWaypoint = system.Waypoints.Single(w => w.Symbol == ship.Nav.WaypointSymbol);
+        var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
         var paths = PathsService.BuildDijkstraPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
-        var path = paths.Single(p => p.Key.Symbol == ship.ShipCommand.StartWaypointSymbol);
-        return await _shipsService.NavigateAsync(path.Value.Item1[1].Symbol, ship.Symbol);
+        var asteroidWaypoints = system.Waypoints.Where(w =>
+            w.Type == WaypointTypesEnum.ASTEROID.ToString()
+            || w.Type == WaypointTypesEnum.ENGINEERED_ASTEROID.ToString()).ToList();
+        var asteroidPaths = paths.Where(p => asteroidWaypoints.Select(w => w.Symbol).Contains(p.Key.Symbol));
+        var closestAsteroidPath = asteroidPaths.OrderBy(p => p.Value.Item1.Count()).FirstOrDefault();
+        return await _shipsService.NavigateAsync(closestAsteroidPath.Value.Item1[1].Symbol, ship.Symbol);
     }
 
     public async Task<Cooldown> Survey(Ship ship)
@@ -613,17 +639,6 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
 
     public async Task<(Nav? nav, Fuel? fuel)> NavigateToShipyard(Ship ship, Waypoint currentWaypoint)
     {
-        // if (ship.ShipCommand.StartWaypointSymbol == ship.Nav.WaypointSymbol)
-        // {
-        //     return (null, null);
-        // }
-
-        // var system = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(ship.Nav.WaypointSymbol));
-        // var currentWaypoint = system.Waypoints.Single(w => w.Symbol == ship.Nav.WaypointSymbol);
-        // var paths = PathsService.BuildDijkstraPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
-        // var path = paths.Single(p => p.Key.Symbol == ship.ShipCommand.StartWaypointSymbol);
-        // return await _shipsService.NavigateAsync(path.Value.Item1[1].Symbol, ship.Symbol);
-
         var agent = await _agentsService.GetAsync();
         if (agent.Credits < 800000)
         {
@@ -631,7 +646,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         }
         var ships = await _shipsService.GetAsync();
         var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
-        var shipToBuy = ShipToBuy(ships, system);
+        var shipToBuy = await ShipToBuy(ships, system);
         if (shipToBuy is null) return (null, null);
 
         var shipyards = system.Waypoints.Where(w => w.Shipyard is not null);
@@ -644,36 +659,34 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         return (null, null);
     }
 
-    public static async Task<ShipTypesEnum?> ShipToBuy(IEnumerable<Ship> ships, STSystem system)
+    public static Task<ShipTypesEnum?> ShipToBuy(IEnumerable<Ship> ships, STSystem system)
     {
-        // var shipyards = system
-        //     .Waypoints
-        //     .Where(w => w.Shipyard is not null)
-        //     .ToList();
-        // var shipTypesAvailable = shipyards
-        //     .SelectMany(w => w.Shipyard.ShipFrames.Select(sf => sf.Symbol))
-        //     .Distinct();
-        // var shipsInSystem = ships
-        //     .Where(s => s.Nav.SystemSymbol == system.Symbol)
-        //     .GroupBy(s => s.Frame.Symbol);
-        // // if (shipsInSystem.Any(sin => sin.Key == ShipTypesEnum.EXCAVATOR.ToString())
-        // //     && !shipsInSystem.Any(sin => sin.Key == ShipTypesEnum.SURVEYOR.ToString()))
-        // // {
-        // //     return ShipTypesEnum.SURVEYOR;
-        // // }
+        var shipyards = system
+            .Waypoints
+            .Where(w => w.Shipyard is not null)
+            .ToList();
+        var shipsInSystem = ships
+            .Where(s => s.Nav.SystemSymbol == system.Symbol)
+            .GroupBy(s => s.Registration.Role);
 
-        // if (shipsInSystem.Count(sin => sin.Key == ShipTypesEnum.FRAME_DRONE.ToString())
-        //     > shipsInSystem.Count(sin => sin.Key == ShipTypesEnum.FRAME_LIGHT_FREIGHTER.ToString()))
-        // {
-        //     return ShipTypesEnum.FRAME_LIGHT_FREIGHTER;
-        // }
+        if (shipsInSystem.Count(sin => sin.Key == ShipRegistrationRolesEnum.EXCAVATOR.ToString())
+            > shipsInSystem.Count(sin => sin.Key == ShipRegistrationRolesEnum.HAULER.ToString()))
+        {
+            return Task.FromResult((ShipTypesEnum?)ShipTypesEnum.SHIP_LIGHT_HAULER);
+        }
 
-        // if (shipsInSystem.Count(sin => sin.Key == ShipTypesEnum.FRAME_DRONE.ToString())
-        //     == shipsInSystem.Count(sin => sin.Key == ShipTypesEnum.FRAME_LIGHT_FREIGHTER.ToString()))
-        // {
-        //     return ShipTypesEnum.FRAME_DRONE;
-        // }
+        if (shipsInSystem.Count(sin => sin.Key == ShipRegistrationRolesEnum.EXCAVATOR.ToString())
+            == shipsInSystem.Count(sin => sin.Key == ShipRegistrationRolesEnum.HAULER.ToString())
+            && shipsInSystem.Count(sin => sin.Key == ShipRegistrationRolesEnum.EXCAVATOR.ToString()) < 5)
+        {
+            return Task.FromResult((ShipTypesEnum?)ShipTypesEnum.SHIP_MINING_DRONE);
+        }
 
-        return null;
+        if (shipsInSystem.Count(sin => sin.Key == ShipRegistrationRolesEnum.SURVEYOR.ToString()) == 0)
+        {
+            return Task.FromResult((ShipTypesEnum?)ShipTypesEnum.SHIP_SURVEYOR);
+        }
+
+        return Task.FromResult((ShipTypesEnum?)null);
     }
 }

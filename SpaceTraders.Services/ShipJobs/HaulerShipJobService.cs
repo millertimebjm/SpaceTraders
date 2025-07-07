@@ -22,8 +22,8 @@ public class HaulerShipJobService : IShipJobService
         if (unfinishedJumpGateWaypoint is not null 
             && !ships.Where(s => s.Symbol != ship.Symbol).Any(s => s.ShipCommand?.ShipCommandEnum == Models.Enums.ShipCommandEnum.SupplyConstruction))
         {
-            return new ShipCommand(ship.Symbol, Models.Enums.ShipCommandEnum.SupplyConstruction, unfinishedJumpGateWaypoint.Symbol);
+            return new ShipCommand(ship.Symbol, Models.Enums.ShipCommandEnum.SupplyConstruction);
         }
-        return new ShipCommand(ship.Symbol, Models.Enums.ShipCommandEnum.BuyToSell, "X1-NA85-E49");
+        return new ShipCommand(ship.Symbol, Models.Enums.ShipCommandEnum.BuyToSell);
     }
 }

@@ -77,15 +77,11 @@ public class BuyAndSellCommand : IShipCommandsService
             if (cargo is not null)
             {
                 ship = ship with { Cargo = cargo };
-                if (cargo.Units == 0)
+                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, ship.ShipCommand?.ShipCommandEnum, ship.Cargo, $"Resetting Job.", DateTime.UtcNow));
+                if (cargo.Units == 0 && ship.Registration.Role == ShipRegistrationRolesEnum.COMMAND.ToString())
                 {
-                    var shipJobsService = _shipJobsFactory.Get(ship);
-                    if (shipJobsService is null)
-                    {
-                        ship = ship with { ShipCommand = null };
-                        return ship;
-                    }
-                    ship = ship with { ShipCommand = await shipJobsService.Get(shipsDictionary.Select(sd => sd.Value), ship) };
+                    ship = ship with { ShipCommand = null };
+                    await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, ship.ShipCommand?.ShipCommandEnum, ship.Cargo, $"Resetting Job.", DateTime.UtcNow));
                     return ship;
                 }
                 continue;
