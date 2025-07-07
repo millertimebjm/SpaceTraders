@@ -142,6 +142,7 @@ public class Program
                 ship = ship with { ShipCommand = shipCommand };
                 shipsDictionary[ship.Symbol] = ship;
                 await shipStatusesCacheService.SetAsync(new ShipStatus(ship, shipCommand?.ShipCommandEnum, ship.Cargo, "No instructions set.", DateTime.UtcNow));
+                if (ship.ShipCommand is null) continue;
 
                 var shipCommandService = shipCommandsServiceFactory.Get(ship.ShipCommand.ShipCommandEnum);
                 var shipUpdate = await shipCommandService.Run(
@@ -155,7 +156,7 @@ public class Program
                     minimumDate = MinimumDate(minimumDate, DateTime.UtcNow.Add(shipUpdateDelay.Value));
                 }
 
-                await Task.Delay(2000);
+                await Task.Delay(1000);
             }
 
                 if (minimumDate is not null && minimumDate > DateTime.UtcNow)

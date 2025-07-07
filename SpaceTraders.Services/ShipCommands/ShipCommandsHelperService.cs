@@ -6,6 +6,7 @@ using SpaceTraders.Services.Marketplaces.Interfaces;
 using SpaceTraders.Services.Paths;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
+using SpaceTraders.Services.Shipyards.Interfaces;
 using SpaceTraders.Services.Surveys.Interfaces;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Waypoints.Interfaces;
@@ -29,6 +30,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
     private readonly IAgentsService _agentsService;
     private readonly IConstructionsService _constructionService;
     private readonly ISurveysCacheService _surveysCacheService;
+    private readonly IShipyardsService _shipyardsService;
     public ShipCommandsHelperService(
         IShipsService shipsService,
         IMarketplacesService marketplacesService,
@@ -36,7 +38,8 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         IWaypointsService waypointsService,
         IAgentsService agentsService,
         IConstructionsService constructionsService,
-        ISurveysCacheService surveysCacheService)
+        ISurveysCacheService surveysCacheService,
+        IShipyardsService shipyardsService)
     {
         _shipsService = shipsService;
         _marketplacesService = marketplacesService;
@@ -45,6 +48,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         _agentsService = agentsService;
         _constructionService = constructionsService;
         _surveysCacheService = surveysCacheService;
+        _shipyardsService = shipyardsService;
     }
 
     public async Task<Cargo?> Buy(Ship ship, Waypoint currentWaypoint)
@@ -145,6 +149,35 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         // Need fuel and fuel is available at this waypoint
         if (ship.Fuel.Current < ship.Fuel.Capacity
             && currentWaypoint.Marketplace?.Exchange.Any(e => e.Symbol == InventoryEnum.FUEL.ToString()) == true)
+        {
+            shouldDock = true;
+        }
+
+        if (!shouldDock)
+        {
+            return null;
+        }
+
+        return await _shipsService.DockAsync(ship.Symbol);
+    }
+
+    public async Task<Nav?> DockForShipyard(Ship ship, Waypoint currentWaypoint)
+    {
+        if (ship.Nav.Status == NavStatusEnum.DOCKED.ToString())
+        {
+            return null;
+        }
+
+        var shouldDock = false;
+        var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
+        var ships = await _shipsService.GetAsync();
+        var shipToBuy = await ShipToBuy(ships, system);
+        if (shipToBuy is null) return null;
+
+        // Need fuel and fuel is available at this waypoint
+        if ((ship.Fuel.Current < ship.Fuel.Capacity
+            && currentWaypoint.Marketplace?.Exchange.Any(e => e.Symbol == InventoryEnum.FUEL.ToString()) == true)
+            || currentWaypoint.Shipyard?.ShipTypes.Any(st => st.Type == shipToBuy.ToString()) == true)
         {
             shouldDock = true;
         }
@@ -639,11 +672,6 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
 
     public async Task<(Nav? nav, Fuel? fuel)> NavigateToShipyard(Ship ship, Waypoint currentWaypoint)
     {
-        var agent = await _agentsService.GetAsync();
-        if (agent.Credits < 800000)
-        {
-            return (null, null);
-        }
         var ships = await _shipsService.GetAsync();
         var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
         var shipToBuy = await ShipToBuy(ships, system);
@@ -651,12 +679,34 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
 
         var shipyards = system.Waypoints.Where(w => w.Shipyard is not null);
         var shipyardWithShip = shipyards.FirstOrDefault(s => s.Shipyard.ShipFrames.Any(sf => sf.Type == shipToBuy.ToString()));
-        if (shipyardWithShip is not null)
+        var paths = PathsService.BuildDijkstraPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
+        if (shipyardWithShip is not null && ship.Nav.WaypointSymbol != shipyardWithShip.Symbol)
         {
-            var (nav, fuel) = await _shipsService.NavigateAsync(shipyardWithShip.Symbol, ship.Symbol);
+            var path = paths.SingleOrDefault(p => p.Key.Symbol == shipyardWithShip.Symbol);
+            var (nav, fuel) = await _shipsService.NavigateAsync(path.Value.Item1[1].Symbol, ship.Symbol);
             return (nav, fuel);
         }
         return (null, null);
+    }
+
+    public async Task<bool> PurchaseShip(Ship ship, Waypoint currentWaypoint)
+    {
+        if (ship.Nav.Status != NavStatusEnum.DOCKED.ToString()
+            || currentWaypoint.Shipyard is null)
+        {
+            return false;
+        }
+        var ships = await _shipsService.GetAsync();
+        var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
+        var shipToBuy = await ShipToBuy(ships, system);
+        if (shipToBuy is null 
+            || !currentWaypoint.Shipyard.ShipTypes.Select(st => st.Type).Contains(shipToBuy.ToString()))
+        {
+            return false;
+        }
+
+        await _shipyardsService.BuyAsync(currentWaypoint.Symbol, shipToBuy.ToString());
+        return true;
     }
 
     public static Task<ShipTypesEnum?> ShipToBuy(IEnumerable<Ship> ships, STSystem system)
@@ -669,20 +719,20 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             .Where(s => s.Nav.SystemSymbol == system.Symbol)
             .GroupBy(s => s.Registration.Role);
 
-        if (shipsInSystem.Count(sin => sin.Key == ShipRegistrationRolesEnum.EXCAVATOR.ToString())
-            > shipsInSystem.Count(sin => sin.Key == ShipRegistrationRolesEnum.HAULER.ToString()))
+        if ((shipsInSystem.SingleOrDefault(sin => sin.Key == ShipRegistrationRolesEnum.EXCAVATOR.ToString())?.Count() ?? 0)
+            > (shipsInSystem.SingleOrDefault(sin => sin.Key == ShipRegistrationRolesEnum.HAULER.ToString())?.Count() ?? 0))
         {
             return Task.FromResult((ShipTypesEnum?)ShipTypesEnum.SHIP_LIGHT_HAULER);
         }
 
-        if (shipsInSystem.Count(sin => sin.Key == ShipRegistrationRolesEnum.EXCAVATOR.ToString())
-            == shipsInSystem.Count(sin => sin.Key == ShipRegistrationRolesEnum.HAULER.ToString())
-            && shipsInSystem.Count(sin => sin.Key == ShipRegistrationRolesEnum.EXCAVATOR.ToString()) < 5)
+        if ((shipsInSystem.SingleOrDefault(sin => sin.Key == ShipRegistrationRolesEnum.EXCAVATOR.ToString())?.Count() ?? 0)
+            == (shipsInSystem.SingleOrDefault(sin => sin.Key == ShipRegistrationRolesEnum.HAULER.ToString())?.Count() ?? 0)
+            && (shipsInSystem.SingleOrDefault(sin => sin.Key == ShipRegistrationRolesEnum.EXCAVATOR.ToString())?.Count() ?? 0) < 5)
         {
             return Task.FromResult((ShipTypesEnum?)ShipTypesEnum.SHIP_MINING_DRONE);
         }
 
-        if (shipsInSystem.Count(sin => sin.Key == ShipRegistrationRolesEnum.SURVEYOR.ToString()) == 0)
+        if ((shipsInSystem.SingleOrDefault(sin => sin.Key == ShipRegistrationRolesEnum.SURVEYOR.ToString())?.Count() ?? 0) == 0)
         {
             return Task.FromResult((ShipTypesEnum?)ShipTypesEnum.SHIP_SURVEYOR);
         }

@@ -43,13 +43,21 @@ public class PurchaseShipCommand : IShipCommandsService
                 continue;
             }
 
-            var nav = await _shipCommandsHelperService.DockForFuel(ship, currentWaypoint);
+            var nav = await _shipCommandsHelperService.DockForShipyard(ship, currentWaypoint);
             if (nav is not null)
             {
                 ship = ship with { Nav = nav };
                 currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol, refresh: true);
 
                 continue;
+            }
+
+            var executed = await _shipCommandsHelperService.PurchaseShip(ship, currentWaypoint);
+            if (executed)
+            {
+                ship = ship with { ShipCommand = null };
+                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, ship.ShipCommand?.ShipCommandEnum, ship.Cargo, $"NavigateToShipyardWaypoint {ship.Nav.WaypointSymbol}", DateTime.UtcNow));
+                return ship;
             }
 
             nav = await _shipCommandsHelperService.Orbit(ship, currentWaypoint);

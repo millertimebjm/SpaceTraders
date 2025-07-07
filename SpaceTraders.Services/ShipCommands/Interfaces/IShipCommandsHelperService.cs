@@ -7,6 +7,7 @@ public interface IShipCommandsHelperService
     Task<Fuel?> Refuel(Ship ship, Waypoint currentWaypoint);
     Task<Nav?> Orbit(Ship ship, Waypoint currentWaypoint);
     Task<Nav?> DockForFuel(Ship ship, Waypoint currentWaypoint);
+    Task<Nav?> DockForShipyard(Ship ship, Waypoint currentWaypoint);
     Task<Nav?> DockForMiningToSellAnywhere(Ship ship, Waypoint currentWaypoint);
     Task<Nav?> DockForBuyAndSell(Ship ship, Waypoint currentWaypoint);
     Task<Nav?> DockForSupplyConstruction(Ship ship, Waypoint currentWaypoint, Waypoint constructionWaypoint);
@@ -28,4 +29,5 @@ public interface IShipCommandsHelperService
 
     Task<Cooldown> Survey(Ship ship);
     Task<(Nav? nav, Fuel? fuel)> NavigateToShipyard(Ship ship, Waypoint currentWaypoint);
+    Task<bool> PurchaseShip(Ship ship, Waypoint currentWaypoint);
 }

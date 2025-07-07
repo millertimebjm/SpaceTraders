@@ -44,7 +44,7 @@ public class BuyAndSellCommand : IShipCommandsService
         while (true)
         {
             if (ShipsService.GetShipCooldown(ship) is not null) return ship;
-            var system = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(currentWaypoint.Symbol));
+            var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
             var inventorySymbols = ship.Cargo.Inventory.Select(i => i.Symbol).ToHashSet();
 
             var paths = PathsService.BuildDijkstraPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
@@ -53,7 +53,7 @@ public class BuyAndSellCommand : IShipCommandsService
                 .Where(w => w.Marketplace is not null
                     && w.Marketplace.Imports.Count(i => inventorySymbols.Contains(i.Symbol)) > 0)
                 .OrderByDescending(w =>
-                    w.Marketplace.Imports.Count(i => inventorySymbols.Contains(i.Symbol)))
+                    w.Marketplace?.Imports.Count(i => inventorySymbols.Contains(i.Symbol)))
                 .FirstOrDefault();
 
             await Task.Delay(2000);
