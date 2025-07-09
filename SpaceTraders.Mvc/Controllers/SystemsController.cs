@@ -136,7 +136,7 @@ public class SystemsController : BaseController
             }
 
             // Wait one second for 429-Rate Limit issues
-            await Task.Delay(1000);
+            await Task.Delay(2000);
             index++;
         }
         system = system with { Waypoints = waypointsHydrated };

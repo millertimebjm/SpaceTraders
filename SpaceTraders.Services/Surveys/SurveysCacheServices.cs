@@ -37,7 +37,7 @@ public class SurveysCacheService : ISurveysCacheService
                 Builders<Survey>.Filter.Eq(s => s.Symbol, waypointSymbol),
                 Builders<Survey>.Filter.Gt(s => s.Expiration, DateTime.UtcNow)
             );
-            
+
         var projection = Builders<Survey>.Projection.Exclude("_id");
         var surveys = await collection
             .Find(filter)
@@ -56,5 +56,15 @@ public class SurveysCacheService : ISurveysCacheService
         var projection = Builders<Survey>.Projection.Exclude("_id");
         await collection.DeleteOneAsync(filter, CancellationToken.None);
         await collection.InsertOneAsync(survey, new InsertOneOptions() { }, CancellationToken.None);
+    }
+
+    public async Task DeleteAsync(string signature)
+    {
+        var collection = _collectionFactory.GetCollection<Survey>();
+
+        var filter = Builders<Survey>
+            .Filter
+            .Eq(s => s.Signature, signature);
+        await collection.DeleteOneAsync(filter, CancellationToken.None);
     }
 }

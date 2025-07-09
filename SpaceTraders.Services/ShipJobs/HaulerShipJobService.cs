@@ -18,7 +18,6 @@ public class HaulerShipJobService : IShipJobService
     {
         var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
         var unfinishedJumpGateWaypoint = system.Waypoints.SingleOrDefault(w => w.JumpGate is not null && w.IsUnderConstruction);
-
         if (unfinishedJumpGateWaypoint is not null 
             && !ships.Where(s => s.Symbol != ship.Symbol).Any(s => s.ShipCommand?.ShipCommandEnum == Models.Enums.ShipCommandEnum.SupplyConstruction))
         {

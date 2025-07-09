@@ -2,7 +2,7 @@
 @using SpaceTraders.Mvc.Services
 @model IEnumerable<STContract>
 @{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Contracts";
 }
 
 @foreach (var contract in Model.OrderByDescending(c => c.DeadlineToAccept))

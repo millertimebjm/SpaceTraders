@@ -156,7 +156,7 @@ public class Program
                     minimumDate = MinimumDate(minimumDate, DateTime.UtcNow.Add(shipUpdateDelay.Value));
                 }
 
-                await Task.Delay(1000);
+                await Task.Delay(2000);
             }
 
                 if (minimumDate is not null && minimumDate > DateTime.UtcNow)

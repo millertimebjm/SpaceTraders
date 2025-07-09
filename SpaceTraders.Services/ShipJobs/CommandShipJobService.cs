@@ -1,7 +1,6 @@
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
-using SpaceTraders.Services.ShipCommands;
 using SpaceTraders.Services.Ships.Interfaces;
 
 namespace SpaceTraders.Services.ShipJobs.Interfaces;
@@ -26,9 +25,9 @@ public class CommandShipJobService : IShipJobService
         //     var shipTypesInSystem = ships
         //         .Where(s => s.Nav.SystemSymbol == ship.Nav.SystemSymbol)
         //         .GroupBy(s => s.Registration.Role);
-        //     if (shipTypesInSystem.Count(st => st.Key == ShipTypesEnum.SHIP_MINING_DRONE.ToString()) < 5
-        //         || shipTypesInSystem.Count(st => st.Key == ShipTypesEnum.SHIP_LIGHT_HAULER.ToString()) < 5
-        //         || shipTypesInSystem.Count(st => st.Key == ShipTypesEnum.SHIP_SURVEYOR.ToString()) == 0)
+        //     if (shipTypesInSystem.SingleOrDefault(st => st.Key == ShipTypesEnum.SHIP_MINING_DRONE.ToString())?.Count() < 5
+        //         || shipTypesInSystem.SingleOrDefault(st => st.Key == ShipTypesEnum.SHIP_LIGHT_HAULER.ToString())?.Count() < 5
+        //         || shipTypesInSystem.SingleOrDefault(st => st.Key == ShipTypesEnum.SHIP_SURVEYOR.ToString())?.Count() == 0)
         //     {
         //         return new ShipCommand(ship.Symbol, ShipCommandEnum.PurchaseShip);    
         //     }

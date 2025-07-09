@@ -77,7 +77,6 @@ public class BuyAndSellCommand : IShipCommandsService
             if (cargo is not null)
             {
                 ship = ship with { Cargo = cargo };
-                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, ship.ShipCommand?.ShipCommandEnum, ship.Cargo, $"Resetting Job.", DateTime.UtcNow));
                 if (cargo.Units == 0 && ship.Registration.Role == ShipRegistrationRolesEnum.COMMAND.ToString())
                 {
                     ship = ship with { ShipCommand = null };
@@ -101,19 +100,11 @@ public class BuyAndSellCommand : IShipCommandsService
                 continue;
             }
 
-            // (nav, fuel) = await _shipCommandsHelperService.NavigateToStartWaypoint(ship, currentWaypoint, initialMarketWaypoint);
-            // if (nav is not null && fuel is not null)
-            // {
-            //     ship = ship with { Nav = nav, Fuel = fuel };
-            //     await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, _shipCommandEnum, ship.Cargo, $"NavigateToStartWaypoint {initialMarketWaypoint.Symbol}", DateTime.UtcNow));
-            //     return ship;
-            // }
-
-            (nav, fuel) = await _shipCommandsHelperService.NavigateToMarketplaceImport(ship, currentWaypoint, sellingWaypoint);
+            (nav, fuel) = await _shipCommandsHelperService.NavigateToMarketplaceImport(ship, currentWaypoint);
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel };
-                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, _shipCommandEnum, ship.Cargo, $"NavigateToMarketplaceImport {sellingWaypoint.Symbol}", DateTime.UtcNow));
+                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, _shipCommandEnum, ship.Cargo, $"NavigateToMarketplaceImport {ship.Nav.Route.Destination.Symbol}", DateTime.UtcNow));
                 return ship;
             }
 

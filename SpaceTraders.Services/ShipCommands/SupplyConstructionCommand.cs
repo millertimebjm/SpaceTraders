@@ -1,5 +1,6 @@
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
+using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Paths;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.ShipJobs.Interfaces;
@@ -14,26 +15,29 @@ namespace SpaceTraders.Services.ShipCommands;
 public class SupplyConstructionCommand : IShipCommandsService
 {
     private readonly IShipCommandsHelperService _shipCommandsHelperService;
-    private readonly IShipsService _shipsService;
     private readonly IWaypointsService _waypointsService;
     private readonly ISystemsService _systemsService;
     private readonly IShipStatusesCacheService _shipStatusesCacheService;
     private readonly IShipJobsFactory _shipJobsFactory;
+    private readonly IAgentsService _agentsService;
+    private readonly IWaypointsCacheService _waypointsCacheService;
     private readonly ShipCommandEnum _shipCommandEnum = ShipCommandEnum.SupplyConstruction;
     public SupplyConstructionCommand(
         IShipCommandsHelperService shipCommandsHelperService,
-        IShipsService shipsService,
         IWaypointsService waypointsService,
         ISystemsService systemsService,
         IShipStatusesCacheService shipStatusesCacheService,
-        IShipJobsFactory shipJobsFactory)
+        IShipJobsFactory shipJobsFactory,
+        IAgentsService agentsService,
+        IWaypointsCacheService waypointsCacheService)
     {
         _shipCommandsHelperService = shipCommandsHelperService;
-        _shipsService = shipsService;
         _waypointsService = waypointsService;
         _systemsService = systemsService;
         _shipStatusesCacheService = shipStatusesCacheService;
         _shipJobsFactory = shipJobsFactory;
+        _agentsService = agentsService;
+        _waypointsCacheService = waypointsCacheService;
     }
 
     public async Task<Ship> Run(
@@ -41,7 +45,7 @@ public class SupplyConstructionCommand : IShipCommandsService
         Dictionary<string, Ship> shipsDictionary)
     {
         var currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol);
-        var system = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(ship.Nav.WaypointSymbol));
+        var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
         var constructionWaypoint = system.Waypoints.FirstOrDefault(w => w.JumpGate is not null && w.IsUnderConstruction);
         while (true)
         {
@@ -76,16 +80,16 @@ public class SupplyConstructionCommand : IShipCommandsService
             if (supplyResult is not null)
             {
                 ship = ship with { Cargo = supplyResult.Cargo };
-                if (supplyResult.Cargo.Units == 0)
+                currentWaypoint = currentWaypoint with { Construction = supplyResult.Construction };
+                await _waypointsCacheService.SetAsync(currentWaypoint);
+
+                if (!currentWaypoint.IsUnderConstruction)
                 {
-                    currentWaypoint = await _waypointsService.GetAsync(currentWaypoint.Symbol, refresh: true);
-                    if (!currentWaypoint.IsUnderConstruction)
-                    {
-                        ship = ship with { ShipCommand = null };
-                        await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, ship.ShipCommand?.ShipCommandEnum, ship.Cargo, $"Resetting Job.", DateTime.UtcNow));
-                        return ship;
-                    }
+                    ship = ship with { ShipCommand = null };
+                    await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, ship.ShipCommand?.ShipCommandEnum, ship.Cargo, $"Resetting Job.", DateTime.UtcNow));
+                    return ship;
                 }
+            
                 continue;
             }
 

@@ -1,9 +1,7 @@
 ﻿using System.Net.Http.Headers;
 using System.Net.Http.Json;
-using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using Microsoft.VisualBasic;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.HttpHelpers;
@@ -39,7 +37,8 @@ public class ShipsService : IShipsService
     {
         var url = new UriBuilder(_apiUrl)
         {
-            Path = DIRECTORY_PATH
+            Path = DIRECTORY_PATH,
+            Query = "limit=10", // limit=20
         };
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);
