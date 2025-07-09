@@ -119,7 +119,7 @@ public class SupplyConstructionCommand : IShipCommandsService
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel };
-                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, _shipCommandEnum, ship.Cargo, $"NavigateToMarketplaceExport", DateTime.UtcNow));
+                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, _shipCommandEnum, ship.Cargo, $"NavigateToMarketplaceExport {nav.Route.Destination.Symbol}", DateTime.UtcNow));
                 return ship;
             }
 

@@ -38,7 +38,7 @@ public class ShipsService : IShipsService
         var url = new UriBuilder(_apiUrl)
         {
             Path = DIRECTORY_PATH,
-            Query = "limit=10", // limit=20
+            Query = "limit=12", // limit=20
         };
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);
