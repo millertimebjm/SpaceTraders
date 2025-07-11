@@ -83,9 +83,10 @@ public class SupplyConstructionCommand : IShipCommandsService
                 currentWaypoint = currentWaypoint with { Construction = supplyResult.Construction };
                 await _waypointsCacheService.SetAsync(currentWaypoint);
 
-                if (!currentWaypoint.IsUnderConstruction)
+                if (currentWaypoint.Construction.Materials.All(m => m.Fulfilled == m.Required))
                 {
                     ship = ship with { ShipCommand = null };
+                    currentWaypoint = await _waypointsService.GetAsync(currentWaypoint.Symbol, refresh: true);
                     await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, ship.ShipCommand?.ShipCommandEnum, ship.Cargo, $"Resetting Job.", DateTime.UtcNow));
                     return ship;
                 }

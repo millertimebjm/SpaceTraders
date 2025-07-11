@@ -138,4 +138,17 @@ public class ShipsController : BaseController
             shipSymbol
         });
     }
+
+    [Route("/ships/{shipSymbol}/jumps/{jumpGate}")]
+    public async Task<IActionResult> Jump(string shipSymbol, string jumpGate)
+    {
+        var ship = await _shipsService.GetAsync(shipSymbol);
+        await _shipsService.JumpAsync(jumpGate, shipSymbol);
+        return RedirectToRoute(new
+        {
+            controller = "Ships",
+            action = "Ship",
+            shipSymbol
+        });
+    }
 }

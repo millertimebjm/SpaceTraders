@@ -78,7 +78,21 @@
     @if (waypoint.Type == WaypointTypesEnum.JUMP_GATE.ToString()
         && waypoint.JumpGate is not null)
     {
-        <li><b>Jump Gate:</b> @string.Join(", ", waypoint.JumpGate.Connections)</li>
+        <text>
+            <li><b>Jump Gate:</b>&nbsp;
+                @foreach (var jumpSystem in waypoint.JumpGate.Connections)
+                {
+                    if (currentShip is not null)
+                    {
+                        <text><a href="/ships/@currentShip.Symbol/jumps/@jumpSystem">@jumpSystem</a>&nbsp;</text>
+                    }
+                    else
+                    {
+                        @jumpSystem<text>&nbsp;</text>
+                    }
+                }
+            </li>
+        </text>
     }
     @if (waypoint.IsUnderConstruction
         && waypoint.Construction is not null)
