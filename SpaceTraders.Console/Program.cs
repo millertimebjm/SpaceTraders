@@ -52,7 +52,7 @@ public class Program
             services.AddScoped<IMarketplacesService, MarketplacesService>();
             services.AddScoped<IWaypointsApiService, WaypointsApiService>();
             services.AddScoped<IWaypointsCacheService, WaypointsCacheService>();
-            services.AddScoped<IMongoCollectionFactory, MongoCollectionFactory>();
+            services.AddSingleton<IMongoCollectionFactory, MongoCollectionFactory>();
             services.AddScoped<ISystemsApiService, SystemsApiService>();
             services.AddScoped<ISystemsCacheService, SystemsCacheService>();
             services.AddScoped<IJumpGatesServices, JumpGatesServices>();
@@ -90,6 +90,7 @@ public class Program
         var shipCommandsServiceFactory = serviceBuilder.Services.GetRequiredService<IShipCommandsServiceFactory>();
         var shipStatusesCacheService = serviceBuilder.Services.GetRequiredService<IShipStatusesCacheService>();
         var shipJobsFactory = serviceBuilder.Services.GetRequiredService<IShipJobsFactory>();
+        var agentsService = serviceBuilder.Services.GetRequiredService<IAgentsService>();
 
         Log.Logger = new LoggerConfiguration()
             .Enrich.FromLogContext()
@@ -109,6 +110,7 @@ public class Program
         });
 
         await shipStatusesCacheService.DeleteAsync();
+        await agentsService.GetAsync(refresh: true);
 
         // set ship jobs
         // recheck and reset ship job at the end of each job (usually after selling)

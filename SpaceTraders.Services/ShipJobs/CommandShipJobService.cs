@@ -19,19 +19,19 @@ public class CommandShipJobService : IShipJobService
         IEnumerable<Ship> ships,
         Ship ship)
     {
-        // var agent = await _agentsService.GetAsync();
-        // if (agent.Credits > 900000)
-        // {
-        //     var shipTypesInSystem = ships
-        //         .Where(s => s.Nav.SystemSymbol == ship.Nav.SystemSymbol)
-        //         .GroupBy(s => s.Registration.Role);
-        //     if (shipTypesInSystem.SingleOrDefault(st => st.Key == ShipTypesEnum.SHIP_MINING_DRONE.ToString())?.Count() < 5
-        //         || shipTypesInSystem.SingleOrDefault(st => st.Key == ShipTypesEnum.SHIP_LIGHT_HAULER.ToString())?.Count() < 5
-        //         || shipTypesInSystem.SingleOrDefault(st => st.Key == ShipTypesEnum.SHIP_SURVEYOR.ToString())?.Count() == 0)
-        //     {
-        //         return new ShipCommand(ship.Symbol, ShipCommandEnum.PurchaseShip);    
-        //     }
-        // }
+        var agent = await _agentsService.GetAsync();
+        if (agent.Credits > 500_000)
+        {
+            var shipTypesInSystem = ships
+                .Where(s => s.Nav.SystemSymbol == ship.Nav.SystemSymbol)
+                .GroupBy(s => s.Registration.Role);
+            if ((shipTypesInSystem.SingleOrDefault(st => st.Key == ShipTypesEnum.SHIP_MINING_DRONE.ToString())?.Count() ?? 0) < 5
+                || (shipTypesInSystem.SingleOrDefault(st => st.Key == ShipTypesEnum.SHIP_LIGHT_HAULER.ToString())?.Count() ?? 0) < 5
+                || (shipTypesInSystem.SingleOrDefault(st => st.Key == ShipTypesEnum.SHIP_SURVEYOR.ToString())?.Count() ?? 0) == 0)
+            {
+                return new ShipCommand(ship.Symbol, ShipCommandEnum.PurchaseShip);
+            }
+        }
         return new ShipCommand(ship.Symbol, ShipCommandEnum.BuyToSell);
     }
 }

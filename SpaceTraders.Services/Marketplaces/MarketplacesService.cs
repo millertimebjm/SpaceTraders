@@ -108,7 +108,7 @@ public class MarketplacesService : IMarketplacesService
         return data.Datum.Cargo;
     }
 
-    public async Task<Cargo> PurchaseAsync(
+    public async Task<PurchaseCargoResult> PurchaseAsync(
         string shipSymbol,
         string inventory,
         int units)
@@ -120,12 +120,12 @@ public class MarketplacesService : IMarketplacesService
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);
         var content = JsonContent.Create(new { symbol = inventory, units });
-        var data = await HttpHelperService.HttpPostHelper<DataSingle<Ship>>(
+        var data = await HttpHelperService.HttpPostHelper<DataSingle<PurchaseCargoResult>>(
             url.ToString(),
             _httpClient,
             content,
             _logger);
-        if (data.Datum is null) throw new HttpRequestException("Ship not retrieved");
-        return data.Datum.Cargo;
+        if (data.Datum is null) throw new HttpRequestException("Result not retrieved");
+        return data.Datum;
     }
 }

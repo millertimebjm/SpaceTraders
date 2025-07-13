@@ -1,5 +1,6 @@
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
+using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Systems.Interfaces;
@@ -13,14 +14,17 @@ public class PurchaseShipCommand : IShipCommandsService
     private readonly IWaypointsService _waypointsService;
     private readonly IShipStatusesCacheService _shipStatusesCacheService;
     private readonly ShipCommandEnum _shipCommandEnum = ShipCommandEnum.PurchaseShip;
+    private readonly IAgentsService _agentsService;
     public PurchaseShipCommand(
         IShipCommandsHelperService shipCommandsHelperService,
         IWaypointsService waypointsService,
-        IShipStatusesCacheService shipStatusesCacheService)
+        IShipStatusesCacheService shipStatusesCacheService,
+        IAgentsService agentsService)
     {
         _shipCommandsHelperService = shipCommandsHelperService;
         _waypointsService = waypointsService;
         _shipStatusesCacheService = shipStatusesCacheService;
+        _agentsService = agentsService;
     }
 
     public async Task<Ship> Run(
@@ -52,11 +56,13 @@ public class PurchaseShipCommand : IShipCommandsService
                 continue;
             }
 
-            var executed = await _shipCommandsHelperService.PurchaseShip(ship, currentWaypoint);
-            if (executed)
+            var purchaseShipResponse = await _shipCommandsHelperService.PurchaseShip(ship, currentWaypoint);
+            if (purchaseShipResponse is not null)
             {
                 ship = ship with { ShipCommand = null };
                 await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, ship.ShipCommand?.ShipCommandEnum, ship.Cargo, $"NavigateToShipyardWaypoint {ship.Nav.WaypointSymbol}", DateTime.UtcNow));
+                await _shipStatusesCacheService.SetAsync(new ShipStatus(purchaseShipResponse.Ship, null, purchaseShipResponse.Ship.Cargo, $"Newly purchase ship.", DateTime.UtcNow));
+                await _agentsService.SetAsync(purchaseShipResponse.Agent);
                 return ship;
             }
 

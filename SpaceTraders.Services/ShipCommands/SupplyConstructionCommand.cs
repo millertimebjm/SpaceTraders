@@ -94,10 +94,11 @@ public class SupplyConstructionCommand : IShipCommandsService
                 continue;
             }
 
-            var cargo = await _shipCommandsHelperService.BuyForConstruction(ship, currentWaypoint, constructionWaypoint);
-            if (cargo is not null)
+            var purchaseCargoResult = await _shipCommandsHelperService.BuyForConstruction(ship, currentWaypoint, constructionWaypoint);
+            if (purchaseCargoResult is not null)
             {
-                ship = ship with { Cargo = cargo };
+                ship = ship with { Cargo = purchaseCargoResult.Cargo };
+                await _agentsService.SetAsync(purchaseCargoResult.Agent);
                 continue;
             }
 

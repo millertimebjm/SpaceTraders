@@ -1,5 +1,7 @@
+using Microsoft.VisualBasic;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
+using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Paths;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.ShipJobs.Interfaces;
@@ -17,6 +19,7 @@ public class BuyAndSellCommand : IShipCommandsService
     private readonly IShipsService _shipsService;
     private readonly IWaypointsService _waypointsService;
     private readonly ISystemsService _systemsService;
+    private readonly IAgentsService _agentsService;
     private readonly IShipStatusesCacheService _shipStatusesCacheService;
     private readonly IShipJobsFactory _shipJobsFactory;
     private readonly ShipCommandEnum _shipCommandEnum = ShipCommandEnum.BuyToSell;
@@ -26,7 +29,8 @@ public class BuyAndSellCommand : IShipCommandsService
         IWaypointsService waypointsService,
         ISystemsService systemsService,
         IShipStatusesCacheService shipStatusesCacheService,
-        IShipJobsFactory shipJobsFactory)
+        IShipJobsFactory shipJobsFactory,
+        IAgentsService agentsService)
     {
         _shipCommandsHelperService = shipCommandsHelperService;
         _shipsService = shipsService;
@@ -34,6 +38,7 @@ public class BuyAndSellCommand : IShipCommandsService
         _systemsService = systemsService;
         _shipStatusesCacheService = shipStatusesCacheService;
         _shipJobsFactory = shipJobsFactory;
+        _agentsService = agentsService;
     }
 
     public async Task<Ship> Run(
@@ -86,10 +91,11 @@ public class BuyAndSellCommand : IShipCommandsService
                 continue;
             }
 
-            cargo = await _shipCommandsHelperService.Buy(ship, currentWaypoint);
-            if (cargo is not null)
+            var purchaseCargoResult = await _shipCommandsHelperService.PurchaseCargo(ship, currentWaypoint);
+            if (purchaseCargoResult is not null)
             {
-                ship = ship with { Cargo = cargo };
+                ship = ship with { Cargo = purchaseCargoResult.Cargo };
+                await _agentsService.SetAsync(purchaseCargoResult.Agent);
                 continue;
             }
 
@@ -108,11 +114,16 @@ public class BuyAndSellCommand : IShipCommandsService
                 return ship;
             }
 
-            (nav, fuel) = await _shipCommandsHelperService.NavigateToMarketplaceRandomExport(ship, currentWaypoint);
-            if (nav is not null && fuel is not null)
+            (nav, fuel, var noWork) = await _shipCommandsHelperService.NavigateToMarketplaceRandomExport(ship, currentWaypoint);
+            if (noWork)
+            {
+                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, _shipCommandEnum, ship.Cargo, $"No Valid Exports found", DateTime.UtcNow));
+                return ship;
+            }
+            else if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel };
-                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, _shipCommandEnum, ship.Cargo, $"NavigateToMarketplaceImport {nav.Route.Destination.Symbol}", DateTime.UtcNow));
+                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, _shipCommandEnum, ship.Cargo, $"NavigateToMarketplaceRandomExport {nav.Route.Destination.Symbol}", DateTime.UtcNow));
                 return ship;
             }
 

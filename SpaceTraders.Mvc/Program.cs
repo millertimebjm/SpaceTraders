@@ -45,7 +45,7 @@ builder.Services.AddScoped<IWaypointsService, WaypointsService>();
 builder.Services.AddScoped<IMarketplacesService, MarketplacesService>();
 builder.Services.AddScoped<IWaypointsApiService, WaypointsApiService>();
 builder.Services.AddScoped<IWaypointsCacheService, WaypointsCacheService>();
-builder.Services.AddScoped<IMongoCollectionFactory, MongoCollectionFactory>();
+builder.Services.AddSingleton<IMongoCollectionFactory, MongoCollectionFactory>();
 builder.Services.AddScoped<ISystemsApiService, SystemsApiService>();
 builder.Services.AddScoped<ISystemsCacheService, SystemsCacheService>();
 builder.Services.AddScoped<IJumpGatesServices, JumpGatesServices>();

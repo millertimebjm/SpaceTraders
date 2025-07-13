@@ -46,7 +46,7 @@ public class ShipyardsService : IShipyardsService
         return data.Datum;
     }
 
-    public async Task<Ship> BuyAsync(string waypointSymbol, string shipType)
+    public async Task<PurchaseShipResponse> PurchaseShipAsync(string waypointSymbol, string shipType)
     {
         var url = new UriBuilder(_apiUrl)
         {
@@ -55,7 +55,7 @@ public class ShipyardsService : IShipyardsService
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);
         var content = JsonContent.Create(new { shipType, waypointSymbol });
-        var data = await HttpHelperService.HttpPostHelper<DataSingle<Ship>>(
+        var data = await HttpHelperService.HttpPostHelper<DataSingle<PurchaseShipResponse>>(
             url.ToString(),
             _httpClient,
             content,

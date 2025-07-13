@@ -7,19 +7,42 @@ namespace SpaceTraders.Services;
 
 public class MongoCollectionFactory : IMongoCollectionFactory
 {
-    public readonly string _mongoConnectionString;
-    public readonly string _mongoDatabase;
+    private IMongoClient? _mongoClient;
+    private IMongoClient MongoClient
+    {
+        get
+        {
+            if (_mongoClient is null)
+            {
+                _mongoClient = new MongoClient(_mongoConnectionString);
+            }
+            return _mongoClient;
+        }
+    }
+    private IMongoDatabase? _mongoDatabase = null;
+    private IMongoDatabase MongoDatabase
+    {
+        get
+        {
+            if (_mongoDatabase is null)
+            {
+                _mongoDatabase = MongoClient.GetDatabase(_mongoDatabaseString);
+
+            }
+            return _mongoDatabase;
+        }
+    }
+    private readonly string _mongoConnectionString;
+    private readonly string _mongoDatabaseString;
 
     public MongoCollectionFactory(IConfiguration configuration)
     {
         _mongoConnectionString = configuration[ConfigurationEnums.CacheConnectionString.ToString()] ?? "";
-        _mongoDatabase = configuration[ConfigurationEnums.CacheDatabaseName.ToString()] ?? "";
+        _mongoDatabaseString = configuration[ConfigurationEnums.CacheDatabaseName.ToString()] ?? "";
     }
 
     public IMongoCollection<T> GetCollection<T>()
     {
-        var client = new MongoClient(_mongoConnectionString);
-        var database = client.GetDatabase(_mongoDatabase);
-        return database.GetCollection<T>(typeof(T).Name);
+        return MongoDatabase.GetCollection<T>(typeof(T).Name);
     }
 }
