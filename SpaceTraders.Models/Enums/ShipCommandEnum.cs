@@ -13,4 +13,6 @@ public enum ShipCommandEnum
     PurchaseShip,
     // BuyToConstruction,
     // BuyToStorage,
+
+    Exploration,
 }
