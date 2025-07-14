@@ -20,7 +20,7 @@ public class CommandShipJobService : IShipJobService
         Ship ship)
     {
         var agent = await _agentsService.GetAsync();
-        if (agent.Credits > 500_000)
+        if (agent.Credits > 800_000)
         {
             var shipTypesInSystem = ships
                 .Where(s => s.Nav.SystemSymbol == ship.Nav.SystemSymbol)

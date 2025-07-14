@@ -127,14 +127,14 @@ public class Program
         }
 
         while (true)
-            {
-                DateTime? minimumDate = null;
-
-            var shipsDictionaryOrdered = shipsDictionary.OrderBy(sd => (ShipRegistrationRolesEnum)Enum.Parse(typeof(ShipRegistrationRolesEnum), sd.Value.Registration.Role)).ToList();
+        {
+            DateTime? minimumDate = null;
+            shipsDictionary = (await shipStatusesCacheService.GetAsync()).ToDictionary(s => s.Ship.Symbol, s => s.Ship);
+            var shipsDictionaryOrdered = shipsDictionary.OrderBy(sd => Enum.Parse<ShipRegistrationRolesEnum>(sd.Value.Registration.Role)).ToList();
             foreach (var shipItem in shipsDictionaryOrdered)
             {
                 var ship = shipItem.Value;
-                var shipJobsService = shipJobsFactory.Get((ShipRegistrationRolesEnum)Enum.Parse(typeof(ShipRegistrationRolesEnum), ship.Registration.Role));
+                var shipJobsService = shipJobsFactory.Get(Enum.Parse<ShipRegistrationRolesEnum>(ship.Registration.Role));
                 if (shipJobsService is null)
                 {
                     await shipStatusesCacheService.SetAsync(new ShipStatus(ship, null, ship.Cargo, "No instructions set.", DateTime.UtcNow));
@@ -161,12 +161,12 @@ public class Program
                 await Task.Delay(2000);
             }
 
-                if (minimumDate is not null && minimumDate > DateTime.UtcNow)
-                {
-                    TimeSpan minimumTimeSpan = minimumDate.Value - DateTime.UtcNow;
-                    await Task.Delay((int)minimumTimeSpan.TotalMilliseconds);
-                }
+            if (minimumDate is not null && minimumDate > DateTime.UtcNow)
+            {
+                TimeSpan minimumTimeSpan = minimumDate.Value - DateTime.UtcNow;
+                await Task.Delay((int)minimumTimeSpan.TotalMilliseconds);
             }
+        }
     }
 
     public static DateTime? MinimumDate(DateTime? d1, DateTime? d2)

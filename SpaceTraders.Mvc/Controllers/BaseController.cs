@@ -15,14 +15,8 @@ public class BaseController : Controller
     {
         ViewBag.CurrentShipSymbol = SessionHelper.Get<string>(HttpContext, SessionEnum.CurrentShipSymbol);
         ViewBag.CurrentWaypointSymbol = SessionHelper.Get<string>(HttpContext, SessionEnum.CurrentWaypointSymbol);
-        var credits = SessionHelper.Get<long?>(HttpContext, SessionEnum.CurrentCredits);
-        if (credits is null)
-        {
-            var agent = await _agentsService.GetAsync();
-            SessionHelper.Set(HttpContext, SessionEnum.CurrentCredits, agent.Credits);
-            credits = agent.Credits;
-        }
-        ViewBag.CurrentCredits = credits;
+        var agent = await _agentsService.GetAsync();
+        ViewBag.CurrentCredits = agent.Credits;
         await base.OnActionExecutionAsync(context, next);
     }
 }

@@ -656,6 +656,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
                     .Max(tg => Enum.Parse<SupplyEnum>(tg.Supply))
             })
             .OrderByDescending(x => x.HighestSupply)
+            .ThenBy(w => w.Waypoint.Symbol)
             .ThenBy(x => paths.Single(p => p.Key.Symbol == x.Waypoint.Symbol).Value.Item1.Count())
             .FirstOrDefault()?.Waypoint;
         return highestSupplyWaypoint;
@@ -681,18 +682,22 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             w.Marketplace is not null
             && w.Marketplace.Exports.Any(e => constructionInventoryNeededSymbols.Contains(e.Symbol))
             && w.Marketplace.TradeGoods is not null);
-        var highestSupplySymbol = inventoryWaypoints
-            .SelectMany(w => w.Marketplace.TradeGoods
-                .Where(tg => constructionInventoryNeededSymbols.Contains(tg.Symbol))
-                .Select(tg => new
-                {
-                    TradeGood = tg,
-                    Supply = Enum.Parse<SupplyEnum>(tg.Supply)
-                })
-            )
-            .OrderByDescending(x => x.Supply)
-            .FirstOrDefault()?.TradeGood;
-        return highestSupplySymbol;
+        var highestSupplyWaypoint = inventoryWaypoints
+            .Select(w => new
+            {
+                Waypoint = w,
+                HighestSupply = w.Marketplace.TradeGoods
+                    .Where(tg => constructionInventoryNeededSymbols.Contains(tg.Symbol))
+                    .Max(tg => Enum.Parse<SupplyEnum>(tg.Supply))
+            })
+            .OrderByDescending(x => x.HighestSupply)
+            .ThenBy(w => w.Waypoint.Symbol)
+            .ThenBy(x => paths.Single(p => p.Key.Symbol == x.Waypoint.Symbol).Value.Item1.Count())
+            .FirstOrDefault();
+
+        return highestSupplyWaypoint.Waypoint.Marketplace.TradeGoods.FirstOrDefault(tg => 
+            constructionInventoryNeededSymbols.Contains(tg.Symbol)
+            && tg.Supply == highestSupplyWaypoint.HighestSupply.ToString());
     }
 
     public async Task<(Nav?, Fuel)> NavigateToMarketplaceExport(Ship ship, Waypoint currentWaypoint, Waypoint constructionWaypoint)

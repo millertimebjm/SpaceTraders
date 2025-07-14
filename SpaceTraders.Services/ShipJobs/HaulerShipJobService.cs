@@ -1,4 +1,5 @@
 using SpaceTraders.Models;
+using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Systems.Interfaces;
 
 namespace SpaceTraders.Services.ShipJobs.Interfaces;
@@ -18,7 +19,8 @@ public class HaulerShipJobService : IShipJobService
     {
         var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
         var unfinishedJumpGateWaypoint = system.Waypoints.SingleOrDefault(w => w.JumpGate is not null && w.IsUnderConstruction);
-        if (unfinishedJumpGateWaypoint is not null 
+        if (unfinishedJumpGateWaypoint is not null
+            && ships.Where(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()).Count() >= 5
             && !ships.Where(s => s.Symbol != ship.Symbol).Any(s => s.ShipCommand?.ShipCommandEnum == Models.Enums.ShipCommandEnum.SupplyConstruction))
         {
             return new ShipCommand(ship.Symbol, Models.Enums.ShipCommandEnum.SupplyConstruction);
