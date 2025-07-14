@@ -80,17 +80,21 @@
     {
         <text>
             <li><b>Jump Gate:</b>&nbsp;
-                @foreach (var jumpSystem in waypoint.JumpGate.Connections)
-                {
-                    if (currentShip is not null)
+                <ul>
+                    @foreach (var jumpSystem in waypoint.JumpGate.Connections)
                     {
-                        <text><a href="/ships/@currentShip.Symbol/jumps/@jumpSystem">@jumpSystem</a>&nbsp;</text>
+                        <li>
+                            @if (currentShip is not null)
+                            {
+                                <text><a href="/systems/@jumpSystem">@jumpSystem</a> <a href="/ships/@currentShip.Symbol/jumps/@jumpSystem">(jump)</a>&nbsp;</text>
+                            }
+                            else
+                            {
+                                <text><a href="/systems/@WaypointsService.ExtractSystemFromWaypoint(jumpSystem)">@WaypointsService.ExtractSystemFromWaypoint(jumpSystem)</a>&nbsp;</text>
+                            }
+                        </li>
                     }
-                    else
-                    {
-                        @jumpSystem<text>&nbsp;</text>
-                    }
-                }
+                </ul>
             </li>
         </text>
     }

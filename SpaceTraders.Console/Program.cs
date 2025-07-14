@@ -91,6 +91,8 @@ public class Program
         var shipStatusesCacheService = serviceBuilder.Services.GetRequiredService<IShipStatusesCacheService>();
         var shipJobsFactory = serviceBuilder.Services.GetRequiredService<IShipJobsFactory>();
         var agentsService = serviceBuilder.Services.GetRequiredService<IAgentsService>();
+        var systemsService = serviceBuilder.Services.GetRequiredService<ISystemsService>();
+        var systemsCacheService = serviceBuilder.Services.GetRequiredService<ISystemsCacheService>();
 
         Log.Logger = new LoggerConfiguration()
             .Enrich.FromLogContext()
@@ -126,47 +128,53 @@ public class Program
             await shipStatusesCacheService.SetAsync(new ShipStatus(ship, ship.ShipCommand?.ShipCommandEnum, ship.Cargo, "No instructions set.", DateTime.UtcNow));
         }
 
-        while (true)
+        var systems = shipsDictionary.Values.Select(s => s.Nav.SystemSymbol);
+        foreach (var system in systems)
         {
-            DateTime? minimumDate = null;
-            shipsDictionary = (await shipStatusesCacheService.GetAsync()).ToDictionary(s => s.Ship.Symbol, s => s.Ship);
-            var shipsDictionaryOrdered = shipsDictionary.OrderBy(sd => Enum.Parse<ShipRegistrationRolesEnum>(sd.Value.Registration.Role)).ToList();
-            foreach (var shipItem in shipsDictionaryOrdered)
-            {
-                var ship = shipItem.Value;
-                var shipJobsService = shipJobsFactory.Get(Enum.Parse<ShipRegistrationRolesEnum>(ship.Registration.Role));
-                if (shipJobsService is null)
-                {
-                    await shipStatusesCacheService.SetAsync(new ShipStatus(ship, null, ship.Cargo, "No instructions set.", DateTime.UtcNow));
-                    continue;
-                }
-                var shipCommand = await shipJobsService.Get(shipsDictionary.Values, ship);
-                ship = ship with { ShipCommand = shipCommand };
-                shipsDictionary[ship.Symbol] = ship;
-                await shipStatusesCacheService.SetAsync(new ShipStatus(ship, shipCommand?.ShipCommandEnum, ship.Cargo, "No instructions set.", DateTime.UtcNow));
-                if (ship.ShipCommand is null) continue;
-
-                var shipCommandService = shipCommandsServiceFactory.Get(ship.ShipCommand.ShipCommandEnum);
-                var shipUpdate = await shipCommandService.Run(
-                    shipsDictionary[ship.Symbol],
-                    shipsDictionary);
-                shipsDictionary[shipUpdate.Symbol] = shipUpdate;
-
-                var shipUpdateDelay = ShipsService.GetShipCooldown(shipUpdate);
-                if (shipUpdateDelay is not null)
-                {
-                    minimumDate = MinimumDate(minimumDate, DateTime.UtcNow.Add(shipUpdateDelay.Value));
-                }
-
-                await Task.Delay(2000);
-            }
-
-            if (minimumDate is not null && minimumDate > DateTime.UtcNow)
-            {
-                TimeSpan minimumTimeSpan = minimumDate.Value - DateTime.UtcNow;
-                await Task.Delay((int)minimumTimeSpan.TotalMilliseconds);
-            }
+            await systemsService.GetAsync(system);
         }
+
+        while (true)
+            {
+                DateTime? minimumDate = null;
+                shipsDictionary = (await shipStatusesCacheService.GetAsync()).ToDictionary(s => s.Ship.Symbol, s => s.Ship);
+                var shipsDictionaryOrdered = shipsDictionary.OrderBy(sd => Enum.Parse<ShipRegistrationRolesEnum>(sd.Value.Registration.Role)).ToList();
+                foreach (var shipItem in shipsDictionaryOrdered)
+                {
+                    var ship = shipItem.Value;
+                    var shipJobsService = shipJobsFactory.Get(Enum.Parse<ShipRegistrationRolesEnum>(ship.Registration.Role));
+                    if (shipJobsService is null)
+                    {
+                        await shipStatusesCacheService.SetAsync(new ShipStatus(ship, null, ship.Cargo, "No instructions set.", DateTime.UtcNow));
+                        continue;
+                    }
+                    var shipCommand = await shipJobsService.Get(shipsDictionary.Values, ship);
+                    ship = ship with { ShipCommand = shipCommand };
+                    shipsDictionary[ship.Symbol] = ship;
+                    await shipStatusesCacheService.SetAsync(new ShipStatus(ship, shipCommand?.ShipCommandEnum, ship.Cargo, "No instructions set.", DateTime.UtcNow));
+                    if (ship.ShipCommand is null) continue;
+
+                    var shipCommandService = shipCommandsServiceFactory.Get(ship.ShipCommand.ShipCommandEnum);
+                    var shipUpdate = await shipCommandService.Run(
+                        shipsDictionary[ship.Symbol],
+                        shipsDictionary);
+                    shipsDictionary[shipUpdate.Symbol] = shipUpdate;
+
+                    var shipUpdateDelay = ShipsService.GetShipCooldown(shipUpdate);
+                    if (shipUpdateDelay is not null)
+                    {
+                        minimumDate = MinimumDate(minimumDate, DateTime.UtcNow.Add(shipUpdateDelay.Value));
+                    }
+
+                    await Task.Delay(2000);
+                }
+
+                if (minimumDate is not null && minimumDate > DateTime.UtcNow)
+                {
+                    TimeSpan minimumTimeSpan = minimumDate.Value - DateTime.UtcNow;
+                    await Task.Delay((int)minimumTimeSpan.TotalMilliseconds);
+                }
+            }
     }
 
     public static DateTime? MinimumDate(DateTime? d1, DateTime? d2)
