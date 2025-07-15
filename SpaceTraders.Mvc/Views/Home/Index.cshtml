@@ -1,6 +1,8 @@
 ﻿@using SpaceTraders.Models
 @using SpaceTraders.Mvc.Services
 @using SpaceTraders.Models.Enums
+@using SpaceTraders.Services
+@using SpaceTraders.Services.Shipyards
 @model IEnumerable<ShipStatus>
 @{
     ViewData["Title"] = "Fleet Status";
@@ -26,7 +28,8 @@
                     <span>@ViewHelperService.HumanReadableTimeSpan(DateTime.UtcNow - shipStatus.DateTimeOfLastInstruction) ago</span>
                     @if (SpaceTraders.Services.Shipyards.ShipsService.GetShipCooldown(shipStatus.Ship).HasValue)
                     {
-                        <span>Available in @ViewHelperService.HumanReadableTimeSpan(SpaceTraders.Services.Shipyards.ShipsService.GetShipCooldown(shipStatus.Ship).Value)</span>
+                        var shipCooldown = ShipsService.GetShipCooldown(shipStatus.Ship);
+                        <span>Available in <span class="countdown" data-countdown="@((DateTime.UtcNow + shipCooldown.Value).ToString("o"))">@ViewHelperService.MinimalHumanReadableTimeSpan(shipCooldown.Value)</span></span>
                     }
                 </div>
             </div>
@@ -50,7 +53,8 @@
                     <span>@ViewHelperService.HumanReadableTimeSpan(DateTime.UtcNow - shipStatus.DateTimeOfLastInstruction) ago</span>
                     @if (SpaceTraders.Services.Shipyards.ShipsService.GetShipCooldown(shipStatus.Ship).HasValue)
                     {
-                        <span>Available in @ViewHelperService.HumanReadableTimeSpan(SpaceTraders.Services.Shipyards.ShipsService.GetShipCooldown(shipStatus.Ship).Value)</span>
+                        var shipCooldown = ShipsService.GetShipCooldown(shipStatus.Ship);
+                        <span>Available in <span class="countdown" data-countdown="@((DateTime.UtcNow + shipCooldown.Value).ToString("o"))">@ViewHelperService.MinimalHumanReadableTimeSpan(shipCooldown.Value)</span></span>
                     }
                 </div>
             </div>
@@ -74,7 +78,8 @@
                     <span>@ViewHelperService.HumanReadableTimeSpan(DateTime.UtcNow - shipStatus.DateTimeOfLastInstruction) ago</span>
                     @if (SpaceTraders.Services.Shipyards.ShipsService.GetShipCooldown(shipStatus.Ship).HasValue)
                     {
-                        <span>Available in @ViewHelperService.HumanReadableTimeSpan(SpaceTraders.Services.Shipyards.ShipsService.GetShipCooldown(shipStatus.Ship).Value)</span>
+                        var shipCooldown = ShipsService.GetShipCooldown(shipStatus.Ship);
+                        <span>Available in <span class="countdown" data-countdown="@((DateTime.UtcNow + shipCooldown.Value).ToString("o"))">@ViewHelperService.MinimalHumanReadableTimeSpan(shipCooldown.Value)</span></span>
                     }
                 </div>
             </div>
@@ -98,7 +103,8 @@
                     <span>@ViewHelperService.HumanReadableTimeSpan(DateTime.UtcNow - shipStatus.DateTimeOfLastInstruction) ago</span>
                     @if (SpaceTraders.Services.Shipyards.ShipsService.GetShipCooldown(shipStatus.Ship).HasValue)
                     {
-                        <span>Available in @ViewHelperService.HumanReadableTimeSpan(SpaceTraders.Services.Shipyards.ShipsService.GetShipCooldown(shipStatus.Ship).Value)</span>
+                        var shipCooldown = ShipsService.GetShipCooldown(shipStatus.Ship);
+                        <span>Available in <span class="countdown" data-countdown="@((DateTime.UtcNow + shipCooldown.Value).ToString("o"))">@ViewHelperService.MinimalHumanReadableTimeSpan(shipCooldown.Value)</span></span>
                     }
                 </div>
             </div>
@@ -122,7 +128,8 @@
                     <span>@ViewHelperService.HumanReadableTimeSpan(DateTime.UtcNow - shipStatus.DateTimeOfLastInstruction) ago</span>
                     @if (SpaceTraders.Services.Shipyards.ShipsService.GetShipCooldown(shipStatus.Ship).HasValue)
                     {
-                        <span>Available in @ViewHelperService.HumanReadableTimeSpan(SpaceTraders.Services.Shipyards.ShipsService.GetShipCooldown(shipStatus.Ship).Value)</span>
+                        var shipCooldown = ShipsService.GetShipCooldown(shipStatus.Ship);
+                        <span>Available in <span class="countdown" data-countdown="@((DateTime.UtcNow + shipCooldown.Value).ToString("o"))">@ViewHelperService.MinimalHumanReadableTimeSpan(shipCooldown.Value)</span></span>
                     }
                 </div>
             </div>
