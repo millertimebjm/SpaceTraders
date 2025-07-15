@@ -151,4 +151,21 @@ public class ShipsController : BaseController
             shipSymbol
         });
     }
+
+    [Route("/ships/{shipSymbol}/sell/{inventorySymbol}")]
+    public async Task<IActionResult> Sell(string shipSymbol, string inventorySymbol)
+    {
+        var ship = await _shipsService.GetAsync(shipSymbol);
+        var currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol);
+        var inventory = currentWaypoint.Marketplace.TradeGoods.Single(tg => tg.Symbol == inventorySymbol);
+        var shipUnits = ship.Cargo.Inventory.Single(i => i.Symbol == inventorySymbol).Units;
+        var sellAmount = Math.Min(inventory.TradeVolume, shipUnits);
+        await _marketplacesService.SellAsync(shipSymbol, inventorySymbol, sellAmount);
+        return RedirectToRoute(new
+        {
+            controller = "Ships",
+            action = "Ship",
+            shipSymbol
+        });
+    }
 }

@@ -4,7 +4,7 @@ namespace SpaceTraders.Services.ShipCommands.Interfaces;
 
 public interface IShipCommandsHelperService
 {
-    Task<Fuel?> Refuel(Ship ship, Waypoint currentWaypoint);
+    Task<RefuelResponse?> Refuel(Ship ship, Waypoint currentWaypoint);
     Task<Nav?> Orbit(Ship ship, Waypoint currentWaypoint);
     Task<Nav?> DockForFuel(Ship ship, Waypoint currentWaypoint);
     Task<Nav?> DockForShipyard(Ship ship, Waypoint currentWaypoint);
@@ -13,7 +13,7 @@ public interface IShipCommandsHelperService
     Task<Nav?> DockForSupplyConstruction(Ship ship, Waypoint currentWaypoint, Waypoint constructionWaypoint);
     Task<(Nav?, Fuel?)> NavigateToEndWaypoint(Ship ship, Waypoint currentWaypoint, Waypoint endWaypoint);
     Task<(Nav?, Fuel?)> NavigateToStartWaypoint(Ship ship, Waypoint currentWaypoint, Waypoint startWaypoint);
-    Task<Cargo?> Sell(Ship ship, Waypoint currentWaypoint);
+    Task<SellCargoResponse?> Sell(Ship ship, Waypoint currentWaypoint);
     Task<PurchaseCargoResult?> PurchaseCargo(Ship ship, Waypoint currentWaypoint);
     Task<SupplyResult?> SupplyConstructionSite(Ship ship, Waypoint currentWaypoint);
     Task<(Cargo?, Cooldown?)> Extract(Ship ship, Waypoint currentWaypoint);
@@ -30,4 +30,5 @@ public interface IShipCommandsHelperService
     Task<Cooldown> Survey(Ship ship);
     Task<(Nav? nav, Fuel? fuel)> NavigateToShipyard(Ship ship, Waypoint currentWaypoint);
     Task<PurchaseShipResponse> PurchaseShip(Ship ship, Waypoint currentWaypoint);
+    Task<(Nav nav, Fuel fuel)> NavigateToExplore(Ship ship, Waypoint currentWaypoint);
 }

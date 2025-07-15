@@ -63,10 +63,11 @@ public class BuyAndSellCommand : IShipCommandsService
 
             await Task.Delay(2000);
 
-            var fuel = await _shipCommandsHelperService.Refuel(ship, currentWaypoint);
-            if (fuel is not null)
+            var refuelResponse = await _shipCommandsHelperService.Refuel(ship, currentWaypoint);
+            if (refuelResponse is not null)
             {
-                ship = ship with { Fuel = fuel };
+                ship = ship with { Fuel = refuelResponse.Fuel };
+                await _agentsService.SetAsync(refuelResponse.Agent);
                 continue;
             }
 
@@ -78,11 +79,18 @@ public class BuyAndSellCommand : IShipCommandsService
                 continue;
             }
 
-            var cargo = await _shipCommandsHelperService.Sell(ship, currentWaypoint);
-            if (cargo is not null)
+            var sellCargoResponse = await _shipCommandsHelperService.Sell(ship, currentWaypoint);
+            if (sellCargoResponse is not null)
             {
-                ship = ship with { Cargo = cargo };
-                if (cargo.Units == 0 && ship.Registration.Role == ShipRegistrationRolesEnum.COMMAND.ToString())
+                ship = ship with { Cargo = sellCargoResponse.Cargo };
+                await _agentsService.SetAsync(sellCargoResponse.Agent);
+                var firstHauler = shipsDictionary
+                    .Where(s => s.Value.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString())
+                    .OrderBy(s => s.Key)
+                    .FirstOrDefault();
+                if (sellCargoResponse.Cargo.Units == 0
+                    && (ship.Registration.Role == ShipRegistrationRolesEnum.COMMAND.ToString()
+                        || ship.Symbol == firstHauler.Key))
                 {
                     ship = ship with { ShipCommand = null };
                     await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, ship.ShipCommand?.ShipCommandEnum, ship.Cargo, $"Resetting Job.", DateTime.UtcNow));
@@ -106,7 +114,7 @@ public class BuyAndSellCommand : IShipCommandsService
                 continue;
             }
 
-            (nav, fuel) = await _shipCommandsHelperService.NavigateToMarketplaceImport(ship, currentWaypoint);
+            (nav, var fuel) = await _shipCommandsHelperService.NavigateToMarketplaceImport(ship, currentWaypoint);
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel };

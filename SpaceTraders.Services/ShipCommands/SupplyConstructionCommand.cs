@@ -61,10 +61,11 @@ public class SupplyConstructionCommand : IShipCommandsService
             //     continue;
             // }
 
-            var fuel = await _shipCommandsHelperService.Refuel(ship, currentWaypoint);
-            if (fuel is not null)
+            var refuelResponse = await _shipCommandsHelperService.Refuel(ship, currentWaypoint);
+            if (refuelResponse is not null)
             {
-                ship = ship with { Fuel = fuel };
+                ship = ship with { Fuel = refuelResponse.Fuel };
+                await _agentsService.SetAsync(refuelResponse.Agent);
                 continue;
             }
 
@@ -83,7 +84,8 @@ public class SupplyConstructionCommand : IShipCommandsService
                 currentWaypoint = currentWaypoint with { Construction = supplyResult.Construction };
                 await _waypointsCacheService.SetAsync(currentWaypoint);
 
-                if (currentWaypoint.Construction.Materials.All(m => m.Fulfilled == m.Required))
+                if (currentWaypoint.Construction.Materials.All(m => m.Fulfilled == m.Required)
+                    || ship.Cargo.Units == 0)
                 {
                     ship = ship with { ShipCommand = null };
                     currentWaypoint = await _waypointsService.GetAsync(currentWaypoint.Symbol, refresh: true);
@@ -109,7 +111,7 @@ public class SupplyConstructionCommand : IShipCommandsService
                 continue;
             }
 
-            (nav, fuel) = await _shipCommandsHelperService.NavigateToConstructionWaypoint(ship, currentWaypoint);
+            (nav, var fuel) = await _shipCommandsHelperService.NavigateToConstructionWaypoint(ship, currentWaypoint);
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel };

@@ -30,7 +30,7 @@
     <ul>
         @foreach (var inventory in ship.Cargo.Inventory)
         {
-            <li>@inventory.Symbol (@inventory.Units/@ship.Cargo.Capacity) <a href="/ships/@ship.Symbol/jettison/@inventory.Symbol">Jettison</a></li>
+            <li>@inventory.Symbol (@inventory.Units/@ship.Cargo.Capacity) <a href="/ships/@ship.Symbol/sell/@inventory.Symbol">Sell</a> <a href="/ships/@ship.Symbol/jettison/@inventory.Symbol">Jettison</a></li>
         }
     </ul>
     <li><b>Fuel:</b> @ship.Fuel.Current (@ship.Fuel.Capacity)</li>

@@ -1,6 +1,8 @@
 using MongoDB.Driver;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
+using SpaceTraders.Services.Agents;
+using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.ShipJobs.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
@@ -17,6 +19,7 @@ public class MiningToSellAnywhereCommand : IShipCommandsService
     private readonly IShipsService _shipsService;
     private readonly IWaypointsService _waypointsService;
     private readonly ISystemsService _systemsService;
+    private readonly IAgentsService _agentsService;
     private readonly IShipStatusesCacheService _shipStatusesCacheService;
     private readonly IShipJobsFactory _shipJobsFactory;
     private readonly ShipCommandEnum _shipCommandEnum = ShipCommandEnum.MiningToSellAnywhere;
@@ -26,7 +29,8 @@ public class MiningToSellAnywhereCommand : IShipCommandsService
         IWaypointsService waypointsService,
         ISystemsService systemsService,
         IShipStatusesCacheService shipStatusesCacheService,
-        IShipJobsFactory shipJobsFactory)
+        IShipJobsFactory shipJobsFactory,
+        IAgentsService agentsService)
     {
         _shipCommandsHelperService = shipCommandsHelperService;
         _shipsService = shipsService;
@@ -34,6 +38,7 @@ public class MiningToSellAnywhereCommand : IShipCommandsService
         _systemsService = systemsService;
         _shipStatusesCacheService = shipStatusesCacheService;
         _shipJobsFactory = shipJobsFactory;
+        _agentsService = agentsService;
     }
 
     public async Task<Ship> Run(
@@ -51,10 +56,11 @@ public class MiningToSellAnywhereCommand : IShipCommandsService
             var executed = await _shipCommandsHelperService.Jettison(ship);
             if (executed) continue;
 
-            var fuel = await _shipCommandsHelperService.Refuel(ship, currentWaypoint);
-            if (fuel is not null)
+            var refuelResponse = await _shipCommandsHelperService.Refuel(ship, currentWaypoint);
+            if (refuelResponse is not null)
             {
-                ship = ship with { Fuel = fuel };
+                ship = ship with { Fuel = refuelResponse.Fuel };
+                await _agentsService.SetAsync(refuelResponse.Agent);
                 continue;
             }
 
@@ -67,11 +73,12 @@ public class MiningToSellAnywhereCommand : IShipCommandsService
                 continue;
             }
 
-            var cargo = await _shipCommandsHelperService.Sell(ship, currentWaypoint);
-            if (cargo is not null)
+            var sellCargoResponse = await _shipCommandsHelperService.Sell(ship, currentWaypoint);
+            if (sellCargoResponse is not null)
             {
-                ship = ship with { Cargo = cargo };
-                if (cargo.Units == 0 && ship.Registration.Role == ShipRegistrationRolesEnum.COMMAND.ToString())
+                ship = ship with { Cargo = sellCargoResponse.Cargo };
+                await _agentsService.SetAsync(sellCargoResponse.Agent);
+                if (sellCargoResponse.Cargo.Units == 0 && ship.Registration.Role == ShipRegistrationRolesEnum.COMMAND.ToString())
                 {
                     ship = ship with { ShipCommand = null };
                     await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, ship.ShipCommand?.ShipCommandEnum, ship.Cargo, $"Resetting Job.", DateTime.UtcNow));
@@ -87,7 +94,7 @@ public class MiningToSellAnywhereCommand : IShipCommandsService
                 continue;
             }
 
-            (nav, fuel) = await _shipCommandsHelperService.NavigateToMiningWaypoint(ship, currentWaypoint);
+            (nav, var fuel) = await _shipCommandsHelperService.NavigateToMiningWaypoint(ship, currentWaypoint);
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel };
@@ -95,7 +102,7 @@ public class MiningToSellAnywhereCommand : IShipCommandsService
                 return ship;
             }
 
-            (cargo, Cooldown? cooldown) = await _shipCommandsHelperService.Extract(ship, currentWaypoint);
+            (var cargo, Cooldown? cooldown) = await _shipCommandsHelperService.Extract(ship, currentWaypoint);
             if (cargo is not null && cooldown is not null)
             {
                 ship = ship with { Cargo = cargo, Cooldown = cooldown };

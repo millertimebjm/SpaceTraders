@@ -40,10 +40,11 @@ public class PurchaseShipCommand : IShipCommandsService
 
             await Task.Delay(2000);
 
-            var fuel = await _shipCommandsHelperService.Refuel(ship, currentWaypoint);
-            if (fuel is not null)
+            var refuelResponse = await _shipCommandsHelperService.Refuel(ship, currentWaypoint);
+            if (refuelResponse is not null)
             {
-                ship = ship with { Fuel = fuel };
+                ship = ship with { Fuel = refuelResponse.Fuel };
+                await _agentsService.SetAsync(refuelResponse.Agent);
                 continue;
             }
 
@@ -73,7 +74,7 @@ public class PurchaseShipCommand : IShipCommandsService
                 continue;
             }
 
-            (nav, fuel) = await _shipCommandsHelperService.NavigateToShipyard(ship, currentWaypoint);
+            (nav, var fuel) = await _shipCommandsHelperService.NavigateToShipyard(ship, currentWaypoint);
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel };
