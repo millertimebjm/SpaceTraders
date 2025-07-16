@@ -12,22 +12,33 @@
     <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
         @foreach (var shipStatus in Model
             .Where(s => s.Ship.Registration.Role != ShipRegistrationRolesEnum.SATELLITE.ToString())
-            .OrderBy(s => s.ShipCommandEnum?.ToString()))
+            .OrderBy(s => s.Ship.ShipCommand?.ShipCommandEnum.ToString()))
         {
             <div class="shadow-lg p-3 bg-white rounded" style="width: 250px; margin: 10px; position: relative;">
                 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 150px;">
-                    <span><b>@shipStatus.ShipCommandEnum.ToString()</b></span>
+                    @if (shipStatus.Ship.ShipCommand is not null)
+                    {
+                        <span><b>@shipStatus.Ship.ShipCommand.ShipCommandEnum.ToString()</b></span>
+                    }
                     <span>@shipStatus.Ship.Symbol (@shipStatus.Ship.Registration.Role)</span>
-                    <span>@shipStatus.ShipCommandEnum</span>
                     
-                    <span data-toggle="tooltip" data-placement="top" title="@(string.Join(" ", shipStatus.Ship.Cargo.Inventory.Select(i => $"{i.Symbol} ({i.Units})")))">Cargo: @shipStatus.Ship.Cargo.Units</span>
+                    @if (shipStatus.Ship.Cargo.Units > 0)
+                    {
+                        <span data-toggle="tooltip" data-placement="top" title="@(string.Join(" ", shipStatus.Ship.Cargo.Inventory.Select(i => $"{i.Symbol} ({i.Units})")))">Cargo: @shipStatus.Ship.Cargo.Units</span>
+                    }
                     
                     <span>@shipStatus.LastMessage</span>
                     <span>@ViewHelperService.HumanReadableTimeSpan(DateTime.UtcNow - shipStatus.DateTimeOfLastInstruction) ago</span>
-                    @if (SpaceTraders.Services.Shipyards.ShipsService.GetShipCooldown(shipStatus.Ship).HasValue)
+                    @{
+                        var cooldown = ShipsService.GetShipCooldown(shipStatus.Ship);
+                    }
+                    @if (cooldown.HasValue)
                     {
-                        var shipCooldown = ShipsService.GetShipCooldown(shipStatus.Ship);
-                        <span>Available in <span class="countdown" data-countdown="@((DateTime.UtcNow + shipCooldown.Value).ToString("o"))">@ViewHelperService.MinimalHumanReadableTimeSpan(shipCooldown.Value)</span></span>
+                        <span>Available in <span class="countdown" data-countdown="@((DateTime.UtcNow + cooldown.Value).ToString("o"))">@ViewHelperService.MinimalHumanReadableTimeSpan(cooldown.Value)</span></span>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(shipStatus.Ship.Error))
+                    {
+                        <span data-toggle="tooltip" data-placement="top" title="@shipStatus.Ship.Error">Error</span>
                     }
                 </div>
             </div>

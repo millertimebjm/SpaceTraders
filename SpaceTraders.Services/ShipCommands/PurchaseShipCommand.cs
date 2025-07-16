@@ -61,8 +61,9 @@ public class PurchaseShipCommand : IShipCommandsService
             if (purchaseShipResponse is not null)
             {
                 ship = ship with { ShipCommand = null };
-                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, ship.ShipCommand?.ShipCommandEnum, ship.Cargo, $"NavigateToShipyardWaypoint {ship.Nav.WaypointSymbol}", DateTime.UtcNow));
-                await _shipStatusesCacheService.SetAsync(new ShipStatus(purchaseShipResponse.Ship, null, purchaseShipResponse.Ship.Cargo, $"Newly purchase ship.", DateTime.UtcNow));
+                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"NavigateToShipyardWaypoint {ship.Nav.WaypointSymbol}", DateTime.UtcNow));
+
+                await _shipStatusesCacheService.SetAsync(new ShipStatus(purchaseShipResponse.Ship, $"Newly purchase ship.", DateTime.UtcNow));
                 await _agentsService.SetAsync(purchaseShipResponse.Agent);
                 return ship;
             }
@@ -78,7 +79,7 @@ public class PurchaseShipCommand : IShipCommandsService
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel };
-                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, _shipCommandEnum, ship.Cargo, $"NavigateToShipyardWaypoint {ship.Nav.WaypointSymbol}", DateTime.UtcNow));
+                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"NavigateToShipyardWaypoint {ship.Nav.WaypointSymbol}", DateTime.UtcNow));
                 return ship;
             }
 

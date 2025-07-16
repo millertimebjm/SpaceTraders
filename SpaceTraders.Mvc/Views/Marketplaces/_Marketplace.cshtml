@@ -18,33 +18,19 @@
             }
         </ul>
     }
-    
-    <li>Imports</li>
-    <li>
-        <ul>
-            @foreach (var import in Model.Imports)
-            {
-                <li>@import.Symbol <a href="/marketplaces/@Model.Symbol/buy/@import.Symbol"></a></li>
-            }
-        </ul>
-    </li>
-    
-    <li>Exports</li>
-    <ul>
+    else
+    {
+        @foreach (var exchange in Model.Exchange)
+        {
+            <li>@exchange.Symbol EXCHANGE</li>
+        }
         @foreach (var export in Model.Exports)
         {
-            <li>@export.Symbol <a href="/marketplaces/@Model.Symbol/buy/@export.Symbol"></a></li>
+            <li>@export.Symbol EXPORT</li>
         }
-    </ul>
-
-    <li>Exchange</li>
-    <li>
-        <ul>
-            @foreach (var exchange in Model.Exchange)
-            {
-                <li>@exchange.Symbol <a href="/marketplaces/@Model.Symbol/buy/@exchange.Symbol"></a></li>
-            }
-        </ul>
-    </li>
-    
+        @foreach (var import in Model.Imports)
+        {
+            <li>@import.Symbol IMPORT</li>
+        }
+    }    
 </ul>

@@ -70,11 +70,12 @@ public class ExplorationCommand : IShipCommandsService
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel };
-                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, _shipCommandEnum, ship.Cargo, $"NavigateToShipyardWaypoint {ship.Nav.WaypointSymbol}", DateTime.UtcNow));
+                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"NavigateToShipyardWaypoint {ship.Nav.WaypointSymbol}", DateTime.UtcNow));
                 return ship;
             }
 
-            await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, ShipCommandEnum: null, ship.Cargo, $"No instructions set.", DateTime.UtcNow));
+            ship = ship with { ShipCommand = null };
+            await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"No instructions set.", DateTime.UtcNow));
             return ship;
         }
     }

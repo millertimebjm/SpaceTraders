@@ -74,7 +74,8 @@ namespace SpaceTraders.Models;
  Cargo Cargo,
  Fuel Fuel,
  Cooldown Cooldown,
- ShipCommand? ShipCommand
+ ShipCommand? ShipCommand,
+ string? Error
     );
 
     public record Route(

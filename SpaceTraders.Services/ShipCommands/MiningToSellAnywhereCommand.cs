@@ -86,7 +86,7 @@ public class MiningToSellAnywhereCommand : IShipCommandsService
                 if (sellCargoResponse.Cargo.Units == 0 && ship.Registration.Role == ShipRegistrationRolesEnum.COMMAND.ToString())
                 {
                     ship = ship with { ShipCommand = null };
-                    await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, ship.ShipCommand?.ShipCommandEnum, ship.Cargo, $"Resetting Job.", DateTime.UtcNow));
+                    await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"Resetting Job.", DateTime.UtcNow));
                     return ship;
                 }
                 continue;
@@ -103,7 +103,7 @@ public class MiningToSellAnywhereCommand : IShipCommandsService
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel };
-                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, _shipCommandEnum, ship.Cargo, $"NavigateToStartWaypoint {nav.WaypointSymbol}", DateTime.UtcNow));
+                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"NavigateToStartWaypoint {nav.WaypointSymbol}", DateTime.UtcNow));
                 return ship;
             }
 
@@ -111,7 +111,7 @@ public class MiningToSellAnywhereCommand : IShipCommandsService
             if (cargo is not null && cooldown is not null)
             {
                 ship = ship with { Cargo = cargo, Cooldown = cooldown };
-                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, _shipCommandEnum, ship.Cargo, $"Extract {ship.Nav.WaypointSymbol}", DateTime.UtcNow));
+                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"Extract {ship.Nav.WaypointSymbol}", DateTime.UtcNow));
                 return ship;
             }
 
@@ -119,7 +119,7 @@ public class MiningToSellAnywhereCommand : IShipCommandsService
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel };
-                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, _shipCommandEnum, ship.Cargo, $"NavigateToMarketplaceImport {nav.Route.Destination.Symbol}", DateTime.UtcNow));
+                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"NavigateToMarketplaceImport {nav.Route.Destination.Symbol}", DateTime.UtcNow));
                 return ship;
             }
 

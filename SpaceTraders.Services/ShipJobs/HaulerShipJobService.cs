@@ -33,7 +33,7 @@ public class HaulerShipJobService : IShipJobService
             && ships.Where(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()).Count() >= 5
             && !ships.Where(s => s.Symbol != ship.Symbol).Any(s => s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.SupplyConstruction)
             && ship.Symbol == firstHauler?.Symbol
-            && (agent.Credits > 500_000
+            && (agent.Credits > 600_000
             || (ship.Cargo.Units > 0 && ship.Cargo.Inventory.All(i => unfinishedJumpGateWaypoint.Construction.Materials.Any(m => i.Symbol == m.TradeSymbol)))))
         {
             if (!ship.Cargo.Inventory.Any())

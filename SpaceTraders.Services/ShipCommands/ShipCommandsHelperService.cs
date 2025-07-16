@@ -384,6 +384,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
                 {
                     await _surveysCacheService.DeleteAsync(surveys.First().Signature);
                 }
+                await Task.Delay(1000);
             }
         }
         return (null, null);
@@ -841,7 +842,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         if (surveys.Count() >= 5)
         {
             var timeSpan = TimeSpan.FromMinutes(1);
-            return new Cooldown(ship.Symbol, (int)timeSpan.TotalSeconds, (int)timeSpan.TotalSeconds, DateTime.UtcNow.AddMinutes(timeSpan.TotalSeconds));
+            return new Cooldown(ship.Symbol, (int)timeSpan.TotalSeconds, (int)timeSpan.TotalSeconds, DateTime.UtcNow.Add(timeSpan));
         }
         var surveyResult = await _shipsService.SurveyAsync(ship.Symbol);
         foreach (var survey in surveyResult.Surveys)

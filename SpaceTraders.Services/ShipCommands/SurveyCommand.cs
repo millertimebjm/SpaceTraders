@@ -14,28 +14,21 @@ namespace SpaceTraders.Services.ShipCommands;
 public class SurveyCommand : IShipCommandsService
 {
     private readonly IShipCommandsHelperService _shipCommandsHelperService;
-    private readonly IShipsService _shipsService;
     private readonly IWaypointsService _waypointsService;
     private readonly ISystemsService _systemsService;
     private readonly IShipStatusesCacheService _shipStatusesCacheService;
-    private readonly IShipJobsFactory _shipJobsFactory;
-    private readonly ShipCommandEnum _shipCommandEnum = ShipCommandEnum.Survey;
     private readonly IAgentsService _agentsService;
     public SurveyCommand(
         IShipCommandsHelperService shipCommandsHelperService,
-        IShipsService shipsService,
         IWaypointsService waypointsService,
         ISystemsService systemsService,
         IShipStatusesCacheService shipStatusesCacheService,
-        IShipJobsFactory shipJobsFactory,
         IAgentsService agentsService)
     {
         _shipCommandsHelperService = shipCommandsHelperService;
-        _shipsService = shipsService;
         _waypointsService = waypointsService;
         _systemsService = systemsService;
         _shipStatusesCacheService = shipStatusesCacheService;
-        _shipJobsFactory = shipJobsFactory;
         _agentsService = agentsService;
     }
 
@@ -80,13 +73,13 @@ public class SurveyCommand : IShipCommandsService
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel };
-                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, _shipCommandEnum, ship.Cargo, $"NavigateToSurvey {nav.WaypointSymbol}", DateTime.UtcNow));
+                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"NavigateToSurvey {nav.WaypointSymbol}", DateTime.UtcNow));
                 return ship;
             }
 
             var cooldown = await _shipCommandsHelperService.Survey(ship);
             ship = ship with { Cooldown = cooldown };
-            await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, _shipCommandEnum, ship.Cargo, $"Survey {ship.Nav.WaypointSymbol}", DateTime.UtcNow));
+            await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"Survey {ship.Nav.WaypointSymbol}", DateTime.UtcNow));
             return ship;
         }
     }

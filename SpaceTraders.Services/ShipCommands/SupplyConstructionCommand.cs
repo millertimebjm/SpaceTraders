@@ -18,16 +18,13 @@ public class SupplyConstructionCommand : IShipCommandsService
     private readonly IWaypointsService _waypointsService;
     private readonly ISystemsService _systemsService;
     private readonly IShipStatusesCacheService _shipStatusesCacheService;
-    private readonly IShipJobsFactory _shipJobsFactory;
     private readonly IAgentsService _agentsService;
     private readonly IWaypointsCacheService _waypointsCacheService;
-    private readonly ShipCommandEnum _shipCommandEnum = ShipCommandEnum.SupplyConstruction;
     public SupplyConstructionCommand(
         IShipCommandsHelperService shipCommandsHelperService,
         IWaypointsService waypointsService,
         ISystemsService systemsService,
         IShipStatusesCacheService shipStatusesCacheService,
-        IShipJobsFactory shipJobsFactory,
         IAgentsService agentsService,
         IWaypointsCacheService waypointsCacheService)
     {
@@ -35,7 +32,6 @@ public class SupplyConstructionCommand : IShipCommandsService
         _waypointsService = waypointsService;
         _systemsService = systemsService;
         _shipStatusesCacheService = shipStatusesCacheService;
-        _shipJobsFactory = shipJobsFactory;
         _agentsService = agentsService;
         _waypointsCacheService = waypointsCacheService;
     }
@@ -89,7 +85,7 @@ public class SupplyConstructionCommand : IShipCommandsService
                 {
                     ship = ship with { ShipCommand = null };
                     currentWaypoint = await _waypointsService.GetAsync(currentWaypoint.Symbol, refresh: true);
-                    await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, ship.ShipCommand?.ShipCommandEnum, ship.Cargo, $"Resetting Job.", DateTime.UtcNow));
+                    await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"Resetting Job.", DateTime.UtcNow));
                     return ship;
                 }
             
@@ -115,7 +111,7 @@ public class SupplyConstructionCommand : IShipCommandsService
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel };
-                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, _shipCommandEnum, ship.Cargo, $"NavigateToStartWaypoint {constructionWaypoint.Symbol}", DateTime.UtcNow));
+                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"NavigateToStartWaypoint {constructionWaypoint.Symbol}", DateTime.UtcNow));
                 return ship;
             }
 
@@ -123,7 +119,7 @@ public class SupplyConstructionCommand : IShipCommandsService
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel };
-                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, _shipCommandEnum, ship.Cargo, $"NavigateToMarketplaceExport {nav.Route.Destination.Symbol}", DateTime.UtcNow));
+                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"NavigateToMarketplaceExport {nav.Route.Destination.Symbol}", DateTime.UtcNow));
                 return ship;
             }
 
