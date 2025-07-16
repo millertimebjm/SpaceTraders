@@ -9,5 +9,4 @@ public interface IWaypointsService
         bool refresh = false);
     Task<IEnumerable<Waypoint>> GetByTypeAsync(string waypointSymbol, string type);
     Task<IEnumerable<Waypoint>> GetByTraitAsync(string waypointSymbol, string trait);
-
 }

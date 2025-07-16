@@ -8,21 +8,19 @@
     ViewData["Title"] = "Fleet Status";
 }
 
-
 <section class="text-center container">
-        <h3 style="text-align: center">BuyToSell</h3>
     <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
-        @foreach (var shipStatus in Model.Where(ss => ss.ShipCommandEnum is not null && ss.ShipCommandEnum == ShipCommandEnum.BuyToSell).OrderBy(ss => ss.Ship.Symbol))
+        @foreach (var shipStatus in Model
+            .Where(s => s.Ship.Registration.Role != ShipRegistrationRolesEnum.SATELLITE.ToString())
+            .OrderBy(s => s.ShipCommandEnum?.ToString()))
         {
             <div class="shadow-lg p-3 bg-white rounded" style="width: 250px; margin: 10px; position: relative;">
                 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 150px;">
+                    <span><b>@shipStatus.ShipCommandEnum.ToString()</b></span>
                     <span>@shipStatus.Ship.Symbol (@shipStatus.Ship.Registration.Role)</span>
                     <span>@shipStatus.ShipCommandEnum</span>
                     
-                    @foreach (var inventory in shipStatus.Cargo.Inventory)
-                    {
-                        <span>@inventory.Symbol (@inventory.Units)</span>
-                    }
+                    <span data-toggle="tooltip" data-placement="top" title="@(string.Join(" ", shipStatus.Ship.Cargo.Inventory.Select(i => $"{i.Symbol} ({i.Units})")))">Cargo: @shipStatus.Ship.Cargo.Units</span>
                     
                     <span>@shipStatus.LastMessage</span>
                     <span>@ViewHelperService.HumanReadableTimeSpan(DateTime.UtcNow - shipStatus.DateTimeOfLastInstruction) ago</span>
@@ -31,126 +29,6 @@
                         var shipCooldown = ShipsService.GetShipCooldown(shipStatus.Ship);
                         <span>Available in <span class="countdown" data-countdown="@((DateTime.UtcNow + shipCooldown.Value).ToString("o"))">@ViewHelperService.MinimalHumanReadableTimeSpan(shipCooldown.Value)</span></span>
                     }
-                </div>
-            </div>
-        }
-    </div>
-    <h3 style="text-align: center">MiningToSellAnywhere</h3>
-<div style="display: flex; flex-wrap: wrap; justify-content: space-around">
-        @foreach (var shipStatus in Model.Where(ss => ss.ShipCommandEnum is not null && ss.ShipCommandEnum == ShipCommandEnum.MiningToSellAnywhere).OrderBy(ss => ss.Ship.Symbol))
-        {
-            <div class="shadow-lg p-3 bg-white rounded" style="width: 250px; margin: 10px; position: relative;">
-                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 150px;">
-                    <span>@shipStatus.Ship.Symbol (@shipStatus.Ship.Registration.Role)</span>
-                    <span>@shipStatus.ShipCommandEnum</span>
-                    
-                    @foreach (var inventory in shipStatus.Cargo.Inventory)
-                    {
-                        <span>@inventory.Symbol (@inventory.Units)</span>
-                    }
-                    
-                    <span>@shipStatus.LastMessage</span>
-                    <span>@ViewHelperService.HumanReadableTimeSpan(DateTime.UtcNow - shipStatus.DateTimeOfLastInstruction) ago</span>
-                    @if (SpaceTraders.Services.Shipyards.ShipsService.GetShipCooldown(shipStatus.Ship).HasValue)
-                    {
-                        var shipCooldown = ShipsService.GetShipCooldown(shipStatus.Ship);
-                        <span>Available in <span class="countdown" data-countdown="@((DateTime.UtcNow + shipCooldown.Value).ToString("o"))">@ViewHelperService.MinimalHumanReadableTimeSpan(shipCooldown.Value)</span></span>
-                    }
-                </div>
-            </div>
-        }
-</div>
-<h3 style="text-align: center">SupplyConstruction</h3>
-<div style="display: flex; flex-wrap: wrap; justify-content: space-around">
-        @foreach (var shipStatus in Model.Where(ss => ss.ShipCommandEnum is not null && ss.ShipCommandEnum == ShipCommandEnum.SupplyConstruction).OrderBy(ss => ss.Ship.Symbol))
-        {
-            <div class="shadow-lg p-3 bg-white rounded" style="width: 250px; margin: 10px; position: relative;">
-                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 150px;">
-                    <span>@shipStatus.Ship.Symbol (@shipStatus.Ship.Registration.Role)</span>
-                    <span>@shipStatus.ShipCommandEnum</span>
-                    
-                    @foreach (var inventory in shipStatus.Cargo.Inventory)
-                    {
-                        <span>@inventory.Symbol (@inventory.Units)</span>
-                    }
-                    
-                    <span>@shipStatus.LastMessage</span>
-                    <span>@ViewHelperService.HumanReadableTimeSpan(DateTime.UtcNow - shipStatus.DateTimeOfLastInstruction) ago</span>
-                    @if (SpaceTraders.Services.Shipyards.ShipsService.GetShipCooldown(shipStatus.Ship).HasValue)
-                    {
-                        var shipCooldown = ShipsService.GetShipCooldown(shipStatus.Ship);
-                        <span>Available in <span class="countdown" data-countdown="@((DateTime.UtcNow + shipCooldown.Value).ToString("o"))">@ViewHelperService.MinimalHumanReadableTimeSpan(shipCooldown.Value)</span></span>
-                    }
-                </div>
-            </div>
-        }
-</div>
-<h3 style="text-align: center">Survey</h3>
-<div style="display: flex; flex-wrap: wrap; justify-content: space-around">
-        @foreach (var shipStatus in Model.Where(ss => ss.ShipCommandEnum is not null && ss.ShipCommandEnum == ShipCommandEnum.Survey).OrderBy(ss => ss.Ship.Symbol))
-        {
-            <div class="shadow-lg p-3 bg-white rounded" style="width: 250px; margin: 10px; position: relative;">
-                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 150px;">
-                    <span>@shipStatus.Ship.Symbol (@shipStatus.Ship.Registration.Role)</span>
-                    <span>@shipStatus.ShipCommandEnum</span>
-                    
-                    @foreach (var inventory in shipStatus.Cargo.Inventory)
-                    {
-                        <span>@inventory.Symbol (@inventory.Units)</span>
-                    }
-                    
-                    <span>@shipStatus.LastMessage</span>
-                    <span>@ViewHelperService.HumanReadableTimeSpan(DateTime.UtcNow - shipStatus.DateTimeOfLastInstruction) ago</span>
-                    @if (SpaceTraders.Services.Shipyards.ShipsService.GetShipCooldown(shipStatus.Ship).HasValue)
-                    {
-                        var shipCooldown = ShipsService.GetShipCooldown(shipStatus.Ship);
-                        <span>Available in <span class="countdown" data-countdown="@((DateTime.UtcNow + shipCooldown.Value).ToString("o"))">@ViewHelperService.MinimalHumanReadableTimeSpan(shipCooldown.Value)</span></span>
-                    }
-                </div>
-            </div>
-        }
-</div>
-<h3 style="text-align: center">Purchase</h3>
-<div style="display: flex; flex-wrap: wrap; justify-content: space-around">
-        @foreach (var shipStatus in Model.Where(ss => ss.ShipCommandEnum is not null && ss.ShipCommandEnum == ShipCommandEnum.PurchaseShip).OrderBy(ss => ss.Ship.Symbol))
-        {
-            <div class="shadow-lg p-3 bg-white rounded" style="width: 250px; margin: 10px; position: relative;">
-                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 150px;">
-                    <span>@shipStatus.Ship.Symbol (@shipStatus.Ship.Registration.Role)</span>
-                    <span>@shipStatus.ShipCommandEnum</span>
-                    
-                    @foreach (var inventory in shipStatus.Cargo.Inventory)
-                    {
-                        <span>@inventory.Symbol (@inventory.Units)</span>
-                    }
-                    
-                    <span>@shipStatus.LastMessage</span>
-                    <span>@ViewHelperService.HumanReadableTimeSpan(DateTime.UtcNow - shipStatus.DateTimeOfLastInstruction) ago</span>
-                    @if (SpaceTraders.Services.Shipyards.ShipsService.GetShipCooldown(shipStatus.Ship).HasValue)
-                    {
-                        var shipCooldown = ShipsService.GetShipCooldown(shipStatus.Ship);
-                        <span>Available in <span class="countdown" data-countdown="@((DateTime.UtcNow + shipCooldown.Value).ToString("o"))">@ViewHelperService.MinimalHumanReadableTimeSpan(shipCooldown.Value)</span></span>
-                    }
-                </div>
-            </div>
-        }
-</div>
-<h3 style="text-align: center">No Command</h3>
-<div style="display: flex; flex-wrap: wrap; justify-content: space-around">
-        @foreach (var shipStatus in Model.Where(ss => ss.ShipCommandEnum is null).OrderBy(ss => ss.Ship.Symbol))
-        {
-            <div class="shadow-lg p-3 bg-white rounded" style="width: 250px; margin: 10px; position: relative;">
-                <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 150px;">
-                    <span>@shipStatus.Ship.Symbol (@shipStatus.Ship.Registration.Role)</span>
-                    <span>@shipStatus.ShipCommandEnum</span>
-                    
-                    @foreach (var inventory in shipStatus.Cargo.Inventory)
-                    {
-                        <span>@inventory.Symbol (@inventory.Units)</span>
-                    }
-                    
-                    <span>@shipStatus.LastMessage</span>
-                    <span>@ViewHelperService.HumanReadableTimeSpan(DateTime.UtcNow - shipStatus.DateTimeOfLastInstruction) ago</span>
                 </div>
             </div>
         }

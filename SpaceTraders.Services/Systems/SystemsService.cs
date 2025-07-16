@@ -9,19 +9,21 @@ public class SystemsService : ISystemsService
 {
     private readonly ISystemsApiService _systemsApiService;
     private readonly ISystemsCacheService _systemsCacheService;
-    private readonly IWaypointsService _waypointsService;
     private readonly ILogger<SystemsService> _logger;
 
     public SystemsService(
         ISystemsApiService systemsApiService,
         ISystemsCacheService systemsCacheService,
-        IWaypointsService waypointsService,
         ILogger<SystemsService> logger)
     {
         _systemsApiService = systemsApiService;
         _systemsCacheService = systemsCacheService;
-        _waypointsService = waypointsService;
         _logger = logger;
+    }
+
+    public async Task<IReadOnlyList<STSystem>> GetAsync()
+    {
+        return await _systemsCacheService.GetAsync();
     }
 
     public async Task<STSystem> GetAsync(string systemSymbol, bool refresh = false)

@@ -22,6 +22,19 @@ public class ShipStatusesCacheService : IShipStatusesCacheService
             .ToListAsync();
     }
 
+    public async Task<ShipStatus> GetAsync(string shipSymbol)
+    {
+        var filter = Builders<ShipStatus>
+            .Filter
+            .Eq(s => s.Ship.Symbol, shipSymbol);
+        var collection = _collectionFactory.GetCollection<ShipStatus>();
+        var projection = Builders<ShipStatus>.Projection.Exclude("_id");
+        return await collection
+            .Find(filter)
+            .Project<ShipStatus>(projection)
+            .SingleOrDefaultAsync();
+    }
+
     public async Task SetAsync(ShipStatus shipStatus)
     {
         var filter = Builders<ShipStatus>

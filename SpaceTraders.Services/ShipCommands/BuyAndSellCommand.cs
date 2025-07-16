@@ -3,6 +3,7 @@ using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Paths;
+using SpaceTraders.Services.Paths.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.ShipJobs.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
@@ -22,6 +23,7 @@ public class BuyAndSellCommand : IShipCommandsService
     private readonly IAgentsService _agentsService;
     private readonly IShipStatusesCacheService _shipStatusesCacheService;
     private readonly IShipJobsFactory _shipJobsFactory;
+    private readonly IPathsService _pathsService;
     private readonly ShipCommandEnum _shipCommandEnum = ShipCommandEnum.BuyToSell;
     public BuyAndSellCommand(
         IShipCommandsHelperService shipCommandsHelperService,
@@ -30,7 +32,8 @@ public class BuyAndSellCommand : IShipCommandsService
         ISystemsService systemsService,
         IShipStatusesCacheService shipStatusesCacheService,
         IShipJobsFactory shipJobsFactory,
-        IAgentsService agentsService)
+        IAgentsService agentsService,
+        IPathsService pathsService)
     {
         _shipCommandsHelperService = shipCommandsHelperService;
         _shipsService = shipsService;
@@ -39,20 +42,34 @@ public class BuyAndSellCommand : IShipCommandsService
         _shipStatusesCacheService = shipStatusesCacheService;
         _shipJobsFactory = shipJobsFactory;
         _agentsService = agentsService;
+        _pathsService = pathsService;
     }
+
+    private const int COUNT_BEFORE_LOOP = 20;
+    private const int LOOP_WAIT_IN_MINUTES = 10;
 
     public async Task<Ship> Run(
         Ship ship,
         Dictionary<string, Ship> shipsDictionary)
     {
+        var count = 0;
         var currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol);
+
         while (true)
         {
+            count++;
+            if (count > COUNT_BEFORE_LOOP)
+            {
+                var timespan = TimeSpan.FromMinutes(LOOP_WAIT_IN_MINUTES);
+                ship = ship with { Cooldown = new Cooldown(ship.Symbol, (int)timespan.TotalSeconds, (int)timespan.TotalSeconds, DateTime.UtcNow.AddMinutes(LOOP_WAIT_IN_MINUTES)) };
+                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, ship.ShipCommand?.ShipCommandEnum, ship.Cargo, $"Stuck in a loop.", DateTime.UtcNow));
+                return ship;
+            }
             if (ShipsService.GetShipCooldown(ship) is not null) return ship;
             var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
             var inventorySymbols = ship.Cargo.Inventory.Select(i => i.Symbol).ToHashSet();
 
-            var paths = PathsService.BuildDijkstraPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
+            var paths = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
 
             var sellingWaypoint = paths.Select(p => p.Key)
                 .Where(w => w.Marketplace is not null

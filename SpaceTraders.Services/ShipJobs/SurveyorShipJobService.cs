@@ -24,7 +24,7 @@ public class SurveyorShipJobService : IShipJobService
         // var miningShips = shipsWithCommands.Where(s => s.ShipCommand is not null && s.ShipCommand.ShipCommandEnum == Models.Enums.ShipCommandEnum.MiningToSellAnywhere);
         // var miningWaypoints = system.Waypoints.Where(w => w.Type == WaypointTypesEnum.ASTEROID.ToString()
         //     || w.Type == WaypointTypesEnum.ENGINEERED_ASTEROID.ToString());
-        // var paths = PathsService.BuildDijkstraPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
+        // var paths = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
         // var closestPath = paths
         //     .Where(p => miningWaypoints.Select(w => w.Symbol).Contains(p.Key.Symbol))
         //     .OrderBy(p => p.Value.Item1.Count())

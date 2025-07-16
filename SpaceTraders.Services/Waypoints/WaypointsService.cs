@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SpaceTraders.Models;
@@ -8,6 +9,7 @@ using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.HttpHelpers;
 using SpaceTraders.Services.Marketplaces.Interfaces;
 using SpaceTraders.Services.Shipyards.Interfaces;
+using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.Waypoints;
@@ -67,7 +69,7 @@ public class WaypointsService : IWaypointsService
         var waypoints = await _waypointsCacheService.GetByTypeAsync(systemSymbol, type);
         if (waypoints is not null) return waypoints;
         _logger.LogWarning("Cache miss GetByType: {type}:{systemSymbol} {waypointType}", nameof(STSystem), systemSymbol, type);
-    
+
         waypoints = await _waypointsApiService.GetByTypeAsync(systemSymbol, type);
         return waypoints;
     }
@@ -79,7 +81,7 @@ public class WaypointsService : IWaypointsService
         var waypoints = await _waypointsCacheService.GetByTraitAsync(systemSymbol, trait);
         if (waypoints is not null) return waypoints;
         _logger.LogWarning("Cache miss GetByTrait: {type}:{systemSymbol} {waypointTrait}", nameof(STSystem), systemSymbol, trait);
-    
+
         waypoints = await _waypointsApiService.GetByTypeAsync(systemSymbol, trait);
         return waypoints;
     }
@@ -105,5 +107,27 @@ public class WaypointsService : IWaypointsService
         double deltaY = y2 - y1;
 
         return Math.Sqrt((deltaX * deltaX) + (deltaY * deltaY));
+    }
+
+    public static double CalculateDistance(Waypoint w1, Waypoint w2)
+    {
+        if (w1.SystemSymbol != w2.SystemSymbol
+            && w1.JumpGate is not null
+            && !w1.IsUnderConstruction
+            && w1.JumpGate.Connections.Contains(w2.Symbol))
+        {
+            return 0;
+        }
+
+        // Using the distance formula: sqrt((x2 - x1)^2 + (y2 - y1)^2)
+            double deltaX = w2.X - w1.X;
+        double deltaY = w2.Y - w1.Y;
+
+        return Math.Sqrt((deltaX * deltaX) + (deltaY * deltaY));
+    }
+
+    public static IEnumerable<Waypoint> GetWaypointsWithinRange(IReadOnlyList<Waypoint> waypoints, Waypoint waypointToSearch)
+    {
+        throw new NotImplementedException();
     }
 }

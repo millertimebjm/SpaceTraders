@@ -50,7 +50,7 @@ public class SupplyConstructionCommand : IShipCommandsService
         while (true)
         {
             if (ShipsService.GetShipCooldown(ship) is not null) return ship;
-            var paths = PathsService.BuildDijkstraPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
+            var paths = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
 
             await Task.Delay(2000);
 

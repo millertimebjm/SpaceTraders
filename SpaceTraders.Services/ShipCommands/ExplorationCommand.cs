@@ -1,6 +1,7 @@
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
+using SpaceTraders.Services.Paths.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Systems.Interfaces;
@@ -64,7 +65,7 @@ public class ExplorationCommand : IShipCommandsService
                 ship = ship with { Nav = nav };
                 continue;
             }
-            
+
             (nav, var fuel) = await _shipCommandsHelperService.NavigateToExplore(ship, currentWaypoint);
             if (nav is not null && fuel is not null)
             {

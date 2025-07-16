@@ -35,7 +35,7 @@
     }
     @if (currentShip is not null && currentWaypoint is not null)
     {
-        var path = PathsService.BuildDijkstraPath(
+        var path = PathsService.BuildWaypointPath(
             system.Waypoints, 
             currentWaypoint,
             currentShip.Fuel.Capacity,

@@ -3,6 +3,8 @@ using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents;
 using SpaceTraders.Services.Agents.Interfaces;
+using SpaceTraders.Services.Paths;
+using SpaceTraders.Services.Paths.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.ShipJobs.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
@@ -22,6 +24,7 @@ public class MiningToSellAnywhereCommand : IShipCommandsService
     private readonly IAgentsService _agentsService;
     private readonly IShipStatusesCacheService _shipStatusesCacheService;
     private readonly IShipJobsFactory _shipJobsFactory;
+    private readonly IPathsService _pathsService;
     private readonly ShipCommandEnum _shipCommandEnum = ShipCommandEnum.MiningToSellAnywhere;
     public MiningToSellAnywhereCommand(
         IShipCommandsHelperService shipCommandsHelperService,
@@ -30,7 +33,8 @@ public class MiningToSellAnywhereCommand : IShipCommandsService
         ISystemsService systemsService,
         IShipStatusesCacheService shipStatusesCacheService,
         IShipJobsFactory shipJobsFactory,
-        IAgentsService agentsService)
+        IAgentsService agentsService,
+        IPathsService pathsService)
     {
         _shipCommandsHelperService = shipCommandsHelperService;
         _shipsService = shipsService;
@@ -39,6 +43,7 @@ public class MiningToSellAnywhereCommand : IShipCommandsService
         _shipStatusesCacheService = shipStatusesCacheService;
         _shipJobsFactory = shipJobsFactory;
         _agentsService = agentsService;
+        _pathsService = pathsService;
     }
 
     public async Task<Ship> Run(

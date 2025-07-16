@@ -12,6 +12,17 @@ public class SystemsCacheService : ISystemsCacheService
         _collectionFactory = collectionFactory;
     }
 
+    public async Task<IReadOnlyList<STSystem>> GetAsync()
+    {
+        var collection = _collectionFactory.GetCollection<STSystem>();
+
+        var projection = Builders<STSystem>.Projection.Exclude("_id");
+        return await collection
+            .Find(FilterDefinition<STSystem>.Empty)
+            .Project<STSystem>(projection)
+            .ToListAsync();
+    }
+
     public async Task<STSystem> GetAsync(string systemSymbol, bool refresh = false)
     {
         var filter = Builders<STSystem>

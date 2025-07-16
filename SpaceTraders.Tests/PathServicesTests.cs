@@ -1,6 +1,9 @@
-﻿using SpaceTraders.Models;
-using SpaceTraders.Models.Enums;
+﻿using NSubstitute;
+using SpaceTraders.Models;
 using SpaceTraders.Services.Paths;
+using SpaceTraders.Services.Paths.Interfaces;
+using SpaceTraders.Services.Systems.Interfaces;
+using SpaceTraders.Services.Waypoints;
 
 namespace SpaceTraders.Tests;
 
@@ -8,27 +11,27 @@ namespace SpaceTraders.Tests;
 public class PathsServicesTests
 {
     [Fact]
-    public void NoPath()
+    public void WaypointPath_NoPath()
     {
         var waypoints = new List<Waypoint>()
         {
             new("origin", "", "", 0, 0, null, "", null, null, null, null, false, null),
             new("destination", "", "", 400, 400, null, "", null, null, null, null, false, null),
         };
-        var paths = PathsService.BuildDijkstraPath(waypoints, waypoints.First(), 1, 1);
+        var paths = PathsService.BuildWaypointPath(waypoints, waypoints.First(), 1, 1);
         var path = paths.SingleOrDefault(p => p.Key.Symbol == waypoints.Last().Symbol);
         Assert.Equal(default, path);
     }
 
     [Fact]
-    public void EasyPath()
+    public void WaypointPath_EasyPath()
     {
         var waypoints = new List<Waypoint>()
         {
             new("origin", "", "", 0, 0, null, "", null, null, null, null, false, null),
             new("destination", "", "", 1, 1, null, "", null, null, null, null, false, null),
         };
-        var paths = PathsService.BuildDijkstraPath(waypoints, waypoints.First(), 2, 2);
+        var paths = PathsService.BuildWaypointPath(waypoints, waypoints.First(), 2, 2);
         var path = paths.SingleOrDefault(p => p.Key.Symbol == waypoints.Last().Symbol);
         Assert.NotEqual(default, path);
         Assert.Equal(path.Value.Item1.First(), waypoints.First());
@@ -36,7 +39,7 @@ public class PathsServicesTests
     }
 
     [Fact]
-    public void RefuelPath()
+    public void WaypointPath_RefuelPath()
     {
         var waypoints = new List<Waypoint>()
         {
@@ -44,7 +47,7 @@ public class PathsServicesTests
             new("refuel", "", "", 0, 100, null, "", null, null, new Marketplace("refuel", null, null, new List<Exchange>() { new Exchange("FUEL", "FUEL", "FUEL") }, null, null), null, false, null),
             new("destination", "", "", 0, 200, null, "", null, null, null, null, false, null),
         };
-        var paths = PathsService.BuildDijkstraPath(waypoints, waypoints.First(), 150, 150);
+        var paths = PathsService.BuildWaypointPath(waypoints, waypoints.First(), 150, 150);
         var path = paths.SingleOrDefault(p => p.Key.Symbol == waypoints.Last().Symbol);
         Assert.NotEqual(default, path);
         Assert.Equal(waypoints[0].Symbol, path.Value.Item1[0].Symbol);
@@ -55,6 +58,63 @@ public class PathsServicesTests
         Assert.NotEqual(default, path);
         Assert.Equal(path.Value.Item1.First(), waypoints.First());
         Assert.Equal(path.Value.Item1.Last(), waypoints.Last());
+    }
+
+    [Fact]
+    public async Task SystemPath_EasyPath()
+    {
+        var secondWaypointSymbol = "Z1-ZY1-ZYX1";
+        var secondWaypoint = new Waypoint(secondWaypointSymbol, WaypointsService.ExtractSystemFromWaypoint(secondWaypointSymbol), "", 0, 0, null, "", null, null, null, null, false, null);
+        var secondSystem = new STSystem("", WaypointsService.ExtractSystemFromWaypoint(secondWaypointSymbol), "", "", 0, 0, new List<Waypoint> { secondWaypoint }, null, null);
+        var jumpgate = new JumpGate("A1-Ab1-ABC1", new List<string> { secondWaypoint.Symbol });
+
+        var firstWaypointSymbol = "A1-AB1-ABC1";
+        var firstWaypointCompletedJumpGate = new Waypoint(firstWaypointSymbol, WaypointsService.ExtractSystemFromWaypoint(firstWaypointSymbol), "", 0, 0, null, "", null, null, null, jumpgate, false, null);
+        var firstSystem = new STSystem("Constellation", "A1-AB1", "A1", "", 0, 0, new List<Waypoint> { firstWaypointCompletedJumpGate }, null, "");
+
+        ISystemsService systemsServiceSub = Substitute.For<ISystemsService>();
+        systemsServiceSub
+            .GetAsync()
+            .Returns(new List<STSystem> { firstSystem, secondSystem });
+
+        var ship = new Ship("", null, null, null, null, null, null, null, null, null, new Fuel(10, 10, null), null, null);
+
+        IPathsService pathsService = new PathsService(systemsServiceSub);
+        var systemPath = await pathsService.BuildSystemPath(
+            firstWaypointSymbol,
+            ship.Fuel.Capacity, ship.Fuel.Current);
+        Assert.Equal(2, systemPath.Single(p => p.Key.Symbol == secondWaypointSymbol).Value.Item1.Count());
+        Assert.Equal(firstWaypointSymbol, systemPath.Single(p => p.Key.Symbol == secondWaypointSymbol).Value.Item1[0].Symbol);
+        Assert.Equal(secondWaypointSymbol, systemPath.Single(p => p.Key.Symbol == secondWaypointSymbol).Value.Item1[1].Symbol);
+    }
+
+    [Fact]
+    public async Task SystemPath_NoPath()
+    {
+        var IS_UNDER_CONSTRUCTION = true;
+
+        var secondWaypointSymbol = "Z1-ZY1-ZYX1";
+        var secondWaypoint = new Waypoint(secondWaypointSymbol, WaypointsService.ExtractSystemFromWaypoint(secondWaypointSymbol), "", 0, 0, null, "", null, null, null, null, false, null);
+        var secondSystem = new STSystem("", WaypointsService.ExtractSystemFromWaypoint(secondWaypointSymbol), "", "", 0, 0, new List<Waypoint> { secondWaypoint }, null, null);
+
+        var jumpgate = new JumpGate("A1-Ab1-ABC1", new List<string> { secondWaypoint.Symbol });
+        var firstWaypointSymbol = "A1-AB1-ABC1";
+        var firstWaypointIncompleteJumpGate = new Waypoint(firstWaypointSymbol, WaypointsService.ExtractSystemFromWaypoint(firstWaypointSymbol), "", 0, 0, null, "", null, null, null, jumpgate, IS_UNDER_CONSTRUCTION, null);
+        var firstSystem = new STSystem("Constellation", "A1-AB1", "A1", "", 0, 0, new List<Waypoint> { firstWaypointIncompleteJumpGate }, null, "");
+
+        ISystemsService systemsServiceSub = Substitute.For<ISystemsService>();
+        systemsServiceSub
+            .GetAsync()
+            .Returns(new List<STSystem> { firstSystem, secondSystem });
+
+        var ship = new Ship("", null, null, null, null, null, null, null, null, null, new Fuel(10, 10, null), null, null);
+
+        IPathsService pathsService = new PathsService(systemsServiceSub);
+        var systemPath = await pathsService.BuildSystemPath(
+            firstWaypointSymbol,
+            ship.Fuel.Capacity, ship.Fuel.Current);
+        Assert.Single(systemPath.Single(p => p.Key.Symbol == firstWaypointSymbol).Value.Item1);
+        Assert.Equal(firstWaypointSymbol, systemPath.Single(p => p.Key.Symbol == firstWaypointSymbol).Value.Item1[0].Symbol);
     }
 }
 #pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.
