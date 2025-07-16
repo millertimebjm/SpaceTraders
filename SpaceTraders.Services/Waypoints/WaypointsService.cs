@@ -1,15 +1,7 @@
-using System.Linq;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
-using SpaceTraders.Services.HttpHelpers;
-using SpaceTraders.Services.Marketplaces.Interfaces;
-using SpaceTraders.Services.Shipyards.Interfaces;
-using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.Waypoints;
@@ -17,33 +9,24 @@ namespace SpaceTraders.Services.Waypoints;
 public class WaypointsService : IWaypointsService
 {
     private readonly string _apiUrl;
-    private readonly HttpClient _httpClient;
     private readonly string _token;
     private readonly ILogger<WaypointsService> _logger;
     private readonly IWaypointsCacheService _waypointsCacheService;
     private readonly IWaypointsApiService _waypointsApiService;
-    private readonly IMarketplacesService _marketplacesService;
-    private readonly IShipyardsService _shipyardsService;
 
     public WaypointsService(
-        HttpClient httpClient,
         IConfiguration configuration,
         ILogger<WaypointsService> logger,
         IWaypointsCacheService waypointsCacheService,
-        IWaypointsApiService waypointsApiService,
-        IMarketplacesService marketplacesService,
-        IShipyardsService shipyardsService)
+        IWaypointsApiService waypointsApiService)
     {
         _logger = logger;
-        _httpClient = httpClient;
         _waypointsApiService = waypointsApiService;
         _waypointsCacheService = waypointsCacheService;
         _apiUrl = configuration[$"SpaceTrader:"+ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
         ArgumentException.ThrowIfNullOrWhiteSpace(_apiUrl);
         _token = configuration[$"SpaceTrader:"+ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
         ArgumentException.ThrowIfNullOrWhiteSpace(_token);
-        _marketplacesService = marketplacesService;
-        _shipyardsService = shipyardsService;
     }
 
     public async Task<Waypoint> GetAsync(
@@ -124,10 +107,5 @@ public class WaypointsService : IWaypointsService
         double deltaY = w2.Y - w1.Y;
 
         return Math.Sqrt((deltaX * deltaX) + (deltaY * deltaY));
-    }
-
-    public static IEnumerable<Waypoint> GetWaypointsWithinRange(IReadOnlyList<Waypoint> waypoints, Waypoint waypointToSearch)
-    {
-        throw new NotImplementedException();
     }
 }
