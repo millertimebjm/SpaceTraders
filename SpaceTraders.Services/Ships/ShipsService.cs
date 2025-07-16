@@ -27,9 +27,9 @@ public class ShipsService : IShipsService
         _collectionFactory = collectionFactory;
         _logger = logger;
         _httpClient = httpClient;
-        _apiUrl = configuration[ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
+        _apiUrl = configuration[$"SpaceTrader:"+ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
         ArgumentException.ThrowIfNullOrWhiteSpace(_apiUrl);
-        _token = configuration[ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
+        _token = configuration[$"SpaceTrader:"+ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
         ArgumentException.ThrowIfNullOrWhiteSpace(_token);
     }
 

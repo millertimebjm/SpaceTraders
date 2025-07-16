@@ -1,3 +1,4 @@
+using System.Text.Json;
 using Serilog;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services;
@@ -65,10 +66,42 @@ Log.Logger = new LoggerConfiguration()
     .CreateLogger();
 builder.Host.UseSerilog();
 
-builder.Configuration.AddJsonFile("local.settings.json", optional: true, reloadOnChange: true);
-var accountToken = builder.Configuration[ConfigurationEnums.AccountToken.ToString()];
+
+builder
+    .Configuration
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables();
+
+const string _appConfigSectionName = "SpaceTrader";
+const string _appConfigEnvironmentVariableName = "AppConfigConnectionString";
+
+string appConfigConnectionString =
+            // Windows config value
+            builder.Configuration[_appConfigEnvironmentVariableName]
+            // Linux config value
+            ?? builder.Configuration[$"Values:{_appConfigEnvironmentVariableName}"]
+            ?? throw new ArgumentNullException(_appConfigEnvironmentVariableName);
+
+if (appConfigConnectionString == null) throw new ArgumentNullException(nameof(appConfigConnectionString));
+
+builder.Configuration
+    .SetBasePath(Directory.GetCurrentDirectory())
+    .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)
+    .AddEnvironmentVariables()
+    .AddAzureAppConfiguration(appConfigConnectionString)
+    .Build();
+
+builder.Services.AddOptions<IConfiguration>()
+    .Configure<IConfiguration>((settings, configuration) =>
+    {
+        configuration.GetSection(_appConfigSectionName).Bind(settings);
+    });
+
+// builder.Configuration.AddJsonFile("local.settings.json", optional: true, reloadOnChange: true);
+var accountToken = builder.Configuration[$"{_appConfigSectionName}:{ConfigurationEnums.AccountToken.ToString()}"];
 ArgumentException.ThrowIfNullOrWhiteSpace(accountToken);
-var agentToken = builder.Configuration[ConfigurationEnums.AgentToken.ToString()];
+var agentToken = builder.Configuration[$"{_appConfigSectionName}:{ConfigurationEnums.AgentToken.ToString()}"];
 ArgumentException.ThrowIfNullOrWhiteSpace(agentToken);
 
 var app = builder.Build();

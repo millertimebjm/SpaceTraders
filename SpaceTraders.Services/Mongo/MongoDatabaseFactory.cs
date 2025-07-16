@@ -37,8 +37,8 @@ public class MongoCollectionFactory : IMongoCollectionFactory
 
     public MongoCollectionFactory(IConfiguration configuration)
     {
-        _mongoConnectionString = configuration[ConfigurationEnums.CacheConnectionString.ToString()] ?? "";
-        _mongoDatabaseString = configuration[ConfigurationEnums.CacheDatabaseName.ToString()] ?? "";
+        _mongoConnectionString = configuration[$"SpaceTrader:"+ConfigurationEnums.CacheConnectionString.ToString()] ?? "";
+        _mongoDatabaseString = configuration[$"SpaceTrader:"+ConfigurationEnums.CacheDatabaseName.ToString()] ?? "";
     }
 
     public IMongoCollection<T> GetCollection<T>()
