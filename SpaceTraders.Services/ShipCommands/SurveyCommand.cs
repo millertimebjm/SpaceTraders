@@ -7,6 +7,7 @@ using SpaceTraders.Services.ShipJobs.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Systems.Interfaces;
+using SpaceTraders.Services.Transactions.Interfaces;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.ShipCommands;
@@ -18,18 +19,21 @@ public class SurveyCommand : IShipCommandsService
     private readonly ISystemsService _systemsService;
     private readonly IShipStatusesCacheService _shipStatusesCacheService;
     private readonly IAgentsService _agentsService;
+    private readonly ITransactionsService _transactionsService;
     public SurveyCommand(
         IShipCommandsHelperService shipCommandsHelperService,
         IWaypointsService waypointsService,
         ISystemsService systemsService,
         IShipStatusesCacheService shipStatusesCacheService,
-        IAgentsService agentsService)
+        IAgentsService agentsService,
+        ITransactionsService transactionsService)
     {
         _shipCommandsHelperService = shipCommandsHelperService;
         _waypointsService = waypointsService;
         _systemsService = systemsService;
         _shipStatusesCacheService = shipStatusesCacheService;
         _agentsService = agentsService;
+        _transactionsService = transactionsService;
     }
 
     public async Task<Ship> Run(
@@ -51,6 +55,7 @@ public class SurveyCommand : IShipCommandsService
             {
                 ship = ship with { Fuel = refuelResponse.Fuel };
                 await _agentsService.SetAsync(refuelResponse.Agent);
+                await _transactionsService.SetAsync(refuelResponse.Transaction);
                 continue;
             }
 

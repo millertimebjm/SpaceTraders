@@ -10,6 +10,7 @@ using SpaceTraders.Services.ShipJobs.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Systems.Interfaces;
+using SpaceTraders.Services.Transactions.Interfaces;
 using SpaceTraders.Services.Waypoints;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
@@ -18,32 +19,23 @@ namespace SpaceTraders.Services.ShipCommands;
 public class MiningToSellAnywhereCommand : IShipCommandsService
 {
     private readonly IShipCommandsHelperService _shipCommandsHelperService;
-    private readonly IShipsService _shipsService;
     private readonly IWaypointsService _waypointsService;
-    private readonly ISystemsService _systemsService;
     private readonly IAgentsService _agentsService;
     private readonly IShipStatusesCacheService _shipStatusesCacheService;
-    private readonly IShipJobsFactory _shipJobsFactory;
-    private readonly IPathsService _pathsService;
+    private readonly ITransactionsService _transactionsService;
     private readonly ShipCommandEnum _shipCommandEnum = ShipCommandEnum.MiningToSellAnywhere;
     public MiningToSellAnywhereCommand(
         IShipCommandsHelperService shipCommandsHelperService,
-        IShipsService shipsService,
         IWaypointsService waypointsService,
-        ISystemsService systemsService,
         IShipStatusesCacheService shipStatusesCacheService,
-        IShipJobsFactory shipJobsFactory,
         IAgentsService agentsService,
-        IPathsService pathsService)
+        ITransactionsService transactionsService)
     {
         _shipCommandsHelperService = shipCommandsHelperService;
-        _shipsService = shipsService;
         _waypointsService = waypointsService;
-        _systemsService = systemsService;
         _shipStatusesCacheService = shipStatusesCacheService;
-        _shipJobsFactory = shipJobsFactory;
         _agentsService = agentsService;
-        _pathsService = pathsService;
+        _transactionsService = transactionsService;
     }
 
     public async Task<Ship> Run(
@@ -66,6 +58,7 @@ public class MiningToSellAnywhereCommand : IShipCommandsService
             {
                 ship = ship with { Fuel = refuelResponse.Fuel };
                 await _agentsService.SetAsync(refuelResponse.Agent);
+                await _transactionsService.SetAsync(refuelResponse.Transaction);
                 continue;
             }
 
@@ -83,6 +76,7 @@ public class MiningToSellAnywhereCommand : IShipCommandsService
             {
                 ship = ship with { Cargo = sellCargoResponse.Cargo };
                 await _agentsService.SetAsync(sellCargoResponse.Agent);
+                await _transactionsService.SetAsync(sellCargoResponse.Transaction);
                 if (sellCargoResponse.Cargo.Units == 0 && ship.Registration.Role == ShipRegistrationRolesEnum.COMMAND.ToString())
                 {
                     ship = ship with { ShipCommand = null };

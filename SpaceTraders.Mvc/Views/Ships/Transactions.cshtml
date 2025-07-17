@@ -1,0 +1,16 @@
+﻿@using SpaceTraders.Models
+@using SpaceTraders.Mvc.Services
+@model ShipTransactionsModel
+@{
+    ViewData["Title"] = "Transactions";
+    var ship = Model.Ship;
+    var transactions = Model.Transactions;
+}
+
+<h3>@ship.Symbol - @ship.Registration.Role</h3>
+<ul>
+    @foreach (var transaction in transactions)
+    {
+        <li>@ViewHelperService.MinimalHumanReadableTimeSpan(transaction.Timestamp - DateTime.UtcNow) @transaction.WaypointSymbol @transaction.Type @transaction.TradeSymbol @transaction.PricePerUnit (@transaction.TotalPrice) </li>
+    }
+</ul>

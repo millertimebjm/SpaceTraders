@@ -7,6 +7,7 @@ using SpaceTraders.Services.ShipJobs.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Systems.Interfaces;
+using SpaceTraders.Services.Transactions.Interfaces;
 using SpaceTraders.Services.Waypoints;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
@@ -20,13 +21,15 @@ public class SupplyConstructionCommand : IShipCommandsService
     private readonly IShipStatusesCacheService _shipStatusesCacheService;
     private readonly IAgentsService _agentsService;
     private readonly IWaypointsCacheService _waypointsCacheService;
+    private readonly ITransactionsService _transactionsService;
     public SupplyConstructionCommand(
         IShipCommandsHelperService shipCommandsHelperService,
         IWaypointsService waypointsService,
         ISystemsService systemsService,
         IShipStatusesCacheService shipStatusesCacheService,
         IAgentsService agentsService,
-        IWaypointsCacheService waypointsCacheService)
+        IWaypointsCacheService waypointsCacheService,
+        ITransactionsService transactionsService)
     {
         _shipCommandsHelperService = shipCommandsHelperService;
         _waypointsService = waypointsService;
@@ -34,6 +37,7 @@ public class SupplyConstructionCommand : IShipCommandsService
         _shipStatusesCacheService = shipStatusesCacheService;
         _agentsService = agentsService;
         _waypointsCacheService = waypointsCacheService;
+        _transactionsService = transactionsService;
     }
 
     public async Task<Ship> Run(
@@ -62,6 +66,7 @@ public class SupplyConstructionCommand : IShipCommandsService
             {
                 ship = ship with { Fuel = refuelResponse.Fuel };
                 await _agentsService.SetAsync(refuelResponse.Agent);
+                await _transactionsService.SetAsync(refuelResponse.Transaction);
                 continue;
             }
 
@@ -97,6 +102,7 @@ public class SupplyConstructionCommand : IShipCommandsService
             {
                 ship = ship with { Cargo = purchaseCargoResult.Cargo };
                 await _agentsService.SetAsync(purchaseCargoResult.Agent);
+                await _transactionsService.SetAsync(purchaseCargoResult.Transaction);
                 continue;
             }
 

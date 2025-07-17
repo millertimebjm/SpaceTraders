@@ -5,6 +5,7 @@ using SpaceTraders.Services.Paths.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Systems.Interfaces;
+using SpaceTraders.Services.Transactions.Interfaces;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.ShipCommands;
@@ -14,15 +15,18 @@ public class ExplorationCommand : IShipCommandsService
     private readonly IShipCommandsHelperService _shipCommandsHelperService;
     private readonly IWaypointsService _waypointsService;
     private readonly IShipStatusesCacheService _shipStatusesCacheService;
+    private readonly ITransactionsService _transactionsService;
     private readonly ShipCommandEnum _shipCommandEnum = ShipCommandEnum.PurchaseShip;
     public ExplorationCommand(
         IShipCommandsHelperService shipCommandsHelperService,
         IWaypointsService waypointsService,
-        IShipStatusesCacheService shipStatusesCacheService)
+        IShipStatusesCacheService shipStatusesCacheService,
+        ITransactionsService transactionsService)
     {
         _shipCommandsHelperService = shipCommandsHelperService;
         _waypointsService = waypointsService;
         _shipStatusesCacheService = shipStatusesCacheService;
+        _transactionsService = transactionsService;
     }
 
     public async Task<Ship> Run(
@@ -47,6 +51,7 @@ public class ExplorationCommand : IShipCommandsService
             if (refuelResponse is not null)
             {
                 ship = ship with { Fuel = refuelResponse.Fuel };
+                await _transactionsService.SetAsync(refuelResponse.Transaction);
                 continue;
             }
 

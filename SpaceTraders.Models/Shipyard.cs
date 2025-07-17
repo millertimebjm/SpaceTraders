@@ -97,11 +97,5 @@ public record Shipyard(
  string Waypoint
     );
 
-    public record Transaction(
- string WaypointSymbol,
- string ShipType,
- int Price,
- string AgentSymbol,
- DateTime Timestamp
-    );
+ 
 

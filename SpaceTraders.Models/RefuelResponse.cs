@@ -2,5 +2,6 @@ namespace SpaceTraders.Models;
 
 public record RefuelResponse(
     Fuel Fuel,
-    Agent Agent
+    Agent Agent,
+    MarketTransaction Transaction
 );

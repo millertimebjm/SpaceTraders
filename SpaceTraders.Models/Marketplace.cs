@@ -1,10 +1,13 @@
 // Root myDeserializedClass = JsonConvert.DeserializeObject<Root>(myJsonResponse);
-    public record Marketplace(
+using SpaceTraders.Models;
+using SpaceTraders.Models.Enums;
+
+public record Marketplace(
  string Symbol,
  IReadOnlyList<Export> Exports,
  IReadOnlyList<Import> Imports,
  IReadOnlyList<Exchange> Exchange,
- IReadOnlyList<Transaction> Transactions,
+ IReadOnlyList<MarketTransaction> Transactions,
  IReadOnlyList<TradeGood>? TradeGoods
     );
 
@@ -38,12 +41,9 @@
 
     public record Transaction(
  string WaypointSymbol,
- string ShipSymbol,
- string TradeSymbol,
- string Type,
- int Units,
- int PricePerUnit,
- int TotalPrice,
+ ShipTypesEnum ShipType,
+ int Price,
+ string AgentSymbol,
  DateTime Timestamp
     );
 

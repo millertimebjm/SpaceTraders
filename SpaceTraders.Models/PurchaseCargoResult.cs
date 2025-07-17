@@ -2,5 +2,6 @@ namespace SpaceTraders.Models;
 
 public record PurchaseCargoResult(
     Cargo Cargo,
-    Agent Agent
+    Agent Agent,
+    MarketTransaction Transaction
 );

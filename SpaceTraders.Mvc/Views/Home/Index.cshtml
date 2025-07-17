@@ -20,7 +20,7 @@
                     {
                         <span><b>@shipStatus.Ship.ShipCommand.ShipCommandEnum.ToString()</b></span>
                     }
-                    <span>@shipStatus.Ship.Symbol (@shipStatus.Ship.Registration.Role)</span>
+                    <span><a href="/ships/@shipStatus.Ship.Symbol/transactions" target="_blank">@shipStatus.Ship.Symbol</a> (@shipStatus.Ship.Registration.Role)</span>
                     
                     @if (shipStatus.Ship.Cargo.Units > 0)
                     {

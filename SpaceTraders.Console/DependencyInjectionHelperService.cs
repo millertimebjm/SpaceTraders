@@ -26,6 +26,8 @@ using SpaceTraders.Services.Surveys;
 using SpaceTraders.Services.Surveys.Interfaces;
 using SpaceTraders.Services.Systems;
 using SpaceTraders.Services.Systems.Interfaces;
+using SpaceTraders.Services.Transactions;
+using SpaceTraders.Services.Transactions.Interfaces;
 using SpaceTraders.Services.Waypoints;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
@@ -57,6 +59,7 @@ public static class DependencyInjectionHelperService
         services.AddScoped<ISurveysCacheService, SurveysCacheService>();
         services.AddScoped<IShipLoopsService, ShipLoopsService>();
         services.AddScoped<IPathsService, PathsService>();
+        services.AddScoped<ITransactionsService, TransactionsServices>();
 
         // Ship Commands
         services.AddScoped<MiningToSellAnywhereCommand>();

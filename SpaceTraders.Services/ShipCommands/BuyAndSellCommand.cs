@@ -9,7 +9,7 @@ using SpaceTraders.Services.ShipJobs.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Systems.Interfaces;
-using SpaceTraders.Services.Waypoints;
+using SpaceTraders.Services.Transactions.Interfaces;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.ShipCommands;
@@ -24,6 +24,7 @@ public class BuyAndSellCommand : IShipCommandsService
     private readonly IShipStatusesCacheService _shipStatusesCacheService;
     private readonly IShipJobsFactory _shipJobsFactory;
     private readonly IPathsService _pathsService;
+    private readonly ITransactionsService _transactionsService;
     private readonly ShipCommandEnum _shipCommandEnum = ShipCommandEnum.BuyToSell;
     public BuyAndSellCommand(
         IShipCommandsHelperService shipCommandsHelperService,
@@ -33,7 +34,8 @@ public class BuyAndSellCommand : IShipCommandsService
         IShipStatusesCacheService shipStatusesCacheService,
         IShipJobsFactory shipJobsFactory,
         IAgentsService agentsService,
-        IPathsService pathsService)
+        IPathsService pathsService,
+        ITransactionsService transactionsService)
     {
         _shipCommandsHelperService = shipCommandsHelperService;
         _shipsService = shipsService;
@@ -43,6 +45,7 @@ public class BuyAndSellCommand : IShipCommandsService
         _shipJobsFactory = shipJobsFactory;
         _agentsService = agentsService;
         _pathsService = pathsService;
+        _transactionsService = transactionsService;
     }
 
     private const int COUNT_BEFORE_LOOP = 20;
@@ -85,6 +88,7 @@ public class BuyAndSellCommand : IShipCommandsService
             {
                 ship = ship with { Fuel = refuelResponse.Fuel };
                 await _agentsService.SetAsync(refuelResponse.Agent);
+                await _transactionsService.SetAsync(refuelResponse.Transaction);
                 continue;
             }
 
@@ -111,6 +115,7 @@ public class BuyAndSellCommand : IShipCommandsService
                 {
                     ship = ship with { ShipCommand = null };
                     await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"Resetting Job.", DateTime.UtcNow));
+                    await _transactionsService.SetAsync(sellCargoResponse.Transaction);
                     return ship;
                 }
                 continue;
@@ -121,6 +126,7 @@ public class BuyAndSellCommand : IShipCommandsService
             {
                 ship = ship with { Cargo = purchaseCargoResult.Cargo };
                 await _agentsService.SetAsync(purchaseCargoResult.Agent);
+                await _transactionsService.SetAsync(purchaseCargoResult.Transaction);
                 continue;
             }
 
