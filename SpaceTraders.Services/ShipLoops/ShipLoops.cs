@@ -114,7 +114,7 @@ public class ShipLoopsService : IShipLoopsService
                         await _shipStatusesCacheService.SetAsync(shipStatuses[i]);
                     }
 
-                    await Task.Delay(2000);
+                    await Task.Delay(1000);
                 }
 
                 TimeSpan? shortestCooldown = null;

@@ -6,6 +6,7 @@ using SpaceTraders.Services.Contracts.Interfaces;
 using SpaceTraders.Services.Marketplaces.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.Surveys.Interfaces;
+using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Transactions.Interfaces;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
@@ -21,6 +22,7 @@ public class ShipsController : BaseController
     private readonly IContractsService _contractsService;
     private readonly ISurveysCacheService _surveyCacheService;
     private readonly ITransactionsService _transactionsService;
+    private readonly IShipStatusesCacheService _shipStatusesCacheService;
 
     public ShipsController(
         ILogger<ShipsController> logger,
@@ -30,7 +32,8 @@ public class ShipsController : BaseController
         IAgentsService agentsService,
         IContractsService contractsService,
         ISurveysCacheService surveysCacheService,
-        ITransactionsService transactionsService) : base(agentsService)
+        ITransactionsService transactionsService,
+        IShipStatusesCacheService shipStatusesCacheService) : base(agentsService)
     {
         _logger = logger;
         _shipsService = shipsService;
@@ -40,6 +43,7 @@ public class ShipsController : BaseController
         _contractsService = contractsService;
         _surveyCacheService = surveysCacheService;
         _transactionsService = transactionsService;
+        _shipStatusesCacheService = shipStatusesCacheService;
     }
 
     [Route("/ships")]
@@ -177,7 +181,7 @@ public class ShipsController : BaseController
     public async Task<IActionResult> Transactions(string shipSymbol)
     {
         var model = new ShipTransactionsModel(
-            await _shipsService.GetAsync(shipSymbol),
+            (await _shipStatusesCacheService.GetAsync(shipSymbol)).Ship,
             await _transactionsService.GetAsync(shipSymbol)
         );
         return View(model);

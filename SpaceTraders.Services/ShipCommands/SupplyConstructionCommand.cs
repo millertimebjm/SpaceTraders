@@ -52,7 +52,7 @@ public class SupplyConstructionCommand : IShipCommandsService
             if (ShipsService.GetShipCooldown(ship) is not null) return ship;
             var paths = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
 
-            await Task.Delay(2000);
+            await Task.Delay(1000);
 
             // var cargo = await _shipCommandsHelperService.JettisonForSupplyConstruction(ship, constructionWaypoint);
             // if (cargo is not null)

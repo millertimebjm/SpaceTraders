@@ -38,7 +38,7 @@ public class PurchaseShipCommand : IShipCommandsService
         {
             if (ShipsService.GetShipCooldown(ship) is not null) return ship;
 
-            await Task.Delay(2000);
+            await Task.Delay(1000);
 
             var refuelResponse = await _shipCommandsHelperService.Refuel(ship, currentWaypoint);
             if (refuelResponse is not null)

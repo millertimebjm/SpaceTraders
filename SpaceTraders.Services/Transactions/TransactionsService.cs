@@ -17,10 +17,14 @@ public class TransactionsServices : ITransactionsService
         var filter = Builders<MarketTransaction>
             .Filter
             .Eq(w => w.ShipSymbol, shipSymbol);
+
         var collection = _collectionFactory.GetCollection<MarketTransaction>();
         var projection = Builders<MarketTransaction>.Projection.Exclude("_id");
+
         return await collection
             .Find(filter)
+            .SortByDescending(w => w.Timestamp)
+            .Limit(40)
             .Project<MarketTransaction>(projection)
             .ToListAsync();
     }

@@ -48,7 +48,7 @@ public class SurveyCommand : IShipCommandsService
 
             var paths = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
 
-            await Task.Delay(2000);
+            await Task.Delay(1000);
 
             var refuelResponse = await _shipCommandsHelperService.Refuel(ship, currentWaypoint);
             if (refuelResponse is not null)

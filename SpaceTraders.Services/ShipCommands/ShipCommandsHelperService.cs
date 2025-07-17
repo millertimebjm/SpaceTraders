@@ -495,7 +495,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             {
                 sellCargoResponse = await _marketplacesService.SellAsync(ship.Symbol, inventory.Symbol, inventory.Units);
             }
-            await Task.Delay(2000);
+            await Task.Delay(1000);
         }
         return sellCargoResponse;
     }

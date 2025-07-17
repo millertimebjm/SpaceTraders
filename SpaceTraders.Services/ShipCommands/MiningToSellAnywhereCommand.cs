@@ -48,7 +48,7 @@ public class MiningToSellAnywhereCommand : IShipCommandsService
             if (ShipsService.GetShipCooldown(ship) is not null) return ship;
             var sellingWaypoint = await _shipCommandsHelperService.GetClosestSellingWaypoint(ship, currentWaypoint);
 
-            await Task.Delay(2000);
+            await Task.Delay(1000);
 
             var executed = await _shipCommandsHelperService.Jettison(ship);
             if (executed) continue;
