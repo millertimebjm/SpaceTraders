@@ -22,6 +22,7 @@ public class ShipCommandsServiceFactory : IShipCommandsServiceFactory
             ShipCommandEnum.SupplyConstruction => _serviceProvider.GetRequiredService<SupplyConstructionCommand>(),
             ShipCommandEnum.Survey => _serviceProvider.GetRequiredService<SurveyCommand>(),
             ShipCommandEnum.PurchaseShip => _serviceProvider.GetRequiredService<PurchaseShipCommand>(),
+            ShipCommandEnum.Exploration => _serviceProvider.GetRequiredService<ExplorationCommand>(),
             _ => throw new ArgumentException($"Unknown command: {command}", nameof(command))
         };
     }

@@ -11,6 +11,8 @@
 <ul>
     @foreach (var transaction in transactions)
     {
-        <li>@ViewHelperService.MinimalHumanReadableTimeSpan(transaction.Timestamp - DateTime.UtcNow) @transaction.WaypointSymbol @transaction.Type @transaction.TradeSymbol @transaction.PricePerUnit (@transaction.TotalPrice) </li>
+        <text><li>
+            @(ViewHelperService.MinimalHumanReadableTimeSpan(transaction.Timestamp - DateTime.UtcNow)) @transaction.WaypointSymbol @transaction.Type @transaction.TradeSymbol @transaction.PricePerUnit @transaction.TotalPrice 
+        </li></text>
     }
 </ul>

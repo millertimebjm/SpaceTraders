@@ -41,7 +41,7 @@ public record Marketplace(
 
     public record Transaction(
  string WaypointSymbol,
- ShipTypesEnum ShipType,
+ string ShipType,
  int Price,
  string AgentSymbol,
  DateTime Timestamp

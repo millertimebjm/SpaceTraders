@@ -19,7 +19,7 @@ public record MarketTransaction(
     string WaypointSymbol,
     string ShipSymbol,
     string TradeSymbol,
-    TransactionTypeEnum Type,
+    string Type,
     int Units,
     int PricePerUnit,
     int TotalPrice,

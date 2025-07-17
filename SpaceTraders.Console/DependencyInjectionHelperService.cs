@@ -67,6 +67,7 @@ public static class DependencyInjectionHelperService
         services.AddScoped<SupplyConstructionCommand>();
         services.AddScoped<SurveyCommand>();
         services.AddScoped<PurchaseShipCommand>();
+        services.AddScoped<ExplorationCommand>();
 
         // Ship Jobs
         services.AddScoped<HaulerShipJobService>();

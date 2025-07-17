@@ -68,7 +68,8 @@ public class BuyAndSellCommand : IShipCommandsService
                 await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"Stuck in a loop.", DateTime.UtcNow));
                 return ship;
             }
-            if (ShipsService.GetShipCooldown(ship) is not null) return ship;
+            var cooldown = ShipsService.GetShipCooldown(ship);
+            if (cooldown is not null) return ship;
             var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
             var inventorySymbols = ship.Cargo.Inventory.Select(i => i.Symbol).ToHashSet();
 
