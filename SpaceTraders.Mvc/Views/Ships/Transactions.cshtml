@@ -9,10 +9,10 @@
 
 <h3>@ship.Symbol - @ship.Registration.Role</h3>
 <ul>
-    @foreach (var transaction in transactions)
+    @foreach (var transaction in transactions.OrderByDescending(t => t.Timestamp))
     {
         <text><li>
-            @(ViewHelperService.MinimalHumanReadableTimeSpan(transaction.Timestamp - DateTime.UtcNow)) @transaction.WaypointSymbol @transaction.Type @transaction.TradeSymbol @transaction.PricePerUnit @transaction.TotalPrice 
+            @(ViewHelperService.MinimalHumanReadableTimeSpan(DateTime.UtcNow - transaction.Timestamp)) @transaction.WaypointSymbol @transaction.Type @transaction.TradeSymbol $@transaction.PricePerUnit * #@transaction.Units = @transaction.TotalPrice
         </li></text>
     }
 </ul>

@@ -106,6 +106,7 @@ public class BuyAndSellCommand : IShipCommandsService
             {
                 ship = ship with { Cargo = sellCargoResponse.Cargo };
                 await _agentsService.SetAsync(sellCargoResponse.Agent);
+                await _transactionsService.SetAsync(sellCargoResponse.Transaction);
                 var firstHauler = shipsDictionary
                     .Where(s => s.Value.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString())
                     .OrderBy(s => s.Key)
@@ -116,7 +117,6 @@ public class BuyAndSellCommand : IShipCommandsService
                 {
                     ship = ship with { ShipCommand = null };
                     await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"Resetting Job.", DateTime.UtcNow));
-                    await _transactionsService.SetAsync(sellCargoResponse.Transaction);
                     return ship;
                 }
                 continue;
