@@ -10,6 +10,7 @@ using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.Shipyards.Interfaces;
 using SpaceTraders.Services.Surveys.Interfaces;
 using SpaceTraders.Services.Systems.Interfaces;
+using SpaceTraders.Services.Transactions.Interfaces;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.ShipCommands;
@@ -33,6 +34,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
     private readonly ISurveysCacheService _surveysCacheService;
     private readonly IShipyardsService _shipyardsService;
     private readonly IPathsService _pathsService;
+    private readonly ITransactionsService _transactionsService;
     public ShipCommandsHelperService(
         IShipsService shipsService,
         IMarketplacesService marketplacesService,
@@ -42,7 +44,8 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         IConstructionsService constructionsService,
         ISurveysCacheService surveysCacheService,
         IShipyardsService shipyardsService,
-        IPathsService pathsService)
+        IPathsService pathsService,
+        ITransactionsService transactionsService)
     {
         _shipsService = shipsService;
         _marketplacesService = marketplacesService;
@@ -53,6 +56,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         _surveysCacheService = surveysCacheService;
         _shipyardsService = shipyardsService;
         _pathsService = pathsService;
+        _transactionsService = transactionsService;
     }
 
     public async Task<PurchaseCargoResult?> PurchaseCargo(Ship ship, Waypoint currentWaypoint)
@@ -71,6 +75,18 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         var waypointSymbolsWithinRange = waypointsWithinRange.Select(wwr => wwr.Symbol).ToList();
 
         // Find closest marketplace with exports, with imports reachable, with supply at least MODERATE
+        // var moderateTradeGoodsWithinRange = system
+        //     .Waypoints
+        //     .Where(w => waypointSymbolsWithinRange.Contains(w.Symbol)
+        //         && w.Marketplace is not null
+        //         && w.Marketplace.TradeGoods is not null
+        //         && w.Marketplace.TradeGoods.Any(tg =>
+        //             tg.Type == "EXPORT"
+        //             && ((SupplyEnum)Enum.Parse(typeof(SupplyEnum), tg.Supply) >= SupplyEnum.LIMITED)
+        //             && system.Waypoints.Any(w2 => waypointSymbolsWithinRange.Contains(w2.Symbol)
+        //                 && w2.Marketplace is not null
+        //                 && w2.Marketplace.Imports.Any(i => tg.Symbol == i.Symbol))));
+
         var moderateTradeGoodsWithinRange = system
             .Waypoints
             .Where(w => waypointSymbolsWithinRange.Contains(w.Symbol)
@@ -78,10 +94,19 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
                 && w.Marketplace.TradeGoods is not null
                 && w.Marketplace.TradeGoods.Any(tg =>
                     tg.Type == "EXPORT"
-                    && ((SupplyEnum)Enum.Parse(typeof(SupplyEnum), tg.Supply) >= SupplyEnum.LIMITED)
-                    && system.Waypoints.Any(w2 => waypointSymbolsWithinRange.Contains(w2.Symbol)
+                    && Enum.Parse<SupplyEnum>(tg.Supply) >= SupplyEnum.LIMITED
+                    && system.Waypoints.Any(w2 =>
+                        waypointSymbolsWithinRange.Contains(w2.Symbol)
                         && w2.Marketplace is not null
-                        && w2.Marketplace.Imports.Any(i => tg.Symbol == i.Symbol))));
+                        && w2.Marketplace.TradeGoods is not null
+                        && w2.Marketplace.TradeGoods.Any(importTg =>
+                            importTg.Symbol == tg.Symbol
+                            && importTg.Type == "IMPORT"
+                            && Enum.Parse<SupplyEnum>(importTg.Supply) < SupplyEnum.ABUNDANT
+                        )
+                    )
+                )
+            );
 
         PurchaseCargoResult? purchaseCargoResult = null;
         if (moderateTradeGoodsWithinRange.Any(w => w.Symbol == currentWaypoint.Symbol))
@@ -93,21 +118,44 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             var marketplace = currentWaypoint.Marketplace;
             var inventoriesToBuy = marketplace.TradeGoods.Where(tg =>
                 tg.Type == "EXPORT"
-                && ((SupplyEnum)Enum.Parse(typeof(SupplyEnum), tg.Supply) >= SupplyEnum.LIMITED)
+                && (Enum.Parse<SupplyEnum>(tg.Supply) >= SupplyEnum.LIMITED)
                 && system.Waypoints.Any(w2 => waypointSymbolsWithinRange.Contains(w2.Symbol)
                     && w2.Marketplace is not null
                         && w2.Marketplace.Imports.Any(i => tg.Symbol == i.Symbol)));
             var inventoryToBuy = inventoriesToBuy.OrderBy(i => Enum.Parse<SupplyEnum>(i.Supply)).Last();
-            var amountToBuy = Math.Min(inventoryToBuy.TradeVolume, ship.Cargo.Capacity - ship.Cargo.Units);
+
+            var buyMore = true;
             var agent = await _agentsService.GetAsync();
-            if (amountToBuy * inventoryToBuy.PurchasePrice > agent.Credits)
+            while (
+                ship.Cargo.Units < ship.Cargo.Capacity
+                && buyMore
+                && Enum.Parse<SupplyEnum>(inventoryToBuy.Supply) >= SupplyEnum.LIMITED)
             {
-                amountToBuy = 1;
+                var amountToBuy = Math.Min(inventoryToBuy.TradeVolume, ship.Cargo.Capacity - ship.Cargo.Units);
+                if (amountToBuy * inventoryToBuy.PurchasePrice > agent.Credits)
+                {
+                    amountToBuy = 1;
+                    buyMore = false;
+                }
+                purchaseCargoResult = await _marketplacesService.PurchaseAsync(ship.Symbol, inventoryToBuy.Symbol, amountToBuy);
+                ship = ship with { Cargo = purchaseCargoResult.Cargo };
+                agent = purchaseCargoResult.Agent;
+                await _transactionsService.SetAsync(purchaseCargoResult.Transaction);
+                currentWaypoint = await _waypointsService.GetAsync(currentWaypoint.Symbol, refresh: true);
+                inventoryToBuy = currentWaypoint.Marketplace.TradeGoods.Single(tg => tg.Symbol == inventoryToBuy.Symbol);
+                await Task.Delay(500);
             }
 
-            purchaseCargoResult = await _marketplacesService.PurchaseAsync(ship.Symbol, inventoryToBuy.Symbol, amountToBuy);
-            ship = ship with { Cargo = purchaseCargoResult.Cargo };
-            currentWaypoint = await _waypointsService.GetAsync(currentWaypoint.Symbol, refresh: true);
+            // var amountToBuy = Math.Min(inventoryToBuy.TradeVolume, ship.Cargo.Capacity - ship.Cargo.Units);
+            // var agent = await _agentsService.GetAsync();
+            // if (amountToBuy * inventoryToBuy.PurchasePrice > agent.Credits)
+            // {
+            //     amountToBuy = 1;
+            // }
+
+            // purchaseCargoResult = await _marketplacesService.PurchaseAsync(ship.Symbol, inventoryToBuy.Symbol, amountToBuy);
+            // ship = ship with { Cargo = purchaseCargoResult.Cargo };
+            // currentWaypoint = await _waypointsService.GetAsync(currentWaypoint.Symbol, refresh: true);
         }
 
         return purchaseCargoResult;

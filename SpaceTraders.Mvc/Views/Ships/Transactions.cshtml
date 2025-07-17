@@ -8,11 +8,30 @@
 }
 
 <h3>@ship.Symbol - @ship.Registration.Role</h3>
-<ul>
-    @foreach (var transaction in transactions.Where(t => t.TradeSymbol != InventoryEnum.FUEL.ToString()).OrderByDescending(t => t.Timestamp))
-    {
-        <text><li>
-            @(ViewHelperService.MinimalHumanReadableTimeSpan(DateTime.UtcNow - transaction.Timestamp)) @transaction.WaypointSymbol @transaction.Type @transaction.TradeSymbol $@transaction.PricePerUnit * #@transaction.Units = @transaction.TotalPrice
-        </li></text>
-    }
-</ul>
+<table class="table">
+    <thead>
+        <tr>
+            <th>Time</th>
+            <th>Waypoint</th>
+            <th>Symbol</th>
+            <th style="text-align: center;">Type</th>
+            <th style="text-align: center;">Price</th>
+            <th style="text-align: center;">Qty</th>
+            <th style="text-align: center;">Total</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var transaction in transactions.Where(t => t.TradeSymbol != InventoryEnum.FUEL.ToString()).OrderByDescending(t => t.Timestamp))
+        {
+            <tr>
+                <td>@(ViewHelperService.MinimalHumanReadableTimeSpan(DateTime.UtcNow - transaction.Timestamp))</td>
+                <td>@transaction.WaypointSymbol</td>
+                <td>@transaction.TradeSymbol</td>
+                <td style="text-align: right;">@transaction.Type</td>
+                <td style="text-align: right;">@transaction.PricePerUnit</td>
+                <td style="text-align: right;">@transaction.Units</td>
+                <td style="text-align: right;">@transaction.TotalPrice</td>
+            </tr>
+        }
+    </tbody>
+</table>

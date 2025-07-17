@@ -132,7 +132,6 @@ public class BuyAndSellCommand : IShipCommandsService
                 {
                     ship = ship with { Cargo = purchaseCargoResult.Cargo };
                     await _agentsService.SetAsync(purchaseCargoResult.Agent);
-                    await _transactionsService.SetAsync(purchaseCargoResult.Transaction);
                     continue;
                 }
 
