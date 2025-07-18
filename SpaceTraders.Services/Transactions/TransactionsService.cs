@@ -12,7 +12,7 @@ public class TransactionsServices : ITransactionsService
         _collectionFactory = collectionFactory;
     }
 
-    public async Task<IReadOnlyList<MarketTransaction>> GetAsync(string shipSymbol)
+    public async Task<IReadOnlyList<MarketTransaction>> GetAsync(string shipSymbol, int take = 200)
     {
         var filter = Builders<MarketTransaction>
             .Filter
@@ -24,7 +24,7 @@ public class TransactionsServices : ITransactionsService
         return await collection
             .Find(filter)
             .SortByDescending(w => w.Timestamp)
-            .Limit(40)
+            .Limit(take)
             .Project<MarketTransaction>(projection)
             .ToListAsync();
     }
