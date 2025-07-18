@@ -71,51 +71,52 @@ public class ShipLoopsService : IShipLoopsService
         while (true)
             {
                 var shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
+                shipStatuses = shipStatuses.Where(ss => ss.Ship.Registration.Role != ShipRegistrationRolesEnum.SATELLITE.ToString()).ToList();
                 for (int i = 0; i < shipStatuses.Count(); i++)
+            {
+                var ship = shipStatuses[i].Ship;
+
+                if (ship.ShipCommand is null)
                 {
-                    var ship = shipStatuses[i].Ship;
-
-                    if (ship.ShipCommand is null)
+                    var shipJobsService = _shipJobsFactory.Get(Enum.Parse<ShipRegistrationRolesEnum>(shipStatuses[i].Ship.Registration.Role));
+                    if (shipJobsService is null)
                     {
-                        var shipJobsService = _shipJobsFactory.Get(Enum.Parse<ShipRegistrationRolesEnum>(shipStatuses[i].Ship.Registration.Role));
-                        if (shipJobsService is null)
-                        {
-                            ship = ship with { ShipCommand = null };
-                            shipStatuses[i] = shipStatuses[i] with { Ship = ship };
-                            await _shipStatusesCacheService.SetAsync(shipStatuses[i]);
-                            continue;
-                        }
-
-                        var shipCommand = await shipJobsService.Get(shipStatuses.Select(ss => ss.Ship).ToList(), shipStatuses[i].Ship);
-                        ship = ship with { ShipCommand = shipCommand };
+                        ship = ship with { ShipCommand = null };
                         shipStatuses[i] = shipStatuses[i] with { Ship = ship };
                         await _shipStatusesCacheService.SetAsync(shipStatuses[i]);
-                        if (shipCommand is null) continue;
+                        continue;
                     }
 
-                    var shipCommandService = _shipCommandsServiceFactory.Get(ship.ShipCommand.ShipCommandEnum);
-
-                    try
-                    {
-                        ship = await shipCommandService.Run(
-                            ship,
-                            shipStatuses.ToDictionary(ss => ss.Ship.Symbol, ss => ss.Ship));
-                        ship = ship with { Error = null };
-                    }
-                    catch (Exception ex)
-                    {
-                        var timeSpan = TimeSpan.FromMinutes(10);
-                        ship = ship with
-                        {
-                            Error = ex.Message,
-                            Cooldown = new Cooldown(ship.Symbol, (int)timeSpan.TotalSeconds, (int)timeSpan.TotalSeconds, DateTime.UtcNow.Add(timeSpan))
-                        };
-                        shipStatuses[i] = shipStatuses[i] with { Ship = ship };
-                        await _shipStatusesCacheService.SetAsync(shipStatuses[i]);
-                    }
-
-                    await Task.Delay(1000);
+                    var shipCommand = await shipJobsService.Get(shipStatuses.Select(ss => ss.Ship).ToList(), shipStatuses[i].Ship);
+                    ship = ship with { ShipCommand = shipCommand };
+                    shipStatuses[i] = shipStatuses[i] with { Ship = ship };
+                    await _shipStatusesCacheService.SetAsync(shipStatuses[i]);
+                    if (shipCommand is null) continue;
                 }
+
+                var shipCommandService = _shipCommandsServiceFactory.Get(ship.ShipCommand.ShipCommandEnum);
+
+                try
+                {
+                    ship = await shipCommandService.Run(
+                        ship,
+                        shipStatuses.ToDictionary(ss => ss.Ship.Symbol, ss => ss.Ship));
+                    ship = ship with { Error = null };
+                }
+                catch (Exception ex)
+                {
+                    var timeSpan = TimeSpan.FromMinutes(10);
+                    ship = ship with
+                    {
+                        Error = ex.Message,
+                        Cooldown = new Cooldown(ship.Symbol, (int)timeSpan.TotalSeconds, (int)timeSpan.TotalSeconds, DateTime.UtcNow.Add(timeSpan))
+                    };
+                    shipStatuses[i] = shipStatuses[i] with { Ship = ship };
+                    await _shipStatusesCacheService.SetAsync(shipStatuses[i]);
+                }
+
+                await Task.Delay(1000);
+            }
 
                 TimeSpan? shortestCooldown = null;
                 foreach (var shipStatus in shipStatuses)

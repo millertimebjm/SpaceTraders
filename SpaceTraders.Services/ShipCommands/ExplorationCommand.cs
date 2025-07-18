@@ -35,7 +35,6 @@ public class ExplorationCommand : IShipCommandsService
     {
         var currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol);
         if (currentWaypoint.Traits is null
-            || !currentWaypoint.Traits.Any()
             || currentWaypoint.Traits.Any(t => t.Symbol == WaypointTraitsEnum.UNCHARTED.ToString()))
         {
             currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol, refresh: true);

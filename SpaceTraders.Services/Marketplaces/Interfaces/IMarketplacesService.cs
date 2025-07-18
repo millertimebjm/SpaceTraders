@@ -9,4 +9,11 @@ public interface IMarketplacesService
     Task<RefuelResponse> RefuelAsync(string shipSymbol);
     Task<Cargo> SellAsync(string shipSymbol, InventoryEnum inventory, int units);
     Task<SellCargoResponse> SellAsync(string shipSymbol, string inventory, int units);
+    IReadOnlyList<TradeModel> BuildTradeModel(
+        IReadOnlyList<Waypoint> marketplaceWaypoints);
+    TradeModel? GetBestTrade(IReadOnlyList<TradeModel> trades);
+    TradeModel? GetAnyBestTrade(IReadOnlyList<TradeModel> trades);
+    SellModel? GetBestSellModel(IReadOnlyList<SellModel> sellModels);
+    IReadOnlyList<SellModel> BuildSellModel(
+        IReadOnlyList<Waypoint> waypoints);
 }

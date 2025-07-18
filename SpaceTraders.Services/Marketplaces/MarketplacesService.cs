@@ -6,7 +6,6 @@ using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.HttpHelpers;
 using SpaceTraders.Services.Marketplaces.Interfaces;
-using SpaceTraders.Services.Shipyards.Interfaces;
 using SpaceTraders.Services.Waypoints;
 
 namespace SpaceTraders.Services.Marketplaces;
@@ -25,9 +24,9 @@ public class MarketplacesService : IMarketplacesService
     {
         _logger = logger;
         _httpClient = httpClient;
-        _apiUrl = configuration[$"SpaceTrader:"+ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
+        _apiUrl = configuration[$"SpaceTrader:" + ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
         ArgumentException.ThrowIfNullOrWhiteSpace(_apiUrl);
-        _token = configuration[$"SpaceTrader:"+ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
+        _token = configuration[$"SpaceTrader:" + ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
         ArgumentException.ThrowIfNullOrWhiteSpace(_token);
     }
 
@@ -128,4 +127,151 @@ public class MarketplacesService : IMarketplacesService
         if (data.Datum is null) throw new HttpRequestException("Result not retrieved");
         return data.Datum;
     }
+
+
+
+    public IReadOnlyList<TradeModel> BuildTradeModel(
+        IReadOnlyList<Waypoint> marketplaceWaypoints)
+    {
+        marketplaceWaypoints = marketplaceWaypoints.Where(w => w.Marketplace is not null && w.Marketplace.TradeGoods is not null).ToList();
+        List<TradeModel> tradeModels = new();
+        foreach (var marketplaceWaypointExport in marketplaceWaypoints.Where(w => w.Marketplace.Exports.Any()).ToList())
+        {
+            foreach (var export in marketplaceWaypointExport.Marketplace.TradeGoods.Where(tg => tg.Type == "EXPORT").ToList())
+            {
+                foreach (var marketplaceWaypointImport in marketplaceWaypoints.Where(w => w.Marketplace.Imports.Any()).ToList())
+                {
+                    foreach (var import in marketplaceWaypointImport.Marketplace.TradeGoods.Where(tg => tg.Type == "IMPORT" && tg.Symbol == export.Symbol))
+                    {
+                        tradeModels.Add(new TradeModel(
+                            export.Symbol,
+                            marketplaceWaypointExport.Symbol,
+                            export.PurchasePrice,
+                            Enum.Parse<SupplyEnum>(export.Supply),
+                            export.TradeVolume,
+                            marketplaceWaypointImport.Symbol,
+                            import.SellPrice,
+                            Enum.Parse<SupplyEnum>(import.Supply),
+                            import.TradeVolume
+                        ));
+                    }
+                }
+                foreach (var marketplaceWaypointExchange in marketplaceWaypoints.Where(w => w.Marketplace.Exchange.Any()).ToList())
+                {
+                    foreach (var import in marketplaceWaypointExchange.Marketplace.TradeGoods.Where(tg => tg.Type == "EXCHANGE" && tg.Symbol == export.Symbol))
+                    {
+                        tradeModels.Add(new TradeModel(
+                            export.Symbol,
+                            marketplaceWaypointExport.Symbol,
+                            export.PurchasePrice,
+                            Enum.Parse<SupplyEnum>(export.Supply),
+                            export.TradeVolume,
+                            marketplaceWaypointExchange.Symbol,
+                            import.SellPrice,
+                            Enum.Parse<SupplyEnum>(import.Supply),
+                            import.TradeVolume
+                        ));
+                    }
+                }
+            }
+        }
+        return tradeModels;
+    }
+
+
+    public TradeModel? GetBestTrade(IReadOnlyList<TradeModel> trades)
+    {
+        var orderedTrades = trades
+            .Where(t => t.ImportSellPrice > t.ExportBuyPrice) // only profitable trades
+            .OrderByDescending(t =>
+                (t.ImportSellPrice - t.ExportBuyPrice) *
+                SupplyFactor(t.ExportSupplyEnum, t.ImportSupplyEnum)
+            ).ToList();
+        return orderedTrades.FirstOrDefault();
+    }
+
+    public TradeModel? GetAnyBestTrade(IReadOnlyList<TradeModel> trades)
+    {
+        var orderedTrades = trades
+            .OrderByDescending(t =>
+                (t.ImportSellPrice - t.ExportBuyPrice) *
+                SupplyFactor(t.ExportSupplyEnum, t.ImportSupplyEnum)
+            ).ToList();
+        return orderedTrades.FirstOrDefault();
+    }
+
+    private double SupplyFactor(SupplyEnum export, SupplyEnum import)
+    {
+        // Assign numeric values to supply levels (tune these based on game logic)
+        double exportMultiplier = export switch
+        {
+            SupplyEnum.ABUNDANT => 1.2,
+            SupplyEnum.HIGH => 1.0,
+            SupplyEnum.MODERATE => 0.8,
+            SupplyEnum.LIMITED => 0.5,
+            SupplyEnum.SCARCE => 0.3,
+            _ => 0
+        };
+
+        double importMultiplier = import switch
+        {
+            SupplyEnum.ABUNDANT => 0.3,
+            SupplyEnum.HIGH => 0.5,
+            SupplyEnum.MODERATE => 0.8,
+            SupplyEnum.LIMITED => 1.0,
+            SupplyEnum.SCARCE => 1.2,
+            _ => 0
+        };
+
+        return exportMultiplier * importMultiplier;
+    }
+
+    public IReadOnlyList<SellModel> BuildSellModel(
+        IReadOnlyList<Waypoint> waypoints)
+    {
+        var marketplaceWaypoints = waypoints.Where(w => w.Marketplace is not null && w.Marketplace.TradeGoods is not null).ToList();
+        List<SellModel> sellModels = new();
+        foreach (var marketplaceWaypoint in marketplaceWaypoints)
+        {
+            foreach (var tradeGood in marketplaceWaypoint.Marketplace.TradeGoods)
+            {
+                sellModels.Add(new SellModel(
+                    tradeGood.Symbol,
+                    marketplaceWaypoint.Symbol,
+                    tradeGood.SellPrice,
+                    Enum.Parse<SupplyEnum>(tradeGood.Supply),
+                    tradeGood.TradeVolume
+                ));
+            }
+        }
+        return sellModels;
+    }
+    public SellModel? GetBestSellModel(IReadOnlyList<SellModel> sellModels)
+    {
+        var orderedTrades = sellModels
+            .OrderByDescending(m =>
+                m.SellPrice
+            ).ToList();
+        return orderedTrades.FirstOrDefault();
+    }
 }
+
+public record TradeModel(
+    string TradeSymbol,
+    string ExportWaypointSymbol,
+    int ExportBuyPrice,
+    SupplyEnum ExportSupplyEnum,
+    int ExportTradeVolume,
+    string ImportWaypointSymbol,
+    int ImportSellPrice,
+    SupplyEnum ImportSupplyEnum,
+    int ImportTradeVolume
+);
+
+public record SellModel(
+    string TradeSymbol,
+    string WaypointSymbol,
+    int SellPrice,
+    SupplyEnum SupplyEnum,
+    int TradeVolume
+);

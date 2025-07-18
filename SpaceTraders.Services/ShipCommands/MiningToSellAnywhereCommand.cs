@@ -71,28 +71,6 @@ public class MiningToSellAnywhereCommand : IShipCommandsService
                 continue;
             }
 
-            var sellCargoResponse = await _shipCommandsHelperService.Sell(ship, currentWaypoint);
-            if (sellCargoResponse is not null)
-            {
-                ship = ship with { Cargo = sellCargoResponse.Cargo };
-                await _agentsService.SetAsync(sellCargoResponse.Agent);
-                await _transactionsService.SetAsync(sellCargoResponse.Transaction);
-                if (sellCargoResponse.Cargo.Units == 0 && ship.Registration.Role == ShipRegistrationRolesEnum.COMMAND.ToString())
-                {
-                    ship = ship with { ShipCommand = null };
-                    await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"Resetting Job.", DateTime.UtcNow));
-                    return ship;
-                }
-                continue;
-            }
-
-            nav = await _shipCommandsHelperService.Orbit(ship, currentWaypoint);
-            if (nav is not null)
-            {
-                ship = ship with { Nav = nav };
-                continue;
-            }
-
             (nav, var fuel) = await _shipCommandsHelperService.NavigateToMiningWaypoint(ship, currentWaypoint);
             if (nav is not null && fuel is not null)
             {
@@ -115,6 +93,27 @@ public class MiningToSellAnywhereCommand : IShipCommandsService
                 ship = ship with { Nav = nav, Fuel = fuel };
                 await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"NavigateToMarketplaceImport {nav.Route.Destination.Symbol}", DateTime.UtcNow));
                 return ship;
+            }
+
+            var sellCargoResponse = await _shipCommandsHelperService.Sell(ship, currentWaypoint);
+            if (sellCargoResponse is not null)
+            {
+                ship = ship with { Cargo = sellCargoResponse.Cargo };
+                await _agentsService.SetAsync(sellCargoResponse.Agent);
+                if (sellCargoResponse.Cargo.Units == 0 && ship.Registration.Role == ShipRegistrationRolesEnum.COMMAND.ToString())
+                {
+                    ship = ship with { ShipCommand = null };
+                    await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"Resetting Job.", DateTime.UtcNow));
+                    return ship;
+                }
+                continue;
+            }
+
+            nav = await _shipCommandsHelperService.Orbit(ship, currentWaypoint);
+            if (nav is not null)
+            {
+                ship = ship with { Nav = nav };
+                continue;
             }
 
             throw new Exception($"Infinite loop, no work planned. {ship.Symbol}, {currentWaypoint.Symbol}, {string.Join(":", ship.Cargo.Inventory.Select(i => $"{i.Name}/{i.Units}"))}, {ship.Fuel.Current}/{ship.Fuel.Capacity}");

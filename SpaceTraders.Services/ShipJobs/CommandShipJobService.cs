@@ -41,7 +41,7 @@ public class CommandShipJobService : IShipJobService
             var miningDrones = shipTypesInSystem.SingleOrDefault(st => st.Key == ShipRegistrationRolesEnum.EXCAVATOR.ToString())?.Count() ?? 0;
             var lightHaulers = shipTypesInSystem.SingleOrDefault(st => st.Key == ShipRegistrationRolesEnum.HAULER.ToString())?.Count() ?? 0;
             var surveyShips = shipTypesInSystem.SingleOrDefault(st => st.Key == ShipRegistrationRolesEnum.SURVEYOR.ToString())?.Count() ?? 0;
-            if (miningDrones < 5
+            if (miningDrones < 10
                 || lightHaulers < 5
                 || miningDrones == 0)
             {
@@ -83,7 +83,6 @@ public class CommandShipJobService : IShipJobService
             .Keys
             .Any(p =>
                 p.Traits is null
-                || !p.Traits.Any()
                 || p.Traits.Any(t => t.Symbol == WaypointTraitsEnum.UNCHARTED.ToString())))
         {
             return new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration);
