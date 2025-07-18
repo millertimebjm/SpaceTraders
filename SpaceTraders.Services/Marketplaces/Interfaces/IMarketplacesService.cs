@@ -16,4 +16,8 @@ public interface IMarketplacesService
     SellModel? GetBestSellModel(IReadOnlyList<SellModel> sellModels);
     IReadOnlyList<SellModel> BuildSellModel(
         IReadOnlyList<Waypoint> waypoints);
+    Task SaveTradeModelsAsync(IReadOnlyList<Waypoint> waypoints);
+    Task<IReadOnlyList<TradeModel>> GetTradeModelsAsync();
+    IReadOnlyList<TradeModel> GetBestOrderedTrades(IReadOnlyList<TradeModel> trades);
+
 }

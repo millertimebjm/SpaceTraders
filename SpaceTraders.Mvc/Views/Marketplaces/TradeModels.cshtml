@@ -1,0 +1,42 @@
+﻿@using SpaceTraders.Models
+@using SpaceTraders.Mvc.Services
+@using SpaceTraders.Services.Marketplaces
+@model (string, IReadOnlyList<TradeModel>)
+@{
+    ViewData["Title"] = "Transactions";
+    var systemSymbol = Model.Item1;
+    IReadOnlyList<TradeModel> tradeModels = Model.Item2;
+}
+
+<h3>@systemSymbol</h3>
+<table class="table">
+    <thead>
+        <tr>
+            <th>TradeSymbol</th>
+            <th>Export WP</th>
+            <th>Buy</th>
+            <th style="text-align: center;">Supply</th>
+            <th style="text-align: center;">Trade AMT</th>
+            <th>Import WP</th>
+            <th>Buy</th>
+            <th style="text-align: center;">Supply</th>
+            <th style="text-align: center;">Trade AMT</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var tradeModel in tradeModels)
+        {
+            <tr>
+                <td>@tradeModel.TradeSymbol</td>
+                <td>@tradeModel.ExportWaypointSymbol</td>
+                <td>@tradeModel.ExportBuyPrice</td>
+                <td>@tradeModel.ExportSupplyEnum</td>
+                <td>@tradeModel.ExportTradeVolume</td>
+                <td>@tradeModel.ImportWaypointSymbol</td>
+                <td>@tradeModel.ImportSellPrice</td>
+                <td>@tradeModel.ImportSupplyEnum</td>
+                <td>@tradeModel.ImportTradeVolume</td>
+            </tr>
+        }
+    </tbody>
+</table>

@@ -5,6 +5,7 @@ using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Interfaces;
+using SpaceTraders.Services.Marketplaces.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.ShipJobs.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
@@ -23,6 +24,7 @@ public class ShipLoopsService : IShipLoopsService
     private readonly IShipJobsFactory _shipJobsFactory;
     private readonly IShipCommandsServiceFactory _shipCommandsServiceFactory;
     private readonly IWaypointsService _waypointsService;
+    private readonly IMarketplacesService _marketplacesService;
     private readonly ILogger<ShipLoopsService> _logger;
 
     public ShipLoopsService(
@@ -33,6 +35,7 @@ public class ShipLoopsService : IShipLoopsService
         IShipJobsFactory shipJobsFactory,
         IShipCommandsServiceFactory shipCommandsServiceFactory,
         IWaypointsService waypointsService,
+        IMarketplacesService marketplacesService,
         ILogger<ShipLoopsService> logger
     )
     {
@@ -43,6 +46,7 @@ public class ShipLoopsService : IShipLoopsService
         _shipJobsFactory = shipJobsFactory;
         _shipCommandsServiceFactory = shipCommandsServiceFactory;
         _waypointsService = waypointsService;
+        _marketplacesService = marketplacesService;
         _logger = logger;
     }
 
@@ -69,10 +73,10 @@ public class ShipLoopsService : IShipLoopsService
         }
 
         while (true)
-            {
-                var shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
-                shipStatuses = shipStatuses.Where(ss => ss.Ship.Registration.Role != ShipRegistrationRolesEnum.SATELLITE.ToString()).ToList();
-                for (int i = 0; i < shipStatuses.Count(); i++)
+        {
+            var shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
+            shipStatuses = shipStatuses.Where(ss => ss.Ship.Registration.Role != ShipRegistrationRolesEnum.SATELLITE.ToString()).ToList();
+            for (int i = 0; i < shipStatuses.Count(); i++)
             {
                 var ship = shipStatuses[i].Ship;
 
@@ -118,25 +122,28 @@ public class ShipLoopsService : IShipLoopsService
                 await Task.Delay(1000);
             }
 
-                TimeSpan? shortestCooldown = null;
-                foreach (var shipStatus in shipStatuses)
-                {
-                    var cooldown = ShipsService.GetShipCooldown(shipStatus.Ship);
-                    if (cooldown is null || cooldown.Value.TotalSeconds < 0)
-                    {
-                        shortestCooldown = null;
-                        break;
-                    }
+            var system = await _systemsService.GetAsync(shipStatuses.First().Ship.Nav.SystemSymbol);
+            await _marketplacesService.SaveTradeModelsAsync(system.Waypoints);
 
-                    if (shortestCooldown is null || cooldown.Value < shortestCooldown.Value)
-                        shortestCooldown = cooldown.Value;
-                }
-                if (shortestCooldown is not null
-                    && shortestCooldown.Value.TotalMilliseconds > 0)
+            TimeSpan? shortestCooldown = null;
+            foreach (var shipStatus in shipStatuses)
+            {
+                var cooldown = ShipsService.GetShipCooldown(shipStatus.Ship);
+                if (cooldown is null || cooldown.Value.TotalSeconds < 0)
                 {
-                    await Task.Delay(shortestCooldown.Value);
+                    shortestCooldown = null;
+                    break;
                 }
+
+                if (shortestCooldown is null || cooldown.Value < shortestCooldown.Value)
+                    shortestCooldown = cooldown.Value;
             }
+            if (shortestCooldown is not null
+                && shortestCooldown.Value.TotalMilliseconds > 0)
+            {
+                await Task.Delay(shortestCooldown.Value);
+            }
+        }
     }
     
     public static DateTime? MinimumDate(DateTime? d1, DateTime? d2)

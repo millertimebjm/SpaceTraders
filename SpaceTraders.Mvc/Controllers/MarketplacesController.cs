@@ -36,4 +36,12 @@ public class MarketplacesController : BaseController
     //         marketplaceWaypointSymbol
     //     });
     // }
+
+    [Route("/marketplaces/{systemSymbol}/trademodels")]
+    public async Task<IActionResult> TradeModels(string systemSymbol)
+    {
+        var modelTrades = await _marketplacesService.GetTradeModelsAsync();
+        var orderedModelTrades = _marketplacesService.GetBestOrderedTrades(modelTrades);
+        return View((systemSymbol, orderedModelTrades));
+    }
 }

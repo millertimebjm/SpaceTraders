@@ -101,7 +101,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             paths = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
 
             newTradeModels = _marketplacesService.BuildTradeModel(paths.Keys.ToList());
-            newBestTrade = _marketplacesService.GetBestTrade(tradeModels);
+            newBestTrade = _marketplacesService.GetBestTrade(newTradeModels);
         }
         return purchaseCargoResult;
         // var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
@@ -308,7 +308,8 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             var paths = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
 
             var sellModels = _marketplacesService.BuildSellModel(paths.Keys.ToList());
-            sellModels = sellModels.Where(tm => tm.TradeSymbol == ship.Cargo.Inventory.OrderByDescending(i => i.Units).ThenBy(i => i.Symbol).First().Symbol).ToList();
+            var inventoryToSell = ship.Cargo.Inventory.OrderByDescending(i => i.Units).ThenBy(i => i.Symbol).First().Symbol;
+            sellModels = sellModels.Where(tm => tm.TradeSymbol == inventoryToSell).ToList();
 
             var bestTrade = _marketplacesService.GetBestSellModel(sellModels);
             if (bestTrade is null) return null;
@@ -553,7 +554,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
         var paths = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
         var tradeModels = _marketplacesService.BuildSellModel(paths.Keys.ToList());
-        var inventoryToSell = ship.Cargo.Inventory.OrderByDescending(i => i.Units).First().Symbol;
+        var inventoryToSell = ship.Cargo.Inventory.OrderByDescending(i => i.Units).ThenBy(i => i.Symbol).First().Symbol;
         tradeModels = tradeModels.Where(tm => tm.TradeSymbol == inventoryToSell).ToList();
         var bestTrade = _marketplacesService.GetBestSellModel(tradeModels);
         if (bestTrade is null) return null;
@@ -661,7 +662,8 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
         var paths = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
         var sellModels = _marketplacesService.BuildSellModel(paths.Keys.ToList());
-        sellModels = sellModels.Where(tm => tm.TradeSymbol == ship.Cargo.Inventory.OrderByDescending(i => i.Units).First().Symbol).ToList();
+        var inventoryToSell = ship.Cargo.Inventory.OrderByDescending(i => i.Units).ThenBy(i => i.Symbol).First().Symbol;
+        sellModels = sellModels.Where(tm => tm.TradeSymbol == inventoryToSell).ToList();
         var bestTrade = _marketplacesService.GetBestSellModel(sellModels);
         if (bestTrade is null) return (null, null);
         var shortestPath = paths.Single(p => p.Key.Symbol == bestTrade.WaypointSymbol);

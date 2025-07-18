@@ -2,6 +2,7 @@
 using System.Net.Http.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using MongoDB.Driver;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.HttpHelpers;
@@ -15,11 +16,13 @@ public class MarketplacesService : IMarketplacesService
     private readonly string _apiUrl;
     private readonly HttpClient _httpClient;
     private readonly string _token;
+    private readonly IMongoCollectionFactory _collectionFactory;
     private readonly ILogger<MarketplacesService> _logger;
 
     public MarketplacesService(
         HttpClient httpClient,
         IConfiguration configuration,
+        IMongoCollectionFactory collectionFactory,
         ILogger<MarketplacesService> logger)
     {
         _logger = logger;
@@ -28,6 +31,7 @@ public class MarketplacesService : IMarketplacesService
         ArgumentException.ThrowIfNullOrWhiteSpace(_apiUrl);
         _token = configuration[$"SpaceTrader:" + ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
         ArgumentException.ThrowIfNullOrWhiteSpace(_token);
+        _collectionFactory = collectionFactory;
     }
 
     public async Task<Marketplace> GetAsync(string marketplaceWaypointSymbol)
@@ -179,14 +183,42 @@ public class MarketplacesService : IMarketplacesService
     }
 
 
+    // public TradeModel? GetBestTrade(IReadOnlyList<TradeModel> trades)
+    // {
+    //     var orderedTrades = trades
+    //         .Where(t => t.ImportSellPrice > t.ExportBuyPrice) // only profitable trades
+    //         .OrderByDescending(t =>
+    //             (t.ImportSellPrice - t.ExportBuyPrice) *
+    //             SupplyFactor(t.ExportSupplyEnum, t.ImportSupplyEnum)
+    //         ).ToList();
+    //     return orderedTrades.FirstOrDefault();
+    // }
+
+    public IReadOnlyList<TradeModel> GetBestOrderedTrades(IReadOnlyList<TradeModel> trades)
+    {
+        const double profitWeight = 0.5;
+        const double marginWeight = 0.5;
+
+        var orderedTrades = trades
+            .Where(t => t.ImportSellPrice > t.ExportBuyPrice)
+            .OrderByDescending(t =>
+            {
+                var profit = t.ImportSellPrice - t.ExportBuyPrice;
+                var marginPercent = (double)profit / t.ExportBuyPrice;
+
+                var score =
+                    (profitWeight * profit) +
+                    (marginWeight * marginPercent * 100); // scale percentage for balance
+
+                return score * SupplyFactor(t.ExportSupplyEnum, t.ImportSupplyEnum);
+            })
+            .ToList();
+        return orderedTrades;
+    }
+
     public TradeModel? GetBestTrade(IReadOnlyList<TradeModel> trades)
     {
-        var orderedTrades = trades
-            .Where(t => t.ImportSellPrice > t.ExportBuyPrice) // only profitable trades
-            .OrderByDescending(t =>
-                (t.ImportSellPrice - t.ExportBuyPrice) *
-                SupplyFactor(t.ExportSupplyEnum, t.ImportSupplyEnum)
-            ).ToList();
+        var orderedTrades = GetBestOrderedTrades(trades);
         return orderedTrades.FirstOrDefault();
     }
 
@@ -205,9 +237,9 @@ public class MarketplacesService : IMarketplacesService
         // Assign numeric values to supply levels (tune these based on game logic)
         double exportMultiplier = export switch
         {
-            SupplyEnum.ABUNDANT => 1.2,
-            SupplyEnum.HIGH => 1.0,
-            SupplyEnum.MODERATE => 0.8,
+            SupplyEnum.ABUNDANT => 5,
+            SupplyEnum.HIGH => 3,
+            SupplyEnum.MODERATE => 1,
             SupplyEnum.LIMITED => 0.5,
             SupplyEnum.SCARCE => 0.3,
             _ => 0
@@ -253,6 +285,25 @@ public class MarketplacesService : IMarketplacesService
                 m.SellPrice
             ).ToList();
         return orderedTrades.FirstOrDefault();
+    }
+
+    public async Task<IReadOnlyList<TradeModel>> GetTradeModelsAsync()
+    {
+        var collection = _collectionFactory.GetCollection<TradeModel>();
+        var projection = Builders<TradeModel>.Projection.Exclude("_id");
+
+        return await collection
+            .Find(FilterDefinition<TradeModel>.Empty)
+            .Project<TradeModel>(projection)
+            .ToListAsync();
+    }
+
+    public async Task SaveTradeModelsAsync(IReadOnlyList<Waypoint> waypoints)
+    {
+        var tradeModels = BuildTradeModel(waypoints);
+        var collection = _collectionFactory.GetCollection<TradeModel>();
+        await collection.DeleteManyAsync(FilterDefinition<TradeModel>.Empty);
+        await collection.InsertManyAsync(tradeModels, new InsertManyOptions(), CancellationToken.None);
     }
 }
 
