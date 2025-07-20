@@ -3,7 +3,7 @@
 @using SpaceTraders.Services.Marketplaces
 @model (string, IReadOnlyList<TradeModel>)
 @{
-    ViewData["Title"] = "Transactions";
+    ViewData["Title"] = "Trade Models";
     var systemSymbol = Model.Item1;
     IReadOnlyList<TradeModel> tradeModels = Model.Item2;
 }

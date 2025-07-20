@@ -31,6 +31,7 @@ public class HaulerShipJobService : IShipJobService
         if (unfinishedJumpGateWaypoint is not null
             && unfinishedJumpGateWaypoint.IsUnderConstruction
             && ships.Where(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()).Count() >= 5
+            && ships.Where(s => s.Registration.Role == ShipRegistrationRolesEnum.EXCAVATOR.ToString()).Count() >= 9
             && !ships.Where(s => s.Symbol != ship.Symbol).Any(s => s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.SupplyConstruction)
             && ship.Symbol == firstHauler?.Symbol
             && (agent.Credits > 600_000

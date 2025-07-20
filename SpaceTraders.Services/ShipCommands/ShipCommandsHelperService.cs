@@ -357,7 +357,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
                 {
                     tradeModels = tradeModels.Where(tm => tm.TradeSymbol == ship.Cargo.Inventory.OrderByDescending(i => i.Symbol).First().Symbol).ToList();
                 }
-                var bestTrade = _marketplacesService.GetAnyBestTrade(tradeModels);
+                var bestTrade = _marketplacesService.GetBestTrade(tradeModels);
                 if (bestTrade is null) return null;
                 if (ship.Cargo.Units > 0 && bestTrade.ImportWaypointSymbol == currentWaypoint.Symbol) shouldDock = true;
                 if (ship.Cargo.Units == 0 && bestTrade.ExportWaypointSymbol == currentWaypoint.Symbol) shouldDock = true;
@@ -426,12 +426,22 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         ExtractionResult? extractionResult = null;
         while (extractionResult is null)
         {
-            IEnumerable<Survey> surveys = (await _surveysCacheService
+            var surveys = (await _surveysCacheService
                     .GetAsync(currentWaypoint.Symbol))
-                    .OrderBy(s => s.Expiration);
+                    .OrderBy(s => s.Expiration)
+                    .ToDictionary(s => s, s => s.Deposits.GroupBy(d => d.Symbol));
+            
+
             try
             {
-                var survey = surveys.FirstOrDefault();
+                var largetsInventory = ship.Cargo.Inventory.OrderByDescending(i => i.Units).FirstOrDefault();
+                var survey = surveys.Where(s => s.Value.OrderByDescending(d => d.Count()).FirstOrDefault()?.Key == largetsInventory?.Symbol).FirstOrDefault().Key;
+                if (survey == default) surveys.FirstOrDefault();
+
+                // var largetsInventory = ship.Cargo.Inventory.OrderByDescending(i => i.Units).FirstOrDefault();
+                // var survey = largetsInventory is not null
+                //     ? surveys.FirstOrDefault(s => s.Deposits.Any(d => d.Symbol == largetsInventory.Symbol))
+                //     : surveys.FirstOrDefault();
 
                 if (survey is not null)
                 {
@@ -445,7 +455,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             {
                 if (surveys.Any())
                 {
-                    await _surveysCacheService.DeleteAsync(surveys.First().Signature);
+                    await _surveysCacheService.DeleteAsync(surveys.First().Key.Signature);
                 }
                 await Task.Delay(1000);
             }
@@ -1042,17 +1052,14 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             .Where(s => s.Nav.SystemSymbol == system.Symbol)
             .GroupBy(s => s.Registration.Role);
 
-        if ((shipsInSystem.SingleOrDefault(sin => sin.Key == ShipRegistrationRolesEnum.EXCAVATOR.ToString())?.Count() ?? 0)
-            > (shipsInSystem.SingleOrDefault(sin => sin.Key == ShipRegistrationRolesEnum.HAULER.ToString())?.Count() ?? 0))
-        {
-            return Task.FromResult((ShipTypesEnum?)ShipTypesEnum.SHIP_LIGHT_HAULER);
-        }
-
-        if ((shipsInSystem.SingleOrDefault(sin => sin.Key == ShipRegistrationRolesEnum.EXCAVATOR.ToString())?.Count() ?? 0)
-            == (shipsInSystem.SingleOrDefault(sin => sin.Key == ShipRegistrationRolesEnum.HAULER.ToString())?.Count() ?? 0)
-            && (shipsInSystem.SingleOrDefault(sin => sin.Key == ShipRegistrationRolesEnum.EXCAVATOR.ToString())?.Count() ?? 0) < 5)
+        if ((shipsInSystem.SingleOrDefault(sin => sin.Key == ShipRegistrationRolesEnum.EXCAVATOR.ToString())?.Count() ?? 0) < 9)
         {
             return Task.FromResult((ShipTypesEnum?)ShipTypesEnum.SHIP_MINING_DRONE);
+        }
+
+        if ((shipsInSystem.SingleOrDefault(sin => sin.Key == ShipRegistrationRolesEnum.HAULER.ToString())?.Count() ?? 0) < 5)
+        {
+            return Task.FromResult((ShipTypesEnum?)ShipTypesEnum.SHIP_LIGHT_HAULER);
         }
 
         if ((shipsInSystem.SingleOrDefault(sin => sin.Key == ShipRegistrationRolesEnum.SURVEYOR.ToString())?.Count() ?? 0) == 0)
