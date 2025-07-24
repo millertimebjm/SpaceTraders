@@ -301,9 +301,12 @@ public class MarketplacesService : IMarketplacesService
     public async Task SaveTradeModelsAsync(IReadOnlyList<Waypoint> waypoints)
     {
         var tradeModels = BuildTradeModel(waypoints);
-        var collection = _collectionFactory.GetCollection<TradeModel>();
-        await collection.DeleteManyAsync(FilterDefinition<TradeModel>.Empty);
-        await collection.InsertManyAsync(tradeModels, new InsertManyOptions(), CancellationToken.None);
+        if (tradeModels.Any())
+        {
+            var collection = _collectionFactory.GetCollection<TradeModel>();
+            await collection.DeleteManyAsync(FilterDefinition<TradeModel>.Empty);
+            await collection.InsertManyAsync(tradeModels, new InsertManyOptions(), CancellationToken.None);
+        }
     }
 }
 
