@@ -2,13 +2,13 @@
 
 # Delete docker container FORCED if it exists
 # Your image name
-PROJECT_NAME="spacetrader-mvc"
-IMAGE_NAME="spacetrader-mvc:latest"
+PROJECT_NAME="spacetraders-mvc"
+IMAGE_NAME="spacetraders-mvc:latest"
 
 
 dotnet publish --os linux --arch x64 /t:PublishContainer -c Release
 
-docker run -d -p 9050:9050 --restart=always --name "$PROJECT_NAME" -e AppConfigConnectionString="$1" "$IMAGE_NAME"
+docker run -d -p 5064:8080 --restart=always --name "$PROJECT_NAME" -e AppConfigConnectionString="$1" "$IMAGE_NAME"
 rm -rf /tmp/Containers
 
 # Check if there are any dangling images

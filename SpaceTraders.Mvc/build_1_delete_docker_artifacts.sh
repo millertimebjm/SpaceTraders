@@ -2,7 +2,7 @@
 
 # Delete docker container FORCED if it exists
 # Your image name
-IMAGE_NAME="spacetrader-mvc"
+IMAGE_NAME="spacetraders-mvc"
 
 # Find the container ID by filtering containers based on the image name
 CONTAINER_ID=$(docker ps -q --filter "ancestor=$IMAGE_NAME:latest")
