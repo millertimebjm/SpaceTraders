@@ -3,12 +3,14 @@
 @model ShipsViewModel
 @{
     ViewData["Title"] = "Ships";
+    var waypoints = await Model.WaypointsTask;
 }
 
 @foreach (var ship in await Model.ShipsTask)
 {
     //ShipViewModel shipViewModel = new(ship, Model.ContractTask);
-    ShipViewModel model = new(Task.FromResult(ship), Model.ContractTask);
+    var waypoint = waypoints.Single(w => w.Symbol == ship.Nav.WaypointSymbol);
+    ShipViewModel model = new(Task.FromResult(ship), Model.ContractTask, Task.FromResult(waypoint));
     await Html.RenderPartialAsync("_Ship", model);
 }
 

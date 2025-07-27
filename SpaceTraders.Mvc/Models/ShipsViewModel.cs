@@ -10,4 +10,5 @@ namespace SpaceTraders.Mvc.Models;
 
 public record ShipsViewModel(
     Task<IEnumerable<Ship>> ShipsTask,
-    Task<STContract?> ContractTask);
+    Task<STContract?> ContractTask,
+    Task<IReadOnlyList<Waypoint>> WaypointsTask);

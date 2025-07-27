@@ -1,5 +1,8 @@
+using System.Diagnostics.Contracts;
+using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using SpaceTraders.Models;
+using SpaceTraders.Models.Enums;
 using SpaceTraders.Mvc.Models;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Contracts.Interfaces;
@@ -23,6 +26,7 @@ public class ShipsController : BaseController
     private readonly ISurveysCacheService _surveyCacheService;
     private readonly ITransactionsService _transactionsService;
     private readonly IShipStatusesCacheService _shipStatusesCacheService;
+    private readonly ISystemsService _systemsService;
 
     public ShipsController(
         ILogger<ShipsController> logger,
@@ -33,7 +37,8 @@ public class ShipsController : BaseController
         IContractsService contractsService,
         ISurveysCacheService surveysCacheService,
         ITransactionsService transactionsService,
-        IShipStatusesCacheService shipStatusesCacheService) : base(agentsService)
+        IShipStatusesCacheService shipStatusesCacheService,
+        ISystemsService systemsService) : base(agentsService)
     {
         _logger = logger;
         _shipsService = shipsService;
@@ -44,21 +49,30 @@ public class ShipsController : BaseController
         _surveyCacheService = surveysCacheService;
         _transactionsService = transactionsService;
         _shipStatusesCacheService = shipStatusesCacheService;
+        _systemsService = systemsService;
     }
 
     [Route("/ships")]
-    public IActionResult Index()
+    public async Task<IActionResult> Index()
     {
+        var shipStatuses = await _shipStatusesCacheService.GetAsync();
+        var ships = shipStatuses.Select(ss => ss.Ship);
+        var systems = await _systemsService.GetAsync();
+        IReadOnlyList<Waypoint> waypoints = systems.SelectMany(s => s.Waypoints).ToList();
         ShipsViewModel model = new(
-            _shipsService.GetAsync(),
-            _contractsService.GetActiveAsync());
+            Task.FromResult(ships),
+            //_contractsService.GetActiveAsync());
+            Task.FromResult((STContract?)null),
+            Task.FromResult(waypoints));
         return View(model);
     }
 
     [Route("/ships/{shipSymbol}/active")]
     public async Task<IActionResult> SetActive(string shipSymbol)
     {
-        var ship = await _shipsService.GetAsync(shipSymbol);
+        var shipsStatus = await _shipStatusesCacheService.GetAsync();
+        var ships = shipsStatus.Select(ss => ss.Ship);
+        var ship = ships.Single(s => s.Symbol == shipSymbol);
         SessionHelper.Set(HttpContext, SessionEnum.CurrentShipSymbol, ship.Symbol);
         var waypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol);
         SessionHelper.Set(HttpContext, SessionEnum.CurrentWaypointSymbol, waypoint.Symbol);
@@ -107,11 +121,15 @@ public class ShipsController : BaseController
     }
 
     [Route("/ships/{shipSymbol}")]
-    public IActionResult Ship(string shipSymbol)
+    public async Task<IActionResult> Ship(string shipSymbol)
     {
+        var shipsStatus = await _shipStatusesCacheService.GetAsync();
+        var ships = shipsStatus.Select(ss => ss.Ship);
+        var ship = ships.Single(s => s.Symbol == shipSymbol);
         ShipViewModel model = new(
-            _shipsService.GetAsync(shipSymbol),
-            _contractsService.GetActiveAsync());
+            Task.FromResult(ship),
+            _contractsService.GetActiveAsync(),
+            _waypointsService.GetAsync(ship.Nav.WaypointSymbol));
         return View(model);
     }
 
@@ -185,5 +203,33 @@ public class ShipsController : BaseController
             await _transactionsService.GetAsync(shipSymbol)
         );
         return View(model);
+    }
+
+    [Route("/ships/{shipSymbol}/scanwaypoints")]
+    public async Task<IActionResult> ScanWaypoints(string shipSymbol)
+    {
+        var result = _shipsService.ScanWaypointsAsync(shipSymbol);
+        return View(result);
+    }
+
+    [Route("/ships/{shipSymbol}/navtoggle")]
+    public async Task<IActionResult> NavToggle(string shipSymbol)
+    {
+        var ship = await _shipsService.GetAsync(shipSymbol);
+        if (ship.Nav.FlightMode == NavFlightModeEnum.CRUISE.ToString())
+        {
+            await _shipsService.NavToggleAsync(shipSymbol, NavFlightModeEnum.DRIFT.ToString());
+        }
+        else
+        {
+            await _shipsService.NavToggleAsync(shipSymbol, NavFlightModeEnum.CRUISE.ToString());
+        }
+
+        return RedirectToRoute(new
+        {
+            controller = "Ships",
+            action = "Ship",
+            shipSymbol
+        });
     }
 }

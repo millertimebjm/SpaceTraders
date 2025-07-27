@@ -1,17 +1,11 @@
 using MongoDB.Driver;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
-using SpaceTraders.Services.Agents;
 using SpaceTraders.Services.Agents.Interfaces;
-using SpaceTraders.Services.Paths;
-using SpaceTraders.Services.Paths.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
-using SpaceTraders.Services.ShipJobs.Interfaces;
-using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Transactions.Interfaces;
-using SpaceTraders.Services.Waypoints;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.ShipCommands;

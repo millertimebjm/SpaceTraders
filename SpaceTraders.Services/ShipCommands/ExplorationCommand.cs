@@ -1,11 +1,11 @@
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
-using SpaceTraders.Services.Agents.Interfaces;
-using SpaceTraders.Services.Paths.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
+using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Transactions.Interfaces;
+using SpaceTraders.Services.Waypoints;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.ShipCommands;
@@ -16,17 +16,20 @@ public class ExplorationCommand : IShipCommandsService
     private readonly IWaypointsService _waypointsService;
     private readonly IShipStatusesCacheService _shipStatusesCacheService;
     private readonly ITransactionsService _transactionsService;
-    private readonly ShipCommandEnum _shipCommandEnum = ShipCommandEnum.PurchaseShip;
+    private readonly IShipsService _shipsService;
+    private readonly IWaypointsCacheService _waypointsCacheService;
     public ExplorationCommand(
         IShipCommandsHelperService shipCommandsHelperService,
         IWaypointsService waypointsService,
         IShipStatusesCacheService shipStatusesCacheService,
-        ITransactionsService transactionsService)
+        ITransactionsService transactionsService,
+        IShipsService shipsService)
     {
         _shipCommandsHelperService = shipCommandsHelperService;
         _waypointsService = waypointsService;
         _shipStatusesCacheService = shipStatusesCacheService;
         _transactionsService = transactionsService;
+        _shipsService = shipsService;
     }
 
     public async Task<Ship> Run(
@@ -34,10 +37,15 @@ public class ExplorationCommand : IShipCommandsService
         Dictionary<string, Ship> shipsDictionary)
     {
         var currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol);
-        if (currentWaypoint.Traits is null
-            || currentWaypoint.Traits.Any(t => t.Symbol == WaypointTraitsEnum.UNCHARTED.ToString()))
+        if (!WaypointsService.IsVisited(currentWaypoint))
         {
             currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol, refresh: true);
+            if (currentWaypoint.Traits.Any(t => t.Symbol == WaypointTraitsEnum.UNCHARTED.ToString()))
+            {
+                var chartWaypointResult = await _shipsService.ChartAsync(ship.Nav.WaypointSymbol);
+                currentWaypoint = chartWaypointResult.Waypoint;
+                await _waypointsCacheService.SetAsync(currentWaypoint);
+            }
         }
 
         while (true)
@@ -74,7 +82,7 @@ public class ExplorationCommand : IShipCommandsService
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel };
-                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"NavigateToShipyardWaypoint {ship.Nav.WaypointSymbol}", DateTime.UtcNow));
+                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"NavigateToExplore {ship.Nav.WaypointSymbol}", DateTime.UtcNow));
                 return ship;
             }
 

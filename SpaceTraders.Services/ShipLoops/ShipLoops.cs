@@ -102,9 +102,10 @@ public class ShipLoopsService : IShipLoopsService
 
                 try
                 {
+                    var shipStatusesDictionary = shipStatuses.ToDictionary(ss => ss.Ship.Symbol, ss => ss.Ship);
                     ship = await shipCommandService.Run(
                         ship,
-                        shipStatuses.ToDictionary(ss => ss.Ship.Symbol, ss => ss.Ship));
+                        shipStatusesDictionary);
                     ship = ship with { Error = null };
                 }
                 catch (Exception ex)

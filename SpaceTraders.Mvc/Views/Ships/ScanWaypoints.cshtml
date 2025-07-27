@@ -1,0 +1,10 @@
+@using SpaceTraders.Models
+@using SpaceTraders.Mvc.Services
+@using System.Text.Json
+@model Task<ScanWaypointsResult>
+@{
+    var scanWaypointsResult = await Model;
+    ViewData["Title"] = $"Scan {scanWaypointsResult.Cooldown.ShipSymbol}";
+}
+
+@JsonSerializer.Serialize(scanWaypointsResult)

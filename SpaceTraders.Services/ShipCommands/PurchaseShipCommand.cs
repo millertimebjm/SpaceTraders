@@ -61,7 +61,7 @@ public class PurchaseShipCommand : IShipCommandsService
             if (purchaseShipResponse is not null)
             {
                 ship = ship with { ShipCommand = null };
-                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"NavigateToShipyardWaypoint {ship.Nav.WaypointSymbol}", DateTime.UtcNow));
+                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"Just purchased ship.", DateTime.UtcNow));
 
                 await _shipStatusesCacheService.SetAsync(new ShipStatus(purchaseShipResponse.Ship, $"Newly purchase ship.", DateTime.UtcNow));
                 await _agentsService.SetAsync(purchaseShipResponse.Agent);

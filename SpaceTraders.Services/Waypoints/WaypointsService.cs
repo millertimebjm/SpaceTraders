@@ -23,9 +23,9 @@ public class WaypointsService : IWaypointsService
         _logger = logger;
         _waypointsApiService = waypointsApiService;
         _waypointsCacheService = waypointsCacheService;
-        _apiUrl = configuration[$"SpaceTrader:"+ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
+        _apiUrl = configuration[$"SpaceTrader:" + ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
         ArgumentException.ThrowIfNullOrWhiteSpace(_apiUrl);
-        _token = configuration[$"SpaceTrader:"+ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
+        _token = configuration[$"SpaceTrader:" + ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
         ArgumentException.ThrowIfNullOrWhiteSpace(_token);
     }
 
@@ -103,9 +103,18 @@ public class WaypointsService : IWaypointsService
         }
 
         // Using the distance formula: sqrt((x2 - x1)^2 + (y2 - y1)^2)
-            double deltaX = w2.X - w1.X;
+        double deltaX = w2.X - w1.X;
         double deltaY = w2.Y - w1.Y;
 
         return Math.Sqrt((deltaX * deltaX) + (deltaY * deltaY));
+    }
+
+    public static bool IsVisited(Waypoint waypoint)
+    {
+        if (waypoint.Marketplace is not null && waypoint.Marketplace.TradeGoods is null) return false;
+        if (waypoint.Shipyard is not null && waypoint.Shipyard.ShipFrames is null) return false;
+        if (waypoint.Type == "GAS_GIANT") return true;
+        if (waypoint.Traits is null) return false;
+        return true;
     }
 }

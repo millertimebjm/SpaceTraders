@@ -1,4 +1,5 @@
 @using SpaceTraders.Models
+@using SpaceTraders.Models.Enums
 @using SpaceTraders.Mvc.Services
 @using SpaceTraders.Services.Shipyards
 @model ShipViewModel
@@ -7,6 +8,7 @@
     var currentShipSymbol = ViewBag.CurrentShipSymbol ?? string.Empty;
     var ship = await Model.ShipTask;
     var contract = await Model.ContractTask;
+    var waypoint = await Model.WaypointTask;
 }
 
 <h6>Ship <a href="/ships/@ship.Symbol">@ship.Symbol</a></h6>
@@ -18,7 +20,7 @@
     <li><b>Waypoint Symbol:</b> <a href="/waypoints/@ship.Nav.WaypointSymbol">@ship.Nav.WaypointSymbol</a></li>
     <li><b>Destination:</b> @ship.Nav.Route.Destination.Symbol</li>
     <li><b>Nav Status:</b> @ship.Nav.Status</li>
-    <li><b>FlightMode:</b> @ship.Nav.FlightMode</li>
+    <li><b>FlightMode:</b> <a href="/ships/@ship.Symbol/navtoggle">@ship.Nav.FlightMode</a></li>
     <li><b>Crew Capacity:</b> @ship.Crew.Capacity</li>
     <li><b>Crew Required:</b> @ship.Crew.Required</li>
     <li><b>Frame:</b> @ship.Frame.Symbol</li>
@@ -41,7 +43,6 @@
     @if (shipCooldown.HasValue && shipCooldown.Value.TotalSeconds > 0)
     {
         <li><b>Cooldown:</b> <span class="countdown" data-countdown="@((DateTime.UtcNow + shipCooldown.Value).ToString("o"))">@ViewHelperService.MinimalHumanReadableTimeSpan(shipCooldown.Value)</span></li>
-        @* <li><b>Cooldown:</b> <span class="countdown" data-countdown="@((DateTime.UtcNow + TimeSpan.FromSeconds(30)).ToString("o"))">@ViewHelperService.MinimalHumanReadableTimeSpan(TimeSpan.FromSeconds(30))</span></li>  *@
     }
     else
     {
@@ -68,5 +69,9 @@
     @if (contract is null)
     {
         <li><a href="/contracts/@ship.Symbol/negotiate">Negotiate New Contract</a></li>
+    }
+    @if (waypoint.Traits.Any(t => t.Symbol == WaypointTraitsEnum.UNCHARTED.ToString()))
+    {
+        <li><a href="/ships/@ship.Symbol/scanwaypoints">Scan</a></li>
     }
 </ul>

@@ -10,5 +10,6 @@ namespace SpaceTraders.Mvc.Models;
 
 public record ShipViewModel(
     Task<Ship> ShipTask,
-    Task<STContract?> ContractTask
+    Task<STContract?> ContractTask,
+    Task<Waypoint> WaypointTask
 );

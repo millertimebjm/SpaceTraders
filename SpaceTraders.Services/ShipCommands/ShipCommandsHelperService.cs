@@ -11,6 +11,7 @@ using SpaceTraders.Services.Shipyards.Interfaces;
 using SpaceTraders.Services.Surveys.Interfaces;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Transactions.Interfaces;
+using SpaceTraders.Services.Waypoints;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.ShipCommands;
@@ -35,6 +36,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
     private readonly IShipyardsService _shipyardsService;
     private readonly IPathsService _pathsService;
     private readonly ITransactionsService _transactionsService;
+    private readonly IShipStatusesCacheService _shipStatusesCacheService;
     public ShipCommandsHelperService(
         IShipsService shipsService,
         IMarketplacesService marketplacesService,
@@ -45,7 +47,8 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         ISurveysCacheService surveysCacheService,
         IShipyardsService shipyardsService,
         IPathsService pathsService,
-        ITransactionsService transactionsService)
+        ITransactionsService transactionsService,
+        IShipStatusesCacheService shipStatusesCacheService)
     {
         _shipsService = shipsService;
         _marketplacesService = marketplacesService;
@@ -57,6 +60,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         _shipyardsService = shipyardsService;
         _pathsService = pathsService;
         _transactionsService = transactionsService;
+        _shipStatusesCacheService = shipStatusesCacheService;
     }
 
     public async Task<PurchaseCargoResult?> PurchaseCargo(Ship ship, Waypoint currentWaypoint)
@@ -266,7 +270,8 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
 
         var shouldDock = false;
         var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
-        var ships = await _shipsService.GetAsync();
+        var shipStatuses = await _shipStatusesCacheService.GetAsync();
+        var ships = shipStatuses.Select(ss => ss.Ship);
         var shipToBuy = await ShipToBuy(ships, system);
         if (shipToBuy is null) return null;
 
@@ -997,7 +1002,8 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
 
     public async Task<(Nav? nav, Fuel? fuel)> NavigateToShipyard(Ship ship, Waypoint currentWaypoint)
     {
-        var ships = await _shipsService.GetAsync();
+        var shipStatuses = await _shipStatusesCacheService.GetAsync();
+        var ships = shipStatuses.Select(ss => ss.Ship);
         var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
         var paths = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
         var shipToBuy = await ShipToBuy(ships, system);
@@ -1029,7 +1035,8 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         {
             return null;
         }
-        var ships = await _shipsService.GetAsync();
+        var shipStatuses = await _shipStatusesCacheService.GetAsync();
+        var ships = shipStatuses.Select(ss => ss.Ship);
         var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
         var shipToBuy = await ShipToBuy(ships, system);
         if (shipToBuy is null
@@ -1072,16 +1079,19 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
 
     public async Task<(Nav? nav, Fuel? fuel)> NavigateToExplore(Ship ship, Waypoint currentWaypoint)
     {
-        var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
+        // var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
+        var systems = await _systemsService.GetAsync();
         var pathDictionary = await _pathsService.BuildSystemPath(currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
-        var unmappedWaypoints = system.Waypoints.Where(w =>
+        var unmappedWaypoints = systems.SelectMany(s => s.Waypoints).Where(w =>
+            // w.Traits is null
+            // || w.Traits.Any(t => t.Symbol == WaypointTraitsEnum.UNCHARTED.ToString()))
             w.Traits is null
-            || w.Traits.Any(t => t.Symbol == WaypointTraitsEnum.UNCHARTED.ToString()))
+            || (w.Marketplace is not null && w.Marketplace.TradeGoods is null))
             .Select(w => w.Symbol)
             .ToList();
         var unmappedPaths = pathDictionary.Where(p => unmappedWaypoints.Contains(p.Key.Symbol));
         var closestUnmappedPath = unmappedPaths
-            .OrderByDescending(p => p.Key.SystemSymbol == ship.Nav.SystemSymbol)
+            .OrderByDescending(p => WaypointsService.ExtractSystemFromWaypoint(p.Key.Symbol) == ship.Nav.SystemSymbol)
             .ThenBy(p => p.Value.Item1.Count())
             .ThenBy(p => p.Value.Item2)
             .ThenBy(p => p.Key.Symbol)
