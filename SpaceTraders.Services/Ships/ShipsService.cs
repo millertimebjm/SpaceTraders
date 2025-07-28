@@ -326,4 +326,21 @@ public class ShipsService : IShipsService
         if (data.Datum is null) throw new HttpRequestException("Scan not retrieved");
         return data.Datum;
     }
+
+    public async Task<ScanSystemsResult> ScanSystemsAsync(string shipSymbol)
+    {
+        var url = new UriBuilder(_apiUrl)
+        {
+            Path = $"/my/ships/{shipSymbol}/scan/systems"
+        };
+        _httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", _token);
+        var data = await HttpHelperService.HttpPostHelper<DataSingle<ScanSystemsResult>>(
+            url.ToString(),
+            _httpClient,
+            null,
+            _logger);
+        if (data.Datum is null) throw new HttpRequestException("Scan not retrieved");
+        return data.Datum;
+    }
 }

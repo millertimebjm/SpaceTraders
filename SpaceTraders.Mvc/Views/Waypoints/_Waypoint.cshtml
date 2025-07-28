@@ -22,7 +22,7 @@
     <li><b>Y:</b> @waypoint.Y</li>
     @if (waypoint.Traits?.Any() == true)
     {
-        <li><b>Traits: </b> @string.Join(",", waypoint.Traits.Select(t => t.Name))</li>
+        <li><b>Traits: </b> @string.Join(",", waypoint.Traits.Select(t => t.Symbol))</li>
     }
     @if (!string.IsNullOrWhiteSpace(waypoint.Orbits))
     {

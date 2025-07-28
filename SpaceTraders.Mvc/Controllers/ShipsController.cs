@@ -212,6 +212,13 @@ public class ShipsController : BaseController
         return View(result);
     }
 
+    [Route("/ships/{shipSymbol}/scansystems")]
+    public async Task<IActionResult> ScanSystems(string shipSymbol)
+    {
+        var result = _shipsService.ScanSystemsAsync(shipSymbol);
+        return View(result);
+    }
+
     [Route("/ships/{shipSymbol}/navtoggle")]
     public async Task<IActionResult> NavToggle(string shipSymbol)
     {

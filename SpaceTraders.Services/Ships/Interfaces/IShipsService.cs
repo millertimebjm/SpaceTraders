@@ -17,4 +17,5 @@ public interface IShipsService
     Task<ScanWaypointsResult> ScanWaypointsAsync(string shipSymbol);
     Task NavToggleAsync(string shipSymbol, string flightMode);
     Task<ChartWaypointResult> ChartAsync(string waypointSymbol);
+    Task<ScanSystemsResult> ScanSystemsAsync(string shipSymbol);
 }

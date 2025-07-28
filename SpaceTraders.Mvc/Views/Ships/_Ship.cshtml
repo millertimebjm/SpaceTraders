@@ -26,7 +26,7 @@
     <li><b>Frame:</b> @ship.Frame.Symbol</li>
     <li><b>Reactor:</b> @ship.Reactor.Symbol</li>
     <li><b>Engine:</b> @ship.Engine.Symbol</li>
-    <li><b>ships:</b> @string.Join(",", ship.Modules.Select(m => m.Symbol))</li>
+    <li><b>Modules:</b> @string.Join(",", ship.Modules.Select(m => m.Symbol))</li>
     <li><b>Mounts:</b> @string.Join(",", ship.Mounts.Select(m => m.Symbol))</li>
     <li><b>Cargo:</b> @ship.Cargo.Units/@ship.Cargo.Capacity</li>
     <ul>
@@ -72,6 +72,8 @@
     }
     @if (waypoint.Traits.Any(t => t.Symbol == WaypointTraitsEnum.UNCHARTED.ToString()))
     {
-        <li><a href="/ships/@ship.Symbol/scanwaypoints">Scan</a></li>
+        <li><a href="/ships/@ship.Symbol/chart">Chart</a></li>
     }
+    <li><a href="/ships/@ship.Symbol/scanwaypoints">Scan Waypoints</a></li>
+    <li><a href="/ships/@ship.Symbol/scansystems">Scan Systems</a></li>
 </ul>
