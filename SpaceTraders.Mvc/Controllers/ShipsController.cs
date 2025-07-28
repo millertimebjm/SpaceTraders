@@ -56,7 +56,10 @@ public class ShipsController : BaseController
     public async Task<IActionResult> Index()
     {
         var shipStatuses = await _shipStatusesCacheService.GetAsync();
-        IEnumerable<Ship> ships = shipStatuses.Select(ss => ss.Ship).OrderBy(s => s.Symbol).ToList();
+        IEnumerable<Ship> ships = shipStatuses.Select(ss => ss.Ship).OrderBy(s => {
+            var parts = s.Symbol.Split('-');
+            return Convert.ToInt32(parts[1], 16); // Parse as hex
+        }).ToList();
         var systems = await _systemsService.GetAsync();
         IReadOnlyList<Waypoint> waypoints = systems.SelectMany(s => s.Waypoints).ToList();
         ShipsViewModel model = new(
