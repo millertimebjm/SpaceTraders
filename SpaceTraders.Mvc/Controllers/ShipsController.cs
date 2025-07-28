@@ -56,7 +56,7 @@ public class ShipsController : BaseController
     public async Task<IActionResult> Index()
     {
         var shipStatuses = await _shipStatusesCacheService.GetAsync();
-        var ships = shipStatuses.Select(ss => ss.Ship);
+        IEnumerable<Ship> ships = shipStatuses.Select(ss => ss.Ship).OrderBy(s => s.Symbol).ToList();
         var systems = await _systemsService.GetAsync();
         IReadOnlyList<Waypoint> waypoints = systems.SelectMany(s => s.Waypoints).ToList();
         ShipsViewModel model = new(
