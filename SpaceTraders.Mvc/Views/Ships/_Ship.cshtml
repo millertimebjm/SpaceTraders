@@ -70,7 +70,7 @@
     {
         <li><a href="/contracts/@ship.Symbol/negotiate">Negotiate New Contract</a></li>
     }
-    @if (waypoint.Traits.Any(t => t.Symbol == WaypointTraitsEnum.UNCHARTED.ToString()))
+    @if (waypoint.Traits?.Any(t => t.Symbol == WaypointTraitsEnum.UNCHARTED.ToString()) == true)
     {
         <li><a href="/ships/@ship.Symbol/chart">Chart</a></li>
     }

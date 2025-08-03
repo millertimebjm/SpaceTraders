@@ -1,6 +1,8 @@
 using System.ComponentModel;
+using System.Text.Json;
 using DnsClient.Internal;
 using Microsoft.Extensions.Logging;
+using SpaceTraders.Model.Exceptions;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
@@ -79,22 +81,25 @@ public class ShipLoopsService : IShipLoopsService
             for (int i = 0; i < shipStatuses.Count(); i++)
             {
                 var ship = shipStatuses[i].Ship;
+                var shipStatus = shipStatuses[i];
+                if (ShipsService.GetShipCooldown(ship) is not null) continue;
 
                 if (ship.ShipCommand is null)
                 {
-                    var shipJobsService = _shipJobsFactory.Get(Enum.Parse<ShipRegistrationRolesEnum>(shipStatuses[i].Ship.Registration.Role));
+                    var shipJobsService = _shipJobsFactory.Get(Enum.Parse<ShipRegistrationRolesEnum>(shipStatus.Ship.Registration.Role));
                     if (shipJobsService is null)
                     {
                         ship = ship with { ShipCommand = null };
-                        shipStatuses[i] = shipStatuses[i] with { Ship = ship };
-                        await _shipStatusesCacheService.SetAsync(shipStatuses[i]);
+                        shipStatus = shipStatus with { Ship = ship };
+                        await _shipStatusesCacheService.SetAsync(shipStatus);
                         continue;
                     }
 
-                    var shipCommand = await shipJobsService.Get(shipStatuses.Select(ss => ss.Ship).ToList(), shipStatuses[i].Ship);
+                    var shipCommand = await shipJobsService.Get(shipStatuses.Select(ss => ss.Ship).ToList(), shipStatus.Ship);
                     ship = ship with { ShipCommand = shipCommand };
-                    shipStatuses[i] = shipStatuses[i] with { Ship = ship };
-                    await _shipStatusesCacheService.SetAsync(shipStatuses[i]);
+                    shipStatus = shipStatus with { Ship = ship };
+                    await _shipStatusesCacheService.SetAsync(shipStatus);
+                    shipStatuses[i] = shipStatus;
                     if (shipCommand is null) continue;
                 }
 
@@ -103,28 +108,34 @@ public class ShipLoopsService : IShipLoopsService
                 try
                 {
                     var shipStatusesDictionary = shipStatuses.ToDictionary(ss => ss.Ship.Symbol, ss => ss.Ship);
-                    ship = await shipCommandService.Run(
-                        ship,
+                    shipStatus = await shipCommandService.Run(
+                        shipStatus,
                         shipStatusesDictionary);
+                    ship = shipStatus.Ship;
                     ship = ship with { Error = null };
+                    shipStatus = shipStatus with { Ship = ship };
+                    shipStatuses[i] = shipStatus;
                 }
-                catch (Exception ex)
+                catch (SpaceTraderResultException ex)
                 {
                     var timeSpan = TimeSpan.FromMinutes(10);
                     ship = ship with
                     {
-                        Error = ex.Message,
+                        Error = ex.Message + " " + ex.InnerException.Message + " " + ex.ResponseBody,
                         Cooldown = new Cooldown(ship.Symbol, (int)timeSpan.TotalSeconds, (int)timeSpan.TotalSeconds, DateTime.UtcNow.Add(timeSpan))
                     };
-                    shipStatuses[i] = shipStatuses[i] with { Ship = ship };
-                    await _shipStatusesCacheService.SetAsync(shipStatuses[i]);
+                    shipStatus = shipStatus with { Ship = ship };
+                    shipStatuses[i] = shipStatus;
                 }
+                await _shipStatusesCacheService.SetAsync(shipStatuses[i]);
 
                 await Task.Delay(1000);
             }
 
-            var system = await _systemsService.GetAsync(shipStatuses.First().Ship.Nav.SystemSymbol);
-            await _marketplacesService.SaveTradeModelsAsync(system.Waypoints);
+            //var system = await _systemsService.GetAsync(shipStatuses.First().Ship.Nav.SystemSymbol);
+            var systems = await _systemsService.GetAsync();
+            var waypoints = systems.SelectMany(s => s.Waypoints).ToList();
+            await _marketplacesService.SaveTradeModelsAsync(waypoints);
 
             TimeSpan? shortestCooldown = null;
             foreach (var shipStatus in shipStatuses)

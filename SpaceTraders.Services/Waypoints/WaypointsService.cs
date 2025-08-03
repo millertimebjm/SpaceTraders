@@ -113,8 +113,8 @@ public class WaypointsService : IWaypointsService
     {
         if (waypoint.Marketplace is not null && waypoint.Marketplace.TradeGoods is null) return false;
         if (waypoint.Shipyard is not null && waypoint.Shipyard.ShipFrames is null) return false;
-        if (waypoint.Type == "GAS_GIANT") return true;
         if (waypoint.Traits is null) return false;
+        if (waypoint.Traits.Any(t => t.Symbol == WaypointTraitsEnum.UNCHARTED.ToString())) return false;
         return true;
     }
 }

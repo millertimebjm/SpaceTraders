@@ -1,12 +1,8 @@
-using Microsoft.VisualBasic;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Marketplaces.Interfaces;
-using SpaceTraders.Services.Paths;
-using SpaceTraders.Services.Paths.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
-using SpaceTraders.Services.ShipJobs.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Systems.Interfaces;
@@ -15,7 +11,7 @@ using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.ShipCommands;
 
-public class BuyAndSellCommand : IShipCommandsService
+public class RescueFuelCommand : IShipCommandsService
 {
     private readonly IShipCommandsHelperService _shipCommandsHelperService;
     private readonly IShipsService _shipsService;
@@ -25,7 +21,7 @@ public class BuyAndSellCommand : IShipCommandsService
     private readonly IShipStatusesCacheService _shipStatusesCacheService;
     private readonly ITransactionsService _transactionsService;
     private readonly IMarketplacesService _marketplacesService;
-    public BuyAndSellCommand(
+    public RescueFuelCommand(
         IShipCommandsHelperService shipCommandsHelperService,
         IShipsService shipsService,
         IWaypointsService waypointsService,
@@ -88,7 +84,15 @@ public class BuyAndSellCommand : IShipCommandsService
                 continue;
             }
 
-            var nav = await _shipCommandsHelperService.DockForBuyAndSell(ship, currentWaypoint);
+            var purchaseCargoResult = await _shipCommandsHelperService.PurchaseFuelForRescue(ship, currentWaypoint, 40);
+            if (purchaseCargoResult is not null)
+            {
+                await _agentsService.SetAsync(purchaseCargoResult.Agent);
+                await _transactionsService.SetAsync(purchaseCargoResult.Transaction);
+                continue;
+            }
+
+            var nav = await _shipCommandsHelperService.DockForFuel(ship, currentWaypoint);
             if (nav is not null)
             {
                 ship = ship with { Nav = nav };
@@ -96,48 +100,23 @@ public class BuyAndSellCommand : IShipCommandsService
                 continue;
             }
 
-            var sellCargoResponse = await _shipCommandsHelperService.Sell(ship, currentWaypoint);
-            if (sellCargoResponse is not null)
-            {
-                ship = ship with { Cargo = sellCargoResponse.Cargo };
-                await _agentsService.SetAsync(sellCargoResponse.Agent);
-                var firstHauler = shipsDictionary
-                    .Where(s => s.Value.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString())
-                    .OrderBy(s => s.Key)
-                    .FirstOrDefault();
-                if (sellCargoResponse.Cargo.Units == 0
-                    && (ship.Registration.Role == ShipRegistrationRolesEnum.COMMAND.ToString()
-                        || ship.Symbol == firstHauler.Key))
-                {
-                    ship = ship with { ShipCommand = null };
-                    return new ShipStatus(ship, $"Resetting Job.", DateTime.UtcNow);
-                }
-                continue;
-            }
-
-            (nav, var fuel, var cooldown) = await _shipCommandsHelperService.NavigateToMarketplaceImport(ship, currentWaypoint);
+            Waypoint destinationWaypoint = null;
+            (nav, Fuel fuel) = await _shipCommandsHelperService.NavigateToShipToRescue(ship, currentWaypoint, destinationWaypoint);
             if (nav is not null && fuel is not null)
             {
-                ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown };
-                return new ShipStatus(ship, $"NavigateToMarketplaceImport {ship.Nav.Route.Destination.Symbol}", DateTime.UtcNow);
+                ship = ship with { Nav = nav, Fuel = fuel };
+                return new ShipStatus(ship, $"NavigateToMarketplaceRandomExport {nav.Route.Destination.Symbol}", DateTime.UtcNow);
             }
 
-            (nav, fuel, cooldown, var noWork) = await _shipCommandsHelperService.NavigateToMarketplaceRandomExport(ship, currentWaypoint);
+            (nav, fuel, var cooldown, var noWork) = await _shipCommandsHelperService.NavigateToMarketplaceRandomExport(ship, currentWaypoint);
             if (noWork)
             {
                 return new ShipStatus(ship, $"No Valid Exports found", DateTime.UtcNow);
             }
             else if (nav is not null && fuel is not null)
             {
-                ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown};
+                ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown };
                 return new ShipStatus(ship, $"NavigateToMarketplaceRandomExport {nav.Route.Destination.Symbol}", DateTime.UtcNow);
-            }
-
-            var purchaseCargoResult = await _shipCommandsHelperService.PurchaseCargo(ship, currentWaypoint);
-            if (purchaseCargoResult is not null)
-            {
-                ship = ship with { Cargo = purchaseCargoResult.Cargo };
-                await _agentsService.SetAsync(purchaseCargoResult.Agent);
             }
 
             nav = await _shipCommandsHelperService.Orbit(ship, currentWaypoint);

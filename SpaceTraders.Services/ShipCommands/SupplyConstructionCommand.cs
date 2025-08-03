@@ -40,16 +40,17 @@ public class SupplyConstructionCommand : IShipCommandsService
         _transactionsService = transactionsService;
     }
 
-    public async Task<Ship> Run(
-        Ship ship,
+    public async Task<ShipStatus> Run(
+        ShipStatus shipStatus,
         Dictionary<string, Ship> shipsDictionary)
     {
+        var ship = shipStatus.Ship;
         var currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol);
         var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
         var constructionWaypoint = system.Waypoints.FirstOrDefault(w => w.JumpGate is not null && w.IsUnderConstruction);
         while (true)
         {
-            if (ShipsService.GetShipCooldown(ship) is not null) return ship;
+            if (ShipsService.GetShipCooldown(ship) is not null) return shipStatus;
             var paths = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
 
             await Task.Delay(1000);
@@ -90,8 +91,7 @@ public class SupplyConstructionCommand : IShipCommandsService
                 {
                     ship = ship with { ShipCommand = null };
                     currentWaypoint = await _waypointsService.GetAsync(currentWaypoint.Symbol, refresh: true);
-                    await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"Resetting Job.", DateTime.UtcNow));
-                    return ship;
+                    return new ShipStatus(ship, $"Resetting Job.", DateTime.UtcNow);
                 }
             
                 continue;
@@ -117,16 +117,14 @@ public class SupplyConstructionCommand : IShipCommandsService
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel };
-                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"NavigateToStartWaypoint {constructionWaypoint.Symbol}", DateTime.UtcNow));
-                return ship;
+                return new ShipStatus(ship, $"NavigateToStartWaypoint {constructionWaypoint.Symbol}", DateTime.UtcNow);
             }
 
             (nav, fuel) = await _shipCommandsHelperService.NavigateToMarketplaceExport(ship, currentWaypoint, constructionWaypoint);
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel };
-                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"NavigateToMarketplaceExport {nav.Route.Destination.Symbol}", DateTime.UtcNow));
-                return ship;
+                return new ShipStatus(ship, $"NavigateToMarketplaceExport {nav.Route.Destination.Symbol}", DateTime.UtcNow);
             }
 
             throw new Exception($"Infinite loop, no work planned. {ship.Symbol}, {currentWaypoint.Symbol}, {string.Join(":", ship.Cargo.Inventory.Select(i => $"{i.Name}/{i.Units}"))}, {ship.Fuel.Current}/{ship.Fuel.Capacity}");

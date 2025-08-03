@@ -128,7 +128,7 @@ public class ShipsService : IShipsService
         return (data.Datum.Nav, data.Datum.Fuel);
     }
 
-    public async Task<Nav> JumpAsync(string waypointSymbol, string shipSymbol)
+    public async Task<(Nav, Cooldown)> JumpAsync(string waypointSymbol, string shipSymbol)
     {
         var url = new UriBuilder(_apiUrl)
         {
@@ -143,7 +143,7 @@ public class ShipsService : IShipsService
             content,
             _logger);
         if (data.Datum is null) throw new HttpRequestException("Jump Nav not retrieved");
-        return data.Datum.Nav;
+        return (data.Datum.Nav, data.Datum.Cooldown);
     }
 
     public async Task<ExtractionResult> ExtractAsync(string shipSymbol)
@@ -342,5 +342,15 @@ public class ShipsService : IShipsService
             _logger);
         if (data.Datum is null) throw new HttpRequestException("Scan not retrieved");
         return data.Datum;
+    }
+
+    public async Task SwitchShipFlightMode(Ship ship, NavFlightModeEnum flightMode)
+    {
+        if (ship.Nav.FlightMode == flightMode.ToString())
+        {
+            return;
+        }
+        await NavToggleAsync(ship.Symbol, flightMode.ToString());
+        await Task.Delay(500);
     }
 }

@@ -32,14 +32,15 @@ public class MiningToSellAnywhereCommand : IShipCommandsService
         _transactionsService = transactionsService;
     }
 
-    public async Task<Ship> Run(
-        Ship ship,
+    public async Task<ShipStatus> Run(
+        ShipStatus shipStatus,
         Dictionary<string, Ship> shipsDictionary)
     {
+        var ship = shipStatus.Ship;
         var currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol);
         while (true)
         {
-            if (ShipsService.GetShipCooldown(ship) is not null) return ship;
+            if (ShipsService.GetShipCooldown(ship) is not null) return shipStatus;
             var sellingWaypoint = await _shipCommandsHelperService.GetClosestSellingWaypoint(ship, currentWaypoint);
 
             await Task.Delay(1000);
@@ -61,32 +62,28 @@ public class MiningToSellAnywhereCommand : IShipCommandsService
             {
                 ship = ship with { Nav = nav };
                 currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol, refresh: true);
-
                 continue;
             }
 
             (nav, var fuel) = await _shipCommandsHelperService.NavigateToMiningWaypoint(ship, currentWaypoint);
             if (nav is not null && fuel is not null)
             {
-                ship = ship with { Nav = nav, Fuel = fuel };
-                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"NavigateToStartWaypoint {nav.WaypointSymbol}", DateTime.UtcNow));
-                return ship;
+                ship = ship with { Nav = nav, Fuel = fuel, Error = null };
+                return new ShipStatus(ship, $"NavigateToStartWaypoint {nav.WaypointSymbol}", DateTime.Now);
             }
 
             (var cargo, Cooldown? cooldown) = await _shipCommandsHelperService.Extract(ship, currentWaypoint);
             if (cargo is not null && cooldown is not null)
             {
-                ship = ship with { Cargo = cargo, Cooldown = cooldown };
-                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"Extract {ship.Nav.WaypointSymbol}", DateTime.UtcNow));
-                return ship;
+                ship = ship with { Cargo = cargo, Cooldown = cooldown, Error = null  };
+                return new ShipStatus(ship, $"Extract {ship.Nav.WaypointSymbol}", DateTime.UtcNow);
             }
 
-            (nav, fuel) = await _shipCommandsHelperService.NavigateToMarketplaceImport(ship, currentWaypoint);
+            (nav, fuel, cooldown) = await _shipCommandsHelperService.NavigateToMarketplaceImport(ship, currentWaypoint);
             if (nav is not null && fuel is not null)
             {
-                ship = ship with { Nav = nav, Fuel = fuel };
-                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"NavigateToMarketplaceImport {nav.Route.Destination.Symbol}", DateTime.UtcNow));
-                return ship;
+                ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown };
+                return new ShipStatus(ship, $"NavigateToMarketplaceImport {nav.Route.Destination.Symbol}", DateTime.UtcNow);
             }
 
             var sellCargoResponse = await _shipCommandsHelperService.Sell(ship, currentWaypoint);
@@ -96,9 +93,8 @@ public class MiningToSellAnywhereCommand : IShipCommandsService
                 await _agentsService.SetAsync(sellCargoResponse.Agent);
                 if (sellCargoResponse.Cargo.Units == 0 && ship.Registration.Role == ShipRegistrationRolesEnum.COMMAND.ToString())
                 {
-                    ship = ship with { ShipCommand = null };
-                    await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"Resetting Job.", DateTime.UtcNow));
-                    return ship;
+                    ship = ship with { ShipCommand = null, Error = null  };
+                    return new ShipStatus(ship, $"Resetting Job.", DateTime.UtcNow);
                 }
                 continue;
             }

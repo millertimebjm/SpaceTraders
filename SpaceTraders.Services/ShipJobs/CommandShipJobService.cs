@@ -34,11 +34,11 @@ public class CommandShipJobService : IShipJobService
         Ship ship)
     {
         var systems = await _systemsService.GetAsync();
-        var waypoints = systems.SelectMany(s => s.Waypoints);
+        var waypoints = systems.SelectMany(s => s.Waypoints).ToList();
         var currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol);
         var unchartedWaypoints =
             waypoints
-                .Where(w => !WaypointsService.IsVisited(w) || w.Traits.Any(t => t.Symbol == WaypointTraitsEnum.UNCHARTED.ToString()))
+                .Where(w => !WaypointsService.IsVisited(w) || w.Traits?.Any(t => t.Symbol == WaypointTraitsEnum.UNCHARTED.ToString()) == true)
                 .Select(w => w.Symbol)
                 .ToList();
         var paths = PathsService.BuildWaypointPath(waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
@@ -75,7 +75,7 @@ public class CommandShipJobService : IShipJobService
         if (agent.Credits > 800_000)
         {
             var shipTypesInSystem = ships
-                .Where(s => s.Nav.SystemSymbol == ship.Nav.SystemSymbol)
+                //.Where(s => s.Nav.SystemSymbol == ship.Nav.SystemSymbol)
                 .GroupBy(s => s.Registration.Role);
             var miningDrones = shipTypesInSystem.SingleOrDefault(st => st.Key == ShipRegistrationRolesEnum.EXCAVATOR.ToString())?.Count() ?? 0;
             var lightHaulers = shipTypesInSystem.SingleOrDefault(st => st.Key == ShipRegistrationRolesEnum.HAULER.ToString())?.Count() ?? 0;

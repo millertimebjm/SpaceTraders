@@ -107,6 +107,11 @@ public class PathsService : IPathsService
 
             // from those waypoints that haven't been searched, find the least paths and then minimum fuel
             var waypointToSearch = waypointsToSearch.Where(w => w.Value.Item1.Count == waypointsToSearch.Min(wts => wts.Value.Item1.Count())).OrderBy(wts => wts.Value.Item3).FirstOrDefault();
+            if (WaypointsService.ExtractSystemFromWaypoint(waypointToSearch.Key.Symbol) != "X1-KT62")
+            {
+                
+            }
+
             currentFuel = waypointToSearch.Value.Item4;
             var currentPath = waypointToSearch.Value.Item1;
 
@@ -115,17 +120,28 @@ public class PathsService : IPathsService
             var waypointsWithinRangeNotReviewed = waypointsWithinRange.Where(wwr => !bestPath.Keys.Select(bp => bp.Symbol).Contains(wwr.Symbol)).ToList();
             foreach (var waypoint in waypointsWithinRangeNotReviewed)
             {
+                if (WaypointsService.ExtractSystemFromWaypoint(waypoint.Symbol) != "X1-KT62")
+                {
+                    
+                }
                 var lastWaypoint = currentPath.Last();
                 var tempPath = currentPath.ToList();
                 tempPath.Add(waypoint);
-                var tempFuelUsage = (int)Math.Ceiling(WaypointsService.CalculateDistance(lastWaypoint.X, lastWaypoint.Y, waypoint.X, waypoint.Y));
-                if (waypoint.Marketplace?.Exchange.ToList().Any(e => e.Symbol == InventoryEnum.FUEL.ToString()) == true)
+                if (WaypointsService.ExtractSystemFromWaypoint(lastWaypoint.Symbol) == WaypointsService.ExtractSystemFromWaypoint(waypoint.Symbol))
                 {
-                    bestPath[waypoint] = (tempPath, false, waypointToSearch.Value.Item3 + tempFuelUsage, fuelMax);
+                    var tempFuelUsage = (int)Math.Ceiling(WaypointsService.CalculateDistance(lastWaypoint.X, lastWaypoint.Y, waypoint.X, waypoint.Y));
+                    if (waypoint.Marketplace?.Exchange.ToList().Any(e => e.Symbol == InventoryEnum.FUEL.ToString()) == true)
+                    {
+                        bestPath[waypoint] = (tempPath, false, waypointToSearch.Value.Item3 + tempFuelUsage, fuelMax);
+                    }
+                    else
+                    {
+                        bestPath[waypoint] = (tempPath, false, waypointToSearch.Value.Item3 + tempFuelUsage, currentFuel - tempFuelUsage);
+                    }
                 }
                 else
                 {
-                    bestPath[waypoint] = (tempPath, false, waypointToSearch.Value.Item3 + tempFuelUsage, currentFuel - tempFuelUsage);
+                    bestPath[waypoint] = (tempPath, false, waypointToSearch.Value.Item3, fuelMax);
                 }
             }
             bestPath[waypointToSearch.Key] = (waypointToSearch.Value.Item1, true, waypointToSearch.Value.Item3, waypointToSearch.Value.Item4);
@@ -140,7 +156,7 @@ public class PathsService : IPathsService
     {
         var waypointsWithinRange = waypoints
             .Where(w =>
-                w.SystemSymbol == currentWaypoint.SystemSymbol
+                WaypointsService.ExtractSystemFromWaypoint(w.Symbol) == WaypointsService.ExtractSystemFromWaypoint(currentWaypoint.Symbol)
                 && WaypointsService.CalculateDistance(currentWaypoint.X, currentWaypoint.Y, w.X, w.Y) <= currentFuel)
             .ToList();
         if (currentWaypoint.JumpGate is not null

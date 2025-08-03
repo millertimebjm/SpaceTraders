@@ -4,8 +4,8 @@ namespace SpaceTraders.Services.ShipCommands.Interfaces;
 
 public interface IShipCommandsService
 {
-    Task<Ship> Run(
-        Ship ship,
+    Task<ShipStatus> Run(
+        ShipStatus ShipStatus,
         Dictionary<string, Ship> shipsDictionary);
 }
 

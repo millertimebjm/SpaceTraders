@@ -27,16 +27,17 @@ public class PurchaseShipCommand : IShipCommandsService
         _agentsService = agentsService;
     }
 
-    public async Task<Ship> Run(
-        Ship ship,
+    public async Task<ShipStatus> Run(
+        ShipStatus shipStatus,
         Dictionary<string, Ship> shipsDictionary)
     {
+        var ship = shipStatus.Ship;
         var currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol);
         //var agent = _agentsService.GetAsync();
 
         while (true)
         {
-            if (ShipsService.GetShipCooldown(ship) is not null) return ship;
+            if (ShipsService.GetShipCooldown(ship) is not null) return shipStatus;
 
             await Task.Delay(1000);
 
@@ -61,11 +62,9 @@ public class PurchaseShipCommand : IShipCommandsService
             if (purchaseShipResponse is not null)
             {
                 ship = ship with { ShipCommand = null };
-                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"Just purchased ship.", DateTime.UtcNow));
-
                 await _shipStatusesCacheService.SetAsync(new ShipStatus(purchaseShipResponse.Ship, $"Newly purchase ship.", DateTime.UtcNow));
                 await _agentsService.SetAsync(purchaseShipResponse.Agent);
-                return ship;
+                return new ShipStatus(ship, $"Just purchased ship.", DateTime.UtcNow);
             }
 
             nav = await _shipCommandsHelperService.Orbit(ship, currentWaypoint);
@@ -79,8 +78,7 @@ public class PurchaseShipCommand : IShipCommandsService
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel };
-                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"NavigateToShipyardWaypoint {ship.Nav.WaypointSymbol}", DateTime.UtcNow));
-                return ship;
+                return new ShipStatus(ship, $"NavigateToShipyardWaypoint {ship.Nav.WaypointSymbol}", DateTime.UtcNow);
             }
 
             throw new Exception($"Infinite loop, no work planned. {ship.Symbol}, {currentWaypoint.Symbol}, {string.Join(":", ship.Cargo.Inventory.Select(i => $"{i.Name}/{i.Units}"))}, {ship.Fuel.Current}/{ship.Fuel.Capacity}");

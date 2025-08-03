@@ -36,14 +36,15 @@ public class SurveyCommand : IShipCommandsService
         _transactionsService = transactionsService;
     }
 
-    public async Task<Ship> Run(
-        Ship ship,
+    public async Task<ShipStatus> Run(
+        ShipStatus shipStatus,
         Dictionary<string, Ship> shipsDictionary)
     {
+        var ship = shipStatus.Ship;
         var currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol);
         while (true)
         {
-            if (ShipsService.GetShipCooldown(ship) is not null) return ship;
+            if (ShipsService.GetShipCooldown(ship) is not null) return shipStatus;
             var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
 
             var paths = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
@@ -78,14 +79,12 @@ public class SurveyCommand : IShipCommandsService
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel };
-                await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"NavigateToSurvey {nav.WaypointSymbol}", DateTime.UtcNow));
-                return ship;
+                return new ShipStatus(ship, $"NavigateToSurvey {nav.WaypointSymbol}", DateTime.UtcNow);
             }
 
             var cooldown = await _shipCommandsHelperService.Survey(ship);
             ship = ship with { Cooldown = cooldown };
-            await _shipStatusesCacheService.SetAsync(new ShipStatus(ship, $"Survey {ship.Nav.WaypointSymbol}", DateTime.UtcNow));
-            return ship;
+            return new ShipStatus(ship, $"Survey {ship.Nav.WaypointSymbol}", DateTime.UtcNow);
         }
     }
 }

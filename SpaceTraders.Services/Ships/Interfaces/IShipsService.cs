@@ -1,4 +1,5 @@
 using SpaceTraders.Models;
+using SpaceTraders.Models.Enums;
 
 namespace SpaceTraders.Services.Ships.Interfaces;
 
@@ -11,11 +12,12 @@ public interface IShipsService
     Task<(Nav, Fuel)> NavigateAsync(string waypointSymbol, string shipSymbol);
     Task<ExtractionResult> ExtractAsync(string shipSymbol);
     Task<ExtractionResult> ExtractAsync(string shipSymbol, Survey survey);
-    Task<Nav> JumpAsync(string waypointSymbol, string shipSymbol);
+    Task<(Nav, Cooldown)> JumpAsync(string waypointSymbol, string shipSymbol);
     Task JettisonAsync(string shipSymbol, string inventorySymbol, int units);
     Task<SurveyResult> SurveyAsync(string shipSymbol);
     Task<ScanWaypointsResult> ScanWaypointsAsync(string shipSymbol);
     Task NavToggleAsync(string shipSymbol, string flightMode);
     Task<ChartWaypointResult> ChartAsync(string waypointSymbol);
     Task<ScanSystemsResult> ScanSystemsAsync(string shipSymbol);
+    Task SwitchShipFlightMode(Ship ship, NavFlightModeEnum flightMode);
 }

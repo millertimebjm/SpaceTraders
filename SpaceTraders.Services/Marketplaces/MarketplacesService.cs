@@ -135,9 +135,9 @@ public class MarketplacesService : IMarketplacesService
 
 
     public IReadOnlyList<TradeModel> BuildTradeModel(
-        IReadOnlyList<Waypoint> marketplaceWaypoints)
+        IReadOnlyList<Waypoint> waypoints)
     {
-        marketplaceWaypoints = marketplaceWaypoints.Where(w => w.Marketplace is not null && w.Marketplace.TradeGoods is not null).ToList();
+        var marketplaceWaypoints = waypoints.Where(w => w.Marketplace is not null && w.Marketplace.TradeGoods is not null).ToList();
         List<TradeModel> tradeModels = new();
         foreach (var marketplaceWaypointExport in marketplaceWaypoints.Where(w => w.Marketplace.Exports.Any()).ToList())
         {

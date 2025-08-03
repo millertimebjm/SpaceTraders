@@ -18,17 +18,19 @@ public interface IShipCommandsHelperService
     Task<SupplyResult?> SupplyConstructionSite(Ship ship, Waypoint currentWaypoint);
     Task<(Cargo?, Cooldown?)> Extract(Ship ship, Waypoint currentWaypoint);
     Task<bool> Jettison(Ship ship);
-    Task<(Nav?, Fuel?)> NavigateToMarketplaceImport(Ship ship, Waypoint currentWaypoint);
+    Task<(Nav?, Fuel?, Cooldown?)> NavigateToMarketplaceImport(Ship ship, Waypoint currentWaypoint);
     Task<(Nav?, Fuel?)> NavigateToConstructionWaypoint(Ship ship, Waypoint currentWaypoint);
     Task<Waypoint?> GetClosestSellingWaypoint(Ship ship, Waypoint currentWaypoint);
     Task<(Nav?, Fuel?)> NavigateToMarketplaceExport(Ship ship, Waypoint currentWaypoint, Waypoint constructionWaypoint);
     Task<PurchaseCargoResult?> BuyForConstruction(Ship ship, Waypoint currentWaypoint, Waypoint constructionWaypoint);
-    Task<(Nav? nav, Fuel? fuel, bool noWork)> NavigateToMarketplaceRandomExport(Ship ship, Waypoint currentWaypoint);
+    Task<(Nav? nav, Fuel? fuel, Cooldown? cooldown, bool noWork)> NavigateToMarketplaceRandomExport(Ship ship, Waypoint currentWaypoint);
     Task<(Nav?, Fuel?)> NavigateToSurvey(Ship ship, Waypoint currentWaypoint);
     Task<(Nav?, Fuel?)> NavigateToMiningWaypoint(Ship ship, Waypoint currentWaypoint);
 
     Task<Cooldown> Survey(Ship ship);
     Task<(Nav? nav, Fuel? fuel)> NavigateToShipyard(Ship ship, Waypoint currentWaypoint);
     Task<PurchaseShipResponse> PurchaseShip(Ship ship, Waypoint currentWaypoint);
-    Task<(Nav nav, Fuel fuel)> NavigateToExplore(Ship ship, Waypoint currentWaypoint);
+    Task<(Nav nav, Fuel fuel, Cooldown cooldown)> NavigateToExplore(Ship ship, Waypoint currentWaypoint);
+    Task<PurchaseCargoResult?> PurchaseFuelForRescue(Ship ship, Waypoint currentWaypoint, int v);
+    Task<(Nav nav, Fuel fuel)> NavigateToShipToRescue(Ship ship, Waypoint currentWaypoint, Waypoint rescueShipWaypoint);
 }
