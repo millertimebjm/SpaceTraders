@@ -49,6 +49,8 @@ public class ExplorationCommand : IShipCommandsService
                     var chartWaypointResult = await _shipsService.ChartAsync(ship.Symbol);
                     currentWaypoint = chartWaypointResult.Waypoint;
                     await _waypointsCacheService.SetAsync(currentWaypoint);
+                    // currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol, refresh: true);
+                    // return shipStatus;
                 }
                 catch (Exception ex)
                 {

@@ -44,12 +44,15 @@ public class SupplyConstructionCommand : IShipCommandsService
         ShipStatus shipStatus,
         Dictionary<string, Ship> shipsDictionary)
     {
+        var loopCount = 0;
         var ship = shipStatus.Ship;
         var currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol);
         var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
         var constructionWaypoint = system.Waypoints.FirstOrDefault(w => w.JumpGate is not null && w.IsUnderConstruction);
         while (true)
         {
+            loopCount++;
+            if (loopCount > 20) return new ShipStatus(ship, $"Ship in loop.", DateTime.UtcNow);
             if (ShipsService.GetShipCooldown(ship) is not null) return shipStatus;
             var paths = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
 

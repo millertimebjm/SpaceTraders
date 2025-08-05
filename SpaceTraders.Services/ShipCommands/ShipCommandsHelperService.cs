@@ -118,8 +118,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
     public async Task<PurchaseCargoResult?> BuyForConstruction(Ship ship, Waypoint currentWaypoint, Waypoint constructionWaypoint)
     {
         var agent = await _agentsService.GetAsync();
-        if (ship.Cargo.Capacity == ship.Cargo.Units
-            || agent.Credits < 500_000)
+        if (ship.Cargo.Capacity == ship.Cargo.Units)
         {
             return null;
         }
@@ -305,7 +304,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
 
         // Need fuel and fuel is available at this waypoint
         if (ship.Fuel.Current < ship.Fuel.Capacity
-            && currentWaypoint.Marketplace?.Exchange.Any(e => e.Symbol == InventoryEnum.FUEL.ToString()) == true)
+            && currentWaypoint.Marketplace?.TradeGoods.Any(e => e.Symbol == InventoryEnum.FUEL.ToString()) == true)
         {
             shouldDock = true;
         }
@@ -991,6 +990,10 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             if (unmappedPaths.Any())
             {
                 await _shipsService.SwitchShipFlightMode(ship, NavFlightModeEnum.DRIFT);
+            }
+            else
+            {
+                return (null, null, null);
             }
         }
         else
