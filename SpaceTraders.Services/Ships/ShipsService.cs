@@ -6,6 +6,8 @@ using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.HttpHelpers;
 using SpaceTraders.Services.Ships.Interfaces;
+using SpaceTraders.Services.Waypoints;
+using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.Shipyards;
 
@@ -17,12 +19,14 @@ public class ShipsService : IShipsService
     private readonly string _token;
     private readonly ILogger<ShipsService> _logger;
     private readonly IMongoCollectionFactory _collectionFactory;
+    private readonly IWaypointsService _waypointsService;
 
     public ShipsService(
         HttpClient httpClient,
         IConfiguration configuration,
         ILogger<ShipsService> logger,
-        IMongoCollectionFactory collectionFactory)
+        IMongoCollectionFactory collectionFactory,
+        IWaypointsService waypointsService)
     {
         _collectionFactory = collectionFactory;
         _logger = logger;
@@ -31,6 +35,7 @@ public class ShipsService : IShipsService
         ArgumentException.ThrowIfNullOrWhiteSpace(_apiUrl);
         _token = configuration[$"SpaceTrader:" + ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
         ArgumentException.ThrowIfNullOrWhiteSpace(_token);
+        _waypointsService = waypointsService;
     }
 
     public async Task<IEnumerable<Ship>> GetAsync()
@@ -110,15 +115,31 @@ public class ShipsService : IShipsService
         return data.Datum.Nav;
     }
 
-    public async Task<(Nav, Fuel)> NavigateAsync(string waypointSymbol, string shipSymbol)
+    public async Task<(Nav, Fuel)> NavigateAsync(string waypointSymbol, Ship ship)
     {
+        var waypoint = await _waypointsService.GetAsync(waypointSymbol);
+        var currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol);
+        return await NavigateAsync(waypoint, currentWaypoint, ship);
+    }
+
+    public async Task<(Nav, Fuel)> NavigateAsync(Waypoint waypoint, Waypoint currentWaypoint, Ship ship)
+    {
+        var distance = WaypointsService.CalculateDistance(waypoint.X, currentWaypoint.X, waypoint.Y, currentWaypoint.Y);
+        if (distance > ship.Fuel.Current)
+        {
+            await this.SwitchShipFlightMode(ship, NavFlightModeEnum.DRIFT);
+        }
+        else
+        {
+            await this.SwitchShipFlightMode(ship, NavFlightModeEnum.CRUISE);
+        }
         var url = new UriBuilder(_apiUrl)
         {
-            Path = $"/v2/my/ships/{shipSymbol}/navigate"
+            Path = $"/v2/my/ships/{ship.Symbol}/navigate"
         };
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);
-        var content = JsonContent.Create(new { waypointSymbol });
+        var content = JsonContent.Create(new { waypointSymbol = waypoint.Symbol });
         var data = await HttpHelperService.HttpPostHelper<DataSingle<Ship>>(
             url.ToString(),
             _httpClient,
@@ -294,9 +315,18 @@ public class ShipsService : IShipsService
 
     public async Task NavToggleAsync(string shipSymbol, string flightMode)
     {
+        var ship = await this.GetAsync(shipSymbol);
+        if (ship.Nav.FlightMode != flightMode)
+        {
+            await NavToggleAsync(ship, flightMode);
+        }
+    }
+
+    public async Task NavToggleAsync(Ship ship, string flightMode)
+    {
         var url = new UriBuilder(_apiUrl)
         {
-            Path = $"/my/ships/{shipSymbol}/nav"
+            Path = $"/my/ships/{ship.Symbol}/nav"
         };
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);
@@ -306,8 +336,6 @@ public class ShipsService : IShipsService
             _httpClient,
             content,
             _logger);
-        // if (data.Datum is null) throw new HttpRequestException("Scan not retrieved");
-        // return data.Datum;
     }
 
     public async Task<ChartWaypointResult> ChartAsync(string shipSymbol)

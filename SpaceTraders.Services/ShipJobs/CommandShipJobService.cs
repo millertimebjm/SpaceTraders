@@ -41,35 +41,15 @@ public class CommandShipJobService : IShipJobService
                 .Where(w => !WaypointsService.IsVisited(w) || w.Traits?.Any(t => t.Symbol == WaypointTraitsEnum.UNCHARTED.ToString()) == true)
                 .Select(w => w.Symbol)
                 .ToList();
-        var paths = PathsService.BuildWaypointPath(waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
-        if (paths.Keys.Any(p => unchartedWaypoints.Contains(p.Symbol)))
+        if (unchartedWaypoints.Any())
         {
             return new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration);
         }
-        // var jumpGate = waypoints.SingleOrDefault(w =>
-        //     w.Type == WaypointTypesEnum.JUMP_GATE.ToString()
-        //     && w.JumpGate is not null
-        //     && !w.IsUnderConstruction);
-        // if (jumpGate is not null)
-        // {
-        //     var jumpSystems = jumpGate.JumpGate.Connections;
-        //     foreach (var jumpSystem in jumpSystems)
-        //     {
-        //         var cacheSystem = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(jumpSystem));
-        //         if (cacheSystem.Waypoints.Any(w => w.Traits is null || !w.Traits.Any()))
-        //         {
-        //             return new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration);
-        //         }
-        //     }
-        // }
-        var pathsDictionary = await _pathsService.BuildSystemPath(ship.Nav.WaypointSymbol, ship.Fuel.Capacity, ship.Fuel.Current);
-        if (pathsDictionary
-            .Keys
-            .Any(w =>
-                !WaypointsService.IsVisited(w)))
-        {
-            return new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration);
-        }
+        // var paths = PathsService.BuildWaypointPath(waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
+            // if (paths.Keys.Any(p => unchartedWaypoints.Contains(p.Symbol)))
+            // {
+            //     return new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration);
+            // }
 
         var agent = await _agentsService.GetAsync();
         if (agent.Credits > 800_000)

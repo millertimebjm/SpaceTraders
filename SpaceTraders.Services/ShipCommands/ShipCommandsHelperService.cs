@@ -397,7 +397,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         var pathDictionary = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
         var pathItem = pathDictionary.SingleOrDefault(p => p.Key.Symbol == endWaypoint.Symbol);
 
-        var (nav, fuel) = await _shipsService.NavigateAsync(pathItem.Value.Item1[1].Symbol, ship.Symbol);
+        var (nav, fuel) = await _shipsService.NavigateAsync(pathItem.Value.Item1[1].Symbol, ship);
         return (nav, fuel);
     }
 
@@ -414,7 +414,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         var pathDictionary = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
         var pathItem = pathDictionary.SingleOrDefault(p => p.Key.Symbol == startWaypoint.Symbol);
 
-        var (nav, fuel) = await _shipsService.NavigateAsync(pathItem.Value.Item1[1].Symbol, ship.Symbol);
+        var (nav, fuel) = await _shipsService.NavigateAsync(pathItem.Value.Item1[1].Symbol, ship);
 
         return (nav, fuel);
     }
@@ -436,7 +436,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             || w.Type == WaypointTypesEnum.ENGINEERED_ASTEROID.ToString()).ToList();
         var asteroidPaths = paths.Where(p => asteroidWaypoints.Select(w => w.Symbol).Contains(p.Key.Symbol));
         var closestAsteroidPath = asteroidPaths.OrderBy(p => p.Value.Item1.Count()).FirstOrDefault();
-        return await _shipsService.NavigateAsync(closestAsteroidPath.Value.Item1[1].Symbol, ship.Symbol);
+        return await _shipsService.NavigateAsync(closestAsteroidPath.Value.Item1[1].Symbol, ship);
     }
 
     public async Task<Nav?> Orbit(Ship ship, Waypoint currentWaypoint)
@@ -601,9 +601,17 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         var inventoryToSell = ship.Cargo.Inventory.OrderByDescending(i => i.Units).ThenBy(i => i.Symbol).First().Symbol;
         sellModels = sellModels.Where(tm => tm.TradeSymbol == inventoryToSell).ToList();
         var bestTrade = _marketplacesService.GetBestSellModel(sellModels);
-        if (bestTrade is null) return (null, null, null);
+        if (bestTrade is null)
+        {
+            paths = await _pathsService.BuildSystemPath(currentWaypoint.Symbol, 10000, 10000);
+            sellModels = _marketplacesService.BuildSellModel(paths.Keys.ToList());
+            inventoryToSell = ship.Cargo.Inventory.OrderByDescending(i => i.Units).ThenBy(i => i.Symbol).First().Symbol;
+            sellModels = sellModels.Where(tm => tm.TradeSymbol == inventoryToSell).ToList();
+            bestTrade = _marketplacesService.GetBestSellModel(sellModels);
+            if (bestTrade is null) return (null, null, null);
+        }
         var shortestPath = paths.Single(p => p.Key.Symbol == bestTrade.WaypointSymbol);
-        if (shortestPath.Key.Symbol == currentWaypoint.Symbol) return (null, null, null);
+        
         // return await _shipsService.NavigateAsync(shortestPath.Value.Item1[1].Symbol, ship.Symbol);
         if (shortestPath.Value.Item1[1].SystemSymbol != ship.Nav.SystemSymbol)
         {
@@ -615,7 +623,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             await _waypointsService.GetAsync(shortestPath.Key.Symbol, refresh: true);
             return (null, null, null);
         }
-        var (nav, fuel) = await _shipsService.NavigateAsync(shortestPath.Value.Item1[1].Symbol, ship.Symbol);
+        var (nav, fuel) = await _shipsService.NavigateAsync(shortestPath.Value.Item1[1].Symbol, ship);
         return (nav, fuel, ship.Cooldown);
     }
 
@@ -666,7 +674,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         var pathDictionary = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
         var path = pathDictionary.Single(p => p.Key.Symbol == jumpGateWaypoint.Symbol);
 
-        var (nav, fuel) = await _shipsService.NavigateAsync(path.Value.Item1[1].Symbol, ship.Symbol);
+        var (nav, fuel) = await _shipsService.NavigateAsync(path.Value.Item1[1].Symbol, ship);
 
         return (nav, fuel);
     }
@@ -756,7 +764,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
                 system);
         var shortestPath = pathDictionary.Single(p => p.Key.Symbol == marketplaceWaypoint.Symbol);
 
-        var (nav, fuel) = await _shipsService.NavigateAsync(shortestPath.Value.Item1[1].Symbol, ship.Symbol);
+        var (nav, fuel) = await _shipsService.NavigateAsync(shortestPath.Value.Item1[1].Symbol, ship);
         return (nav, fuel);
     }
 
@@ -819,7 +827,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
                 await _waypointsService.GetAsync(shortestPathUnmapped.Key.Symbol, refresh: true);
                 return (null, null, null, true);
             }
-            var (navResponse, fuelResponse) = await _shipsService.NavigateAsync(shortestPathUnmapped.Value.Item1[1].Symbol, ship.Symbol);
+            var (navResponse, fuelResponse) = await _shipsService.NavigateAsync(shortestPathUnmapped.Value.Item1[1].Symbol, ship);
             return (navResponse, fuelResponse, ship.Cooldown, false);
         }
 
@@ -838,7 +846,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             await _waypointsService.GetAsync(shortestPath.Key.Symbol, refresh: true);
             return (null, null, null, true);
         }
-        var (nav, fuel) = await _shipsService.NavigateAsync(shortestPath.Value.Item1[1].Symbol, ship.Symbol);
+        var (nav, fuel) = await _shipsService.NavigateAsync(shortestPath.Value.Item1[1].Symbol, ship);
         return (nav, fuel, ship.Cooldown, false);
     }
 
@@ -857,7 +865,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             || w.Type == WaypointTypesEnum.ENGINEERED_ASTEROID.ToString()).ToList();
         var asteroidPaths = paths.Where(p => asteroidWaypoints.Select(w => w.Symbol).Contains(p.Key.Symbol));
         var closestAsteroidPath = asteroidPaths.OrderBy(p => p.Value.Item1.Count()).FirstOrDefault();
-        return await _shipsService.NavigateAsync(closestAsteroidPath.Value.Item1[1].Symbol, ship.Symbol);
+        return await _shipsService.NavigateAsync(closestAsteroidPath.Value.Item1[1].Symbol, ship);
     }
 
     public async Task<Cooldown> Survey(Ship ship)
@@ -891,14 +899,14 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         {
             var shipyardPaths = paths.Where(p => unmappedShipyards.Select(s => s.Symbol).Contains(p.Key.Symbol));
             var closestShipyard = shipyardPaths.OrderBy(s => s.Value.Item1.Count()).ThenByDescending(s => s.Value.Item4).First();
-            return await _shipsService.NavigateAsync(closestShipyard.Value.Item1[1].Symbol, ship.Symbol);
+            return await _shipsService.NavigateAsync(closestShipyard.Value.Item1[1].Symbol, ship);
         }
 
         var shipyardWithShip = shipyards.FirstOrDefault(s => s.Shipyard.ShipFrames.Any(sf => sf.Type == shipToBuy.ToString()));
         if (shipyardWithShip is not null && ship.Nav.WaypointSymbol != shipyardWithShip.Symbol)
         {
             var path = paths.SingleOrDefault(p => p.Key.Symbol == shipyardWithShip.Symbol);
-            var (nav, fuel) = await _shipsService.NavigateAsync(path.Value.Item1[1].Symbol, ship.Symbol);
+            var (nav, fuel) = await _shipsService.NavigateAsync(path.Value.Item1[1].Symbol, ship);
             return (nav, fuel);
         }
         return (null, null);
@@ -1018,7 +1026,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             await _waypointsService.GetAsync(closestUnmappedPath.Key.Symbol, refresh: true);
             return (null, null, null);
         }
-        var (nav, fuel) = await _shipsService.NavigateAsync(closestUnmappedPath.Value.Item1[1].Symbol, ship.Symbol);
+        var (nav, fuel) = await _shipsService.NavigateAsync(closestUnmappedPath.Value.Item1[1].Symbol, ship);
         return (nav, fuel, ship.Cooldown);
     }
 
