@@ -455,7 +455,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         if (ship.Fuel.Current == ship.Fuel.Capacity
             || ship.Nav.Status != NavStatusEnum.DOCKED.ToString()
             || currentWaypoint.Marketplace is null
-            || !currentWaypoint.Marketplace.TradeGoods.Any(e => e.Symbol == InventoryEnum.FUEL.ToString()))
+            || currentWaypoint.Marketplace.TradeGoods?.Any(e => e.Symbol == InventoryEnum.FUEL.ToString())== false)
         {
             return null;
         }

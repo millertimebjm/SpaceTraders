@@ -69,7 +69,8 @@ public class WaypointsController : BaseController
     {
         var shipSymbol = SessionHelper.Get<string>(HttpContext, SessionEnum.CurrentShipSymbol);
         ArgumentException.ThrowIfNullOrWhiteSpace(shipSymbol);
-        await _shipsService.NavigateAsync(waypointSymbol, shipSymbol);
+        var ship = await _shipsService.GetAsync(shipSymbol);
+        await _shipsService.NavigateAsync(waypointSymbol, ship);
         var waypoint = await _waypointsService.GetAsync(waypointSymbol);
         SessionHelper.Set(HttpContext, SessionEnum.CurrentWaypointSymbol, waypointSymbol);
         return Redirect($"/ships/{shipSymbol}");
