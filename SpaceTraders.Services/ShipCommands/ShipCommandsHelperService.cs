@@ -145,6 +145,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
 
         if (inventoryToBuy is null) return null;
         var quantityToBuy = Math.Min(constructionInventory.Required - constructionInventory.Fulfilled - ship.Cargo.Units, Math.Min(inventoryToBuy.TradeVolume, (ship.Cargo.Capacity - ship.Cargo.Units)));
+        if (inventoryToBuy.PurchasePrice * quantityToBuy > (agent.Credits - 200_000)) return null;
         if (quantityToBuy == 0) return null;
         var purchaseCargoResult = await _marketplacesService.PurchaseAsync(ship.Symbol, inventoryToBuy.Symbol, quantityToBuy);
         return purchaseCargoResult;
