@@ -27,6 +27,7 @@ namespace SpaceTraders.Services.ShipCommands;
 
 public class ShipCommandsHelperService : IShipCommandsHelperService
 {
+    private const int minimumFuel = 5;
     private readonly IShipsService _shipsService;
     private readonly IMarketplacesService _marketplacesService;
     private readonly ISystemsService _systemsService;
@@ -79,8 +80,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         var paths = await _pathsService.BuildSystemPath(currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
 
         var agent = await _agentsService.GetAsync();
-        // var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
-        // var paths = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
+
         var tradeModels = _marketplacesService.BuildTradeModel(paths.Keys.ToList());
         var bestTrade = _marketplacesService.GetBestTrade(tradeModels);
         if (bestTrade is null || bestTrade.ExportWaypointSymbol != currentWaypoint.Symbol) return null;
@@ -981,6 +981,20 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
     {
         // var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
         var systems = await _systemsService.GetAsync();
+
+        if (ship.Fuel.Current < minimumFuel)
+        {
+            var allSystemPaths = await _pathsService.BuildSystemPath(currentWaypoint.Symbol, 10000, 10000);
+            var fuelPaths = allSystemPaths.Keys
+                .Where(p => p.Marketplace?.TradeGoods?.Any(tg => tg.Symbol == InventoryEnum.FUEL.ToString()) == true)
+                .ToList();
+            var shortestFuelPath = fuelPaths
+                .OrderBy(p => WaypointsService.CalculateDistance(currentWaypoint.X, currentWaypoint.X, p.Y, p.Y))
+                .First();
+            var (refuelNav, refuelFuel) = await _shipsService.NavigateAsync(shortestFuelPath.Symbol, ship);
+            return (refuelNav, refuelFuel, null);
+        }
+
         var unmappedWaypoints = systems.SelectMany(s => s.Waypoints).Where(w =>
             // w.Traits is null
             // || w.Traits.Any(t => t.Symbol == WaypointTraitsEnum.UNCHARTED.ToString()))
