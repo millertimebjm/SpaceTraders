@@ -8,4 +8,9 @@ public interface IPathsService
         string originWaypoint,
         int fuelMax,
         int fuelCurrent);
+
+    Task<Dictionary<Waypoint, (List<Waypoint>, int)>> BuildSystemPathWithCost(
+        string originWaypoint,
+        int fuelMax,
+        int fuelCurrent);
 }
