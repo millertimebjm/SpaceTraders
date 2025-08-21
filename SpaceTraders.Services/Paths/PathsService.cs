@@ -233,4 +233,19 @@ public class PathsService : IPathsService
         }
         return bestPath.ToDictionary(p => p.Key, p => (p.Value.Item1, p.Value.Item5));
     }
+
+    private readonly Dictionary<(string, int, int), Dictionary<Waypoint, (List<Waypoint>, int)>> SystemPathMemo = new ();
+    public async Task<Dictionary<Waypoint, (List<Waypoint>, int)>> BuildSystemPathWithCostWithMemo(
+        string originWaypoint,
+        int fuelMax,
+        int startingFuel)
+    {
+        if (SystemPathMemo.TryGetValue((originWaypoint, fuelMax, startingFuel), out var value))
+        {
+            return value;
+        }
+        var result = await BuildSystemPathWithCost(originWaypoint, fuelMax, startingFuel);
+        SystemPathMemo.Add((originWaypoint, fuelMax, startingFuel), result);
+        return result;
+    }
 }

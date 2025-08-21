@@ -136,7 +136,7 @@ public class ShipLoopsService : IShipLoopsService
             //var system = await _systemsService.GetAsync(shipStatuses.First().Ship.Nav.SystemSymbol);
             var systems = await _systemsService.GetAsync();
             var waypoints = systems.SelectMany(s => s.Waypoints).ToList();
-            await _marketplacesService.SaveTradeModelsAsync(waypoints);
+            await _marketplacesService.SaveTradeModelsAsync(waypoints, 400, 400);
 
             TimeSpan? shortestCooldown = null;
             foreach (var shipStatus in shipStatuses)

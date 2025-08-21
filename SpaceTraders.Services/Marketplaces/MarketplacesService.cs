@@ -1,5 +1,6 @@
 ﻿using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
@@ -7,6 +8,8 @@ using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.HttpHelpers;
 using SpaceTraders.Services.Marketplaces.Interfaces;
+using SpaceTraders.Services.Paths;
+using SpaceTraders.Services.Paths.Interfaces;
 using SpaceTraders.Services.Waypoints;
 
 namespace SpaceTraders.Services.Marketplaces;
@@ -18,20 +21,24 @@ public class MarketplacesService : IMarketplacesService
     private readonly string _token;
     private readonly IMongoCollectionFactory _collectionFactory;
     private readonly ILogger<MarketplacesService> _logger;
+    private readonly IPathsService _pathsService;
+    public const string SPACETRADER_PREFIX = "SpaceTrader";
 
     public MarketplacesService(
         HttpClient httpClient,
         IConfiguration configuration,
         IMongoCollectionFactory collectionFactory,
-        ILogger<MarketplacesService> logger)
+        ILogger<MarketplacesService> logger,
+        IPathsService pathsService)
     {
         _logger = logger;
         _httpClient = httpClient;
-        _apiUrl = configuration[$"SpaceTrader:" + ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
+        _apiUrl = configuration[SPACETRADER_PREFIX + ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
         ArgumentException.ThrowIfNullOrWhiteSpace(_apiUrl);
-        _token = configuration[$"SpaceTrader:" + ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
+        _token = configuration[SPACETRADER_PREFIX + ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
         ArgumentException.ThrowIfNullOrWhiteSpace(_token);
         _collectionFactory = collectionFactory;
+        _pathsService = pathsService;
     }
 
     public async Task<Marketplace> GetAsync(string marketplaceWaypointSymbol)
@@ -134,8 +141,10 @@ public class MarketplacesService : IMarketplacesService
 
 
 
-    public IReadOnlyList<TradeModel> BuildTradeModel(
-        IReadOnlyList<Waypoint> waypoints)
+    public async Task<IReadOnlyList<TradeModel>> BuildTradeModel(
+        IReadOnlyList<Waypoint> waypoints,
+        int fuelMax,
+        int fuelCurrent)
     {
         var marketplaceWaypoints = waypoints.Where(w => w.Marketplace is not null && w.Marketplace.TradeGoods is not null).ToList();
         List<TradeModel> tradeModels = new();
@@ -156,7 +165,8 @@ public class MarketplacesService : IMarketplacesService
                             marketplaceWaypointImport.Symbol,
                             import.SellPrice,
                             Enum.Parse<SupplyEnum>(import.Supply),
-                            import.TradeVolume
+                            import.TradeVolume,
+                            await GetNavigationFactor(marketplaceWaypointExport.Symbol, marketplaceWaypointImport.Symbol, fuelMax, fuelCurrent)
                         ));
                     }
                 }
@@ -173,7 +183,8 @@ public class MarketplacesService : IMarketplacesService
                             marketplaceWaypointExchange.Symbol,
                             import.SellPrice,
                             Enum.Parse<SupplyEnum>(import.Supply),
-                            import.TradeVolume
+                            import.TradeVolume,
+                            await GetNavigationFactor(marketplaceWaypointExport.Symbol, marketplaceWaypointExchange.Symbol, fuelMax, fuelCurrent)
                         ));
                     }
                 }
@@ -182,17 +193,12 @@ public class MarketplacesService : IMarketplacesService
         return tradeModels;
     }
 
-
-    // public TradeModel? GetBestTrade(IReadOnlyList<TradeModel> trades)
-    // {
-    //     var orderedTrades = trades
-    //         .Where(t => t.ImportSellPrice > t.ExportBuyPrice) // only profitable trades
-    //         .OrderByDescending(t =>
-    //             (t.ImportSellPrice - t.ExportBuyPrice) *
-    //             SupplyFactor(t.ExportSupplyEnum, t.ImportSupplyEnum)
-    //         ).ToList();
-    //     return orderedTrades.FirstOrDefault();
-    // }
+    public async Task<double> GetNavigationFactor(string exportSymbol, string importSymbol, int fuelMax, int fuelCurrent)
+    {
+        var paths = await _pathsService.BuildSystemPathWithCost(exportSymbol, fuelMax, fuelCurrent);
+        var path = paths.Single(p => p.Key.Symbol == importSymbol);
+        return NavigationFactor(path.Value.Item2);
+    }
 
     public IReadOnlyList<TradeModel> GetBestOrderedTrades(IReadOnlyList<TradeModel> trades)
     {
@@ -216,6 +222,31 @@ public class MarketplacesService : IMarketplacesService
         return orderedTrades;
     }
 
+    public IReadOnlyList<TradeModel> GetBestOrderedTradesWithTravelCost(
+        IReadOnlyList<TradeModel> trades)
+    {
+        const double profitWeight = 0.5;
+        const double marginWeight = 0.5;
+
+        var orderedTrades = trades
+            .Where(t => t.ImportSellPrice > t.ExportBuyPrice)
+            .OrderByDescending(t =>
+            {
+                var profit = t.ImportSellPrice - t.ExportBuyPrice;
+                var marginPercent = (double)profit / t.ExportBuyPrice;
+
+                var score =
+                    (profitWeight * profit) +
+                    (marginWeight * marginPercent * 100); // scale percentage for balance
+
+                score = score * SupplyFactor(t.ExportSupplyEnum, t.ImportSupplyEnum);
+                score = score * t.NavigationFactor;
+                return score;
+            })
+            .ToList();
+        return orderedTrades;
+    }
+
     public TradeModel? GetBestTrade(IReadOnlyList<TradeModel> trades)
     {
         var orderedTrades = GetBestOrderedTrades(trades);
@@ -232,7 +263,7 @@ public class MarketplacesService : IMarketplacesService
         return orderedTrades.FirstOrDefault();
     }
 
-    private double SupplyFactor(SupplyEnum export, SupplyEnum import)
+    private static double SupplyFactor(SupplyEnum export, SupplyEnum import)
     {
         // Assign numeric values to supply levels (tune these based on game logic)
         double exportMultiplier = export switch
@@ -256,6 +287,16 @@ public class MarketplacesService : IMarketplacesService
         };
 
         return exportMultiplier * importMultiplier;
+    }
+
+    private static double NavigationFactor(int cost)
+    {
+        if (cost <= 400) return 1;
+        if (cost <= 800) return .85;
+        if (cost <= 1600) return .7;
+        if (cost <= 3200) return .55;
+        if (cost <= 6400) return .4;
+        return .25;
     }
 
     public IReadOnlyList<SellModel> BuildSellModel(
@@ -298,9 +339,9 @@ public class MarketplacesService : IMarketplacesService
             .ToListAsync();
     }
 
-    public async Task SaveTradeModelsAsync(IReadOnlyList<Waypoint> waypoints)
+    public async Task SaveTradeModelsAsync(IReadOnlyList<Waypoint> waypoints, int fuelMax, int fuelCurrent)
     {
-        var tradeModels = BuildTradeModel(waypoints);
+        var tradeModels = await BuildTradeModel(waypoints, fuelMax, fuelCurrent);
         if (tradeModels.Any())
         {
             var collection = _collectionFactory.GetCollection<TradeModel>();
@@ -319,7 +360,8 @@ public record TradeModel(
     string ImportWaypointSymbol,
     int ImportSellPrice,
     SupplyEnum ImportSupplyEnum,
-    int ImportTradeVolume
+    int ImportTradeVolume,
+    double NavigationFactor
 );
 
 public record SellModel(
