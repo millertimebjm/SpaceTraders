@@ -8,6 +8,7 @@ using SpaceTraders.Services;
 using SpaceTraders.Services.Marketplaces;
 using SpaceTraders.Services.Marketplaces.Interfaces;
 using SpaceTraders.Services.Paths.Interfaces;
+using SpaceTraders.Services.Trades;
 
 namespace SpaceTraders.Tests;
 
@@ -20,7 +21,7 @@ public class MarketplacesServicesTests
         var configurationSub = Substitute.For<IConfiguration>();
         configurationSub[MarketplacesService.SPACETRADER_PREFIX + ConfigurationEnums.ApiUrl.ToString()].Returns(ConfigurationEnums.ApiUrl.ToString());
         configurationSub[MarketplacesService.SPACETRADER_PREFIX + ConfigurationEnums.AgentToken.ToString()].Returns(ConfigurationEnums.AgentToken.ToString());
-        var mongoCollectionFactorySub = Substitute.For<IMongoCollectionFactory>();
+        var collectionFactorySub = Substitute.For<IMongoCollectionFactory>();
         var loggerSub = Substitute.For<ILogger<MarketplacesService>>();
         var pathsServiceSub = Substitute.For<IPathsService>();
         pathsServiceSub.BuildSystemPathWithCostWithMemo("A1-AB1-ABC1", 10, 10).Returns(
@@ -31,13 +32,15 @@ public class MarketplacesServicesTests
             }
         );
 
-        IMarketplacesService marketplacesService = new MarketplacesService(
-            httpClient,
-            configurationSub,
-            mongoCollectionFactorySub,
-            loggerSub,
-            pathsServiceSub
-        );
+        // IMarketplacesService marketplacesService = new MarketplacesService(
+        //     httpClient,
+        //     configurationSub,
+        //     mongoCollectionFactorySub,
+        //     loggerSub,
+        //     pathsServiceSub
+        // );
+
+        ITradesService tradesService = new TradesService(pathsServiceSub, collectionFactorySub);        
 
         var tradeSymbolBest = "TradeSymbolBest";
         var tradeSymbolWorst = "TradeSymbolWorst";
@@ -47,7 +50,7 @@ public class MarketplacesServicesTests
             new TradeModel(tradeSymbolBest,"A1-AB1-ABC1", 1000, SupplyEnum.MODERATE, 1, "A1-AB1-ABC3", 2000, SupplyEnum.LIMITED, 1, 1)
         ];
 
-        var tradesOrdered = marketplacesService.GetBestOrderedTradesWithTravelCost(tradeModels);
+        var tradesOrdered = tradesService.GetBestOrderedTradesWithTravelCost(tradeModels);
         Assert.Equal(2, tradesOrdered.Count());
         Assert.Equal(tradeSymbolBest, tradesOrdered.First().TradeSymbol);
         Assert.Equal(tradeSymbolWorst, tradesOrdered.Last().TradeSymbol);

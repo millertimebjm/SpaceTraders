@@ -26,6 +26,7 @@ using SpaceTraders.Services.Surveys;
 using SpaceTraders.Services.Surveys.Interfaces;
 using SpaceTraders.Services.Systems;
 using SpaceTraders.Services.Systems.Interfaces;
+using SpaceTraders.Services.Trades;
 using SpaceTraders.Services.Transactions;
 using SpaceTraders.Services.Transactions.Interfaces;
 using SpaceTraders.Services.Waypoints;
@@ -60,6 +61,7 @@ public static class DependencyInjectionHelperService
         services.AddSingleton<IShipLoopsService, ShipLoopsService>();
         services.AddSingleton<IPathsService, PathsService>();
         services.AddSingleton<ITransactionsService, TransactionsServices>();
+        services.AddSingleton<ITradesService, TradesService>();
 
         // Ship Commands
         services.AddSingleton<MiningToSellAnywhereCommand>();

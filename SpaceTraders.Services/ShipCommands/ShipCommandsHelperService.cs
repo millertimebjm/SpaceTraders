@@ -7,10 +7,10 @@ using SpaceTraders.Services.Paths;
 using SpaceTraders.Services.Paths.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
-using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Shipyards.Interfaces;
 using SpaceTraders.Services.Surveys.Interfaces;
 using SpaceTraders.Services.Systems.Interfaces;
+using SpaceTraders.Services.Trades;
 using SpaceTraders.Services.Transactions.Interfaces;
 using SpaceTraders.Services.Waypoints;
 using SpaceTraders.Services.Waypoints.Interfaces;
@@ -39,6 +39,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
     private readonly IPathsService _pathsService;
     private readonly ITransactionsService _transactionsService;
     private readonly IShipStatusesCacheService _shipStatusesCacheService;
+    private readonly ITradesService _tradesService;
     public ShipCommandsHelperService(
         IShipsService shipsService,
         IMarketplacesService marketplacesService,
@@ -50,7 +51,8 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         IShipyardsService shipyardsService,
         IPathsService pathsService,
         ITransactionsService transactionsService,
-        IShipStatusesCacheService shipStatusesCacheService)
+        IShipStatusesCacheService shipStatusesCacheService,
+        ITradesService tradesService)
     {
         _shipsService = shipsService;
         _marketplacesService = marketplacesService;
@@ -63,6 +65,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         _pathsService = pathsService;
         _transactionsService = transactionsService;
         _shipStatusesCacheService = shipStatusesCacheService;
+        _tradesService = tradesService;
     }
 
     public async Task<PurchaseCargoResult?> PurchaseCargo(Ship ship, Waypoint currentWaypoint)
@@ -81,13 +84,13 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
 
         var agent = await _agentsService.GetAsync();
 
-        var tradeModels = await _marketplacesService.BuildTradeModel(paths.Keys.ToList(), ship.Fuel.Capacity, ship.Fuel.Current);
-        var bestTrade = _marketplacesService.GetBestTrade(tradeModels);
+        var tradeModels = await _tradesService.BuildTradeModel(paths.Keys.ToList(), ship.Fuel.Capacity, ship.Fuel.Current);
+        var bestTrade = _tradesService.GetBestTrade(tradeModels);
         if (bestTrade is null || bestTrade.ExportWaypointSymbol != currentWaypoint.Symbol) return null;
         var inventoryToBuy = currentWaypoint.Marketplace.TradeGoods.Single(tg => tg.Symbol == bestTrade.TradeSymbol);
 
         var newTradeModels = tradeModels;
-        var newBestTrade = bestTrade;
+        TradeModel newBestTrade = bestTrade;
         PurchaseCargoResult? purchaseCargoResult = null;
         while (bestTrade.TradeSymbol == newBestTrade.TradeSymbol
             && bestTrade.ExportWaypointSymbol == newBestTrade.ExportWaypointSymbol
@@ -109,8 +112,8 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             await Task.Delay(500);
             paths = await _pathsService.BuildSystemPath(currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
 
-            newTradeModels = await _marketplacesService.BuildTradeModel(paths.Keys.ToList(), ship.Fuel.Capacity, ship.Fuel.Current);
-            newBestTrade = _marketplacesService.GetBestTrade(newTradeModels);
+            newTradeModels = await _tradesService.BuildTradeModel(paths.Keys.ToList(), ship.Fuel.Capacity, ship.Fuel.Current);
+            newBestTrade = _tradesService.GetBestTrade(newTradeModels);
         }
         return purchaseCargoResult;
     }
@@ -125,7 +128,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
 
         var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
 
-        var marketplaceWaypoint = await GetConstructionInventoryWaypoint(
+        var marketplaceWaypoint = GetConstructionInventoryWaypoint(
             ship,
             currentWaypoint,
             constructionWaypoint,
@@ -135,15 +138,14 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             return null;
         }
 
-        var inventoryToBuy = await GetConstructionInventoryToBuy(
+        var inventoryToBuy = GetConstructionInventoryToBuy(
             ship,
             currentWaypoint,
             constructionWaypoint,
             system);
-
-        var constructionInventory = constructionWaypoint.Construction.Materials.Single(m => m.TradeSymbol == inventoryToBuy.Symbol);
-
         if (inventoryToBuy is null) return null;
+        var constructionInventory = constructionWaypoint.Construction?.Materials.Single(m => m.TradeSymbol == inventoryToBuy.Symbol);
+
         var quantityToBuy = Math.Min(constructionInventory.Required - constructionInventory.Fulfilled - ship.Cargo.Units, Math.Min(inventoryToBuy.TradeVolume, (ship.Cargo.Capacity - ship.Cargo.Units)));
         if (inventoryToBuy.PurchasePrice * quantityToBuy > (agent.Credits - 200_000)) return null;
         if (quantityToBuy == 0) return null;
@@ -162,7 +164,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
 
         // Need fuel and fuel is available at this waypoint
         if (ship.Fuel.Current < ship.Fuel.Capacity
-            && currentWaypoint.Marketplace?.TradeGoods.Any(e => e.Symbol == InventoryEnum.FUEL.ToString()) == true)
+            && currentWaypoint.Marketplace?.TradeGoods?.Any(e => e.Symbol == InventoryEnum.FUEL.ToString()) == true)
         {
             shouldDock = true;
         }
@@ -226,11 +228,11 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
             var paths = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
 
-            var sellModels = _marketplacesService.BuildSellModel(paths.Keys.ToList());
+            var sellModels = _tradesService.BuildSellModel(paths.Keys.ToList());
             var inventoryToSell = ship.Cargo.Inventory.OrderByDescending(i => i.Units).ThenBy(i => i.Symbol).First().Symbol;
             sellModels = sellModels.Where(tm => tm.TradeSymbol == inventoryToSell).ToList();
 
-            var bestTrade = _marketplacesService.GetBestSellModel(sellModels);
+            var bestTrade = _tradesService.GetBestSellModel(sellModels);
             if (bestTrade is null) return null;
             if (bestTrade.WaypointSymbol == currentWaypoint.Symbol) shouldDock = true;
         }
@@ -254,7 +256,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
 
         // Need fuel and fuel is available at this waypoint
         if (ship.Fuel.Current < ship.Fuel.Capacity
-            && currentWaypoint.Marketplace?.TradeGoods.Any(e => e.Symbol == InventoryEnum.FUEL.ToString()) == true)
+            && currentWaypoint.Marketplace?.TradeGoods?.Any(e => e.Symbol == InventoryEnum.FUEL.ToString()) == true)
         {
             shouldDock = true;
         }
@@ -274,12 +276,12 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             var waypointSymbolsWithinRangeWithExportsNotMapped = waypointsWithinRangeWithExportsNotMapped.Select(w => w.Symbol);
             if (!waypointSymbolsWithinRangeWithExportsNotMapped.Any())
             {
-                var tradeModels = await _marketplacesService.BuildTradeModel(paths.Keys.ToList(), ship.Fuel.Capacity, ship.Fuel.Current);
+                var tradeModels = await _tradesService.BuildTradeModel(paths.Keys.ToList(), ship.Fuel.Capacity, ship.Fuel.Current);
                 if (ship.Cargo.Units > 0)
                 {
                     tradeModels = tradeModels.Where(tm => tm.TradeSymbol == ship.Cargo.Inventory.OrderByDescending(i => i.Symbol).First().Symbol).ToList();
                 }
-                var bestTrade = _marketplacesService.GetBestTrade(tradeModels);
+                var bestTrade = _tradesService.GetBestTrade(tradeModels);
                 if (bestTrade is null) return null;
                 if (ship.Cargo.Units > 0 && bestTrade.ImportWaypointSymbol == currentWaypoint.Symbol) shouldDock = true;
                 if (ship.Cargo.Units == 0 && bestTrade.ExportWaypointSymbol == currentWaypoint.Symbol) shouldDock = true;
@@ -305,14 +307,14 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
 
         // Need fuel and fuel is available at this waypoint
         if (ship.Fuel.Current < ship.Fuel.Capacity
-            && currentWaypoint.Marketplace?.TradeGoods.Any(e => e.Symbol == InventoryEnum.FUEL.ToString()) == true)
+            && currentWaypoint.Marketplace?.TradeGoods?.Any(e => e.Symbol == InventoryEnum.FUEL.ToString()) == true)
         {
             shouldDock = true;
         }
         else if (ship.Cargo.Units == 0 && currentWaypoint.Marketplace is not null && constructionWaypoint.Construction is not null)
         {
             var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
-            var marketplaceWaypoint = await GetConstructionInventoryWaypoint(
+            var marketplaceWaypoint = GetConstructionInventoryWaypoint(
                 ship,
                 currentWaypoint,
                 constructionWaypoint,
@@ -373,7 +375,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
                 extractionResult = await _shipsService.ExtractAsync(ship.Symbol);
                 return (extractionResult.Cargo, extractionResult.Cooldown);
             }
-            catch (HttpRequestException e)
+            catch (HttpRequestException)
             {
                 if (surveys.Any())
                 {
@@ -487,10 +489,10 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         var systems = await _systemsService.GetAsync();
         var waypoints = systems.SelectMany(s => s.Waypoints).ToList();
         var paths = await _pathsService.BuildSystemPath(currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
-        var tradeModels = _marketplacesService.BuildSellModel(paths.Keys.ToList());
+        var tradeModels = _tradesService.BuildSellModel(paths.Keys.ToList());
         var inventoryToSell = ship.Cargo.Inventory.OrderByDescending(i => i.Units).ThenBy(i => i.Symbol).First().Symbol;
         tradeModels = tradeModels.Where(tm => tm.TradeSymbol == inventoryToSell).ToList();
-        var bestTrade = _marketplacesService.GetBestSellModel(tradeModels);
+        var bestTrade = _tradesService.GetBestSellModel(tradeModels);
         if (bestTrade is null) return null;
         if (currentWaypoint.Symbol != bestTrade.WaypointSymbol) return null;
         SellCargoResponse? sellCargoResponse = null;
@@ -532,7 +534,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             return null;
         }
 
-        SupplyResult supplyResult = null;
+        SupplyResult? supplyResult = null;
         foreach (var inventory in ship.Cargo.Inventory)
         {
             var material = currentWaypoint.Construction.Materials.SingleOrDefault(m => m.TradeSymbol == inventory.Symbol);
@@ -598,17 +600,17 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         var systems = await _systemsService.GetAsync();
         var waypoints = systems.SelectMany(s => s.Waypoints).ToList();
         var paths = await _pathsService.BuildSystemPath(currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
-        var sellModels = _marketplacesService.BuildSellModel(paths.Keys.ToList());
+        var sellModels = _tradesService.BuildSellModel(paths.Keys.ToList());
         var inventoryToSell = ship.Cargo.Inventory.OrderByDescending(i => i.Units).ThenBy(i => i.Symbol).First().Symbol;
         sellModels = sellModels.Where(tm => tm.TradeSymbol == inventoryToSell).ToList();
-        var bestTrade = _marketplacesService.GetBestSellModel(sellModels);
+        var bestTrade = _tradesService.GetBestSellModel(sellModels);
         if (bestTrade is null)
         {
             paths = await _pathsService.BuildSystemPath(currentWaypoint.Symbol, 10000, 10000);
-            sellModels = _marketplacesService.BuildSellModel(paths.Keys.ToList());
+            sellModels = _tradesService.BuildSellModel(paths.Keys.ToList());
             inventoryToSell = ship.Cargo.Inventory.OrderByDescending(i => i.Units).ThenBy(i => i.Symbol).First().Symbol;
             sellModels = sellModels.Where(tm => tm.TradeSymbol == inventoryToSell).ToList();
-            bestTrade = _marketplacesService.GetBestSellModel(sellModels);
+            bestTrade = _tradesService.GetBestSellModel(sellModels);
             if (bestTrade is null) return (null, null, null);
         }
         var shortestPath = paths.Single(p => p.Key.Symbol == bestTrade.WaypointSymbol);
@@ -670,7 +672,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         }
 
         var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
-        var jumpGateWaypoint = system.Waypoints.FirstOrDefault(w => w.JumpGate is not null && w.IsUnderConstruction);
+        var jumpGateWaypoint = system.Waypoints.First(w => w.JumpGate is not null && w.IsUnderConstruction);
 
         var pathDictionary = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
         var path = pathDictionary.Single(p => p.Key.Symbol == jumpGateWaypoint.Symbol);
@@ -680,7 +682,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         return (nav, fuel);
     }
 
-    public static async Task<Waypoint?> GetConstructionInventoryWaypoint(
+    public static Waypoint? GetConstructionInventoryWaypoint(
         Ship ship,
         Waypoint currentWaypoint,
         Waypoint constructionWaypoint,
@@ -715,7 +717,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         return highestSupplyWaypoint;
     }
 
-    public static async Task<TradeGood?> GetConstructionInventoryToBuy(
+    public static TradeGood? GetConstructionInventoryToBuy(
         Ship ship,
         Waypoint currentWaypoint,
         Waypoint constructionWaypoint,
@@ -748,17 +750,17 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             .ThenBy(x => paths.Single(p => p.Key.Symbol == x.Waypoint.Symbol).Value.Item1.Count())
             .FirstOrDefault();
 
-        return highestSupplyWaypoint.Waypoint.Marketplace.TradeGoods.FirstOrDefault(tg =>
+        return highestSupplyWaypoint?.Waypoint.Marketplace?.TradeGoods?.FirstOrDefault(tg =>
             constructionInventoryNeededSymbols.Contains(tg.Symbol)
             && tg.Supply == highestSupplyWaypoint.HighestSupply.ToString());
     }
 
-    public async Task<(Nav?, Fuel)> NavigateToMarketplaceExport(Ship ship, Waypoint currentWaypoint, Waypoint constructionWaypoint)
+    public async Task<(Nav?, Fuel?)> NavigateToMarketplaceExport(Ship ship, Waypoint currentWaypoint, Waypoint constructionWaypoint)
     {
         var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
         var pathDictionary = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
 
-        var marketplaceWaypoint = await GetConstructionInventoryWaypoint(
+        var marketplaceWaypoint = GetConstructionInventoryWaypoint(
                 ship,
                 currentWaypoint,
                 constructionWaypoint,
@@ -798,7 +800,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
 
     public async Task<(Nav? nav, Fuel? fuel, Cooldown? cooldown, bool noWork)> NavigateToMarketplaceRandomExport(Ship ship, Waypoint currentWaypoint)
     {
-        if (ship.Nav.Status == NavStatusEnum.DOCKED.ToString()) return (Nav: null, Fuel: null, Cooldown: null, noWork: false);
+        if (ship.Nav.Status == NavStatusEnum.DOCKED.ToString()) return (null, null, null, noWork: false);
 
         // var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
         // var paths = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
@@ -832,8 +834,8 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             return (navResponse, fuelResponse, ship.Cooldown, false);
         }
 
-        var tradeModels = await _marketplacesService.BuildTradeModel(paths.Keys.ToList(), ship.Fuel.Capacity, ship.Fuel.Current);
-        var bestTrade = _marketplacesService.GetBestTrade(tradeModels);
+        var tradeModels = await _tradesService.BuildTradeModel(paths.Keys.ToList(), ship.Fuel.Capacity, ship.Fuel.Current);
+        var bestTrade = _tradesService.GetBestTrade(tradeModels);
         if (bestTrade is null) return (null, null, null, true);
         if (bestTrade.ExportWaypointSymbol == currentWaypoint.Symbol) return (null, null, null, false);
         var shortestPath = paths.Single(p => p.Key.Symbol == bestTrade.ExportWaypointSymbol);
@@ -895,7 +897,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         if (shipToBuy is null) return (null, null);
 
         var shipyards = system.Waypoints.Where(w => w.Shipyard is not null);
-        var unmappedShipyards = shipyards.Where(s => s.Shipyard.ShipFrames is null);
+        var unmappedShipyards = shipyards.Where(s => s.Shipyard?.ShipFrames is null);
         if (unmappedShipyards.Any())
         {
             var shipyardPaths = paths.Where(p => unmappedShipyards.Select(s => s.Symbol).Contains(p.Key.Symbol));
@@ -903,7 +905,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             return await _shipsService.NavigateAsync(closestShipyard.Value.Item1[1].Symbol, ship);
         }
 
-        var shipyardWithShip = shipyards.FirstOrDefault(s => s.Shipyard.ShipFrames.Any(sf => sf.Type == shipToBuy.ToString()));
+        var shipyardWithShip = shipyards.FirstOrDefault(s => s.Shipyard?.ShipFrames.Any(sf => sf.Type == shipToBuy.ToString()) == true);
         if (shipyardWithShip is not null && ship.Nav.WaypointSymbol != shipyardWithShip.Symbol)
         {
             var path = paths.SingleOrDefault(p => p.Key.Symbol == shipyardWithShip.Symbol);
@@ -929,8 +931,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         {
             return null;
         }
-
-        var response = await _shipyardsService.PurchaseShipAsync(currentWaypoint.Symbol, shipToBuy.ToString());
+        var response = await _shipyardsService.PurchaseShipAsync(currentWaypoint.Symbol, shipToBuy.Value.ToString());
         return response;
     }
 
@@ -962,11 +963,11 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         return Task.FromResult((ShipTypesEnum?)null);
     }
 
-    public async Task<PurchaseCargoResult> PurchaseFuelForRescue(Ship ship, Waypoint currentWaypoint, int fuelToBuy)
+    public async Task<PurchaseCargoResult?> PurchaseFuelForRescue(Ship ship, Waypoint currentWaypoint, int fuelToBuy)
     {
         if (ship.Cargo.Inventory.Count > 0
             || ship.Nav.Status == NavStatusEnum.IN_ORBIT.ToString()
-            || currentWaypoint.Marketplace is null
+            || currentWaypoint.Marketplace?.TradeGoods is null
             || (!currentWaypoint.Marketplace.TradeGoods.Any(tg => tg.Symbol == InventoryEnum.FUEL.ToString())))
         {
             return null;
@@ -1045,7 +1046,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         return (nav, fuel, ship.Cooldown);
     }
 
-    public async Task<(Nav nav, Fuel fuel)> NavigateToShipToRescue(Ship ship, Waypoint currentWaypoint, Waypoint rescueShipWaypoint)
+    public async Task<(Nav? nav, Fuel? fuel)> NavigateToShipToRescue(Ship ship, Waypoint currentWaypoint, Waypoint rescueShipWaypoint)
     {
         await _pathsService.BuildSystemPath(currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
 
