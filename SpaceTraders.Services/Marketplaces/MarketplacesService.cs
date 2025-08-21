@@ -17,7 +17,7 @@ public class MarketplacesService : IMarketplacesService
     private readonly HttpClient _httpClient;
     private readonly string _token;
     private readonly ILogger<MarketplacesService> _logger;
-    public const string SPACETRADER_PREFIX = "SpaceTrader";
+    public const string SPACETRADER_PREFIX = "SpaceTrader:";
 
     public MarketplacesService(
         HttpClient httpClient,
