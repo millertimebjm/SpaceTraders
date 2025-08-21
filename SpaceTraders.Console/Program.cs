@@ -3,14 +3,12 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using SpaceTraders.Console;
-using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Interfaces;
 
 public class Program
 {
     public static async Task Main(string[] args)
     {
-        const string _appConfigSectionName = "SpaceTrader";
         const string _appConfigEnvironmentVariableName = "AppConfigConnectionString";
 
         var host = Host.CreateDefaultBuilder(args);

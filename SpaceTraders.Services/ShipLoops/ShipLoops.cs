@@ -1,5 +1,3 @@
-using System.ComponentModel;
-using System.Text.Json;
 using DnsClient.Internal;
 using Microsoft.Extensions.Logging;
 using SpaceTraders.Model.Exceptions;
@@ -13,6 +11,7 @@ using SpaceTraders.Services.ShipJobs.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Systems.Interfaces;
+using SpaceTraders.Services.Trades;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.ShipLoops;
@@ -28,6 +27,7 @@ public class ShipLoopsService : IShipLoopsService
     private readonly IWaypointsService _waypointsService;
     private readonly IMarketplacesService _marketplacesService;
     private readonly ILogger<ShipLoopsService> _logger;
+    private readonly ITradesService _tradesService;
 
     public ShipLoopsService(
         IShipStatusesCacheService shipStatusesCacheService,
@@ -38,7 +38,8 @@ public class ShipLoopsService : IShipLoopsService
         IShipCommandsServiceFactory shipCommandsServiceFactory,
         IWaypointsService waypointsService,
         IMarketplacesService marketplacesService,
-        ILogger<ShipLoopsService> logger
+        ILogger<ShipLoopsService> logger,
+        ITradesService tradesService
     )
     {
         _shipStatusesCacheService = shipStatusesCacheService;
@@ -50,6 +51,7 @@ public class ShipLoopsService : IShipLoopsService
         _waypointsService = waypointsService;
         _marketplacesService = marketplacesService;
         _logger = logger;
+        _tradesService = tradesService;
     }
 
     public async Task Run()
@@ -136,7 +138,7 @@ public class ShipLoopsService : IShipLoopsService
             //var system = await _systemsService.GetAsync(shipStatuses.First().Ship.Nav.SystemSymbol);
             var systems = await _systemsService.GetAsync();
             var waypoints = systems.SelectMany(s => s.Waypoints).ToList();
-            await _marketplacesService.SaveTradeModelsAsync(waypoints, 400, 400);
+            await _tradesService.SaveTradeModelsAsync(waypoints, 400, 400);
 
             TimeSpan? shortestCooldown = null;
             foreach (var shipStatus in shipStatuses)

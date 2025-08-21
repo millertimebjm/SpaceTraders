@@ -1,7 +1,6 @@
 using Microsoft.Extensions.Logging;
 using SpaceTraders.Models;
 using SpaceTraders.Services.Systems.Interfaces;
-using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.Systems;
 
