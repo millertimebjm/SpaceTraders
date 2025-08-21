@@ -38,41 +38,41 @@ public static class DependencyInjectionHelperService
     public static void AddDependencies(IServiceCollection services)
     {
         services.AddHttpClient();
-        services.AddScoped<IAgentsService, AgentsService>();
-        services.AddScoped<ISystemsService, SystemsService>();
-        services.AddScoped<IContractsService, ContractsService>();
-        services.AddScoped<IShipyardsService, ShipyardsService>();
-        services.AddScoped<IShipsService, ShipsService>();
-        services.AddScoped<IWaypointsService, WaypointsService>();
-        services.AddScoped<IMarketplacesService, MarketplacesService>();
-        services.AddScoped<IWaypointsApiService, WaypointsApiService>();
-        services.AddScoped<IWaypointsCacheService, WaypointsCacheService>();
+        services.AddSingleton<IAgentsService, AgentsService>();
+        services.AddSingleton<ISystemsService, SystemsService>();
+        services.AddSingleton<IContractsService, ContractsService>();
+        services.AddSingleton<IShipyardsService, ShipyardsService>();
+        services.AddSingleton<IShipsService, ShipsService>();
+        services.AddSingleton<IWaypointsService, WaypointsService>();
+        services.AddSingleton<IMarketplacesService, MarketplacesService>();
+        services.AddSingleton<IWaypointsApiService, WaypointsApiService>();
+        services.AddSingleton<IWaypointsCacheService, WaypointsCacheService>();
         services.AddSingleton<IMongoCollectionFactory, MongoCollectionFactory>();
-        services.AddScoped<ISystemsApiService, SystemsApiService>();
-        services.AddScoped<ISystemsCacheService, SystemsCacheService>();
-        services.AddScoped<IJumpGatesServices, JumpGatesServices>();
-        services.AddScoped<IConstructionsService, ConstructionsService>();
-        services.AddScoped<IShipCommandsHelperService, ShipCommandsHelperService>();
-        services.AddScoped<IShipCommandsServiceFactory, ShipCommandsServiceFactory>();
-        services.AddScoped<IShipStatusesCacheService, ShipStatusesCacheService>();
-        services.AddScoped<IShipJobsFactory, ShipJobsFactory>();
-        services.AddScoped<ISurveysCacheService, SurveysCacheService>();
-        services.AddScoped<IShipLoopsService, ShipLoopsService>();
-        services.AddScoped<IPathsService, PathsService>();
-        services.AddScoped<ITransactionsService, TransactionsServices>();
+        services.AddSingleton<ISystemsApiService, SystemsApiService>();
+        services.AddSingleton<ISystemsCacheService, SystemsCacheService>();
+        services.AddSingleton<IJumpGatesServices, JumpGatesServices>();
+        services.AddSingleton<IConstructionsService, ConstructionsService>();
+        services.AddSingleton<IShipCommandsHelperService, ShipCommandsHelperService>();
+        services.AddSingleton<IShipCommandsServiceFactory, ShipCommandsServiceFactory>();
+        services.AddSingleton<IShipStatusesCacheService, ShipStatusesCacheService>();
+        services.AddSingleton<IShipJobsFactory, ShipJobsFactory>();
+        services.AddSingleton<ISurveysCacheService, SurveysCacheService>();
+        services.AddSingleton<IShipLoopsService, ShipLoopsService>();
+        services.AddSingleton<IPathsService, PathsService>();
+        services.AddSingleton<ITransactionsService, TransactionsServices>();
 
         // Ship Commands
-        services.AddScoped<MiningToSellAnywhereCommand>();
-        services.AddScoped<BuyAndSellCommand>();
-        services.AddScoped<SupplyConstructionCommand>();
-        services.AddScoped<SurveyCommand>();
-        services.AddScoped<PurchaseShipCommand>();
-        services.AddScoped<ExplorationCommand>();
+        services.AddSingleton<MiningToSellAnywhereCommand>();
+        services.AddSingleton<BuyAndSellCommand>();
+        services.AddSingleton<SupplyConstructionCommand>();
+        services.AddSingleton<SurveyCommand>();
+        services.AddSingleton<PurchaseShipCommand>();
+        services.AddSingleton<ExplorationCommand>();
 
         // Ship Jobs
-        services.AddScoped<HaulerShipJobService>();
-        services.AddScoped<MiningShipJobService>();
-        services.AddScoped<CommandShipJobService>();
-        services.AddScoped<SurveyorShipJobService>();
+        services.AddSingleton<HaulerShipJobService>();
+        services.AddSingleton<MiningShipJobService>();
+        services.AddSingleton<CommandShipJobService>();
+        services.AddSingleton<SurveyorShipJobService>();
     }
 }

@@ -81,7 +81,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
 
         var agent = await _agentsService.GetAsync();
 
-        var tradeModels = _marketplacesService.BuildTradeModel(paths.Keys.ToList());
+        var tradeModels = await _marketplacesService.BuildTradeModel(paths.Keys.ToList(), ship.Fuel.Capacity, ship.Fuel.Current);
         var bestTrade = _marketplacesService.GetBestTrade(tradeModels);
         if (bestTrade is null || bestTrade.ExportWaypointSymbol != currentWaypoint.Symbol) return null;
         var inventoryToBuy = currentWaypoint.Marketplace.TradeGoods.Single(tg => tg.Symbol == bestTrade.TradeSymbol);
@@ -109,7 +109,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             await Task.Delay(500);
             paths = await _pathsService.BuildSystemPath(currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
 
-            newTradeModels = _marketplacesService.BuildTradeModel(paths.Keys.ToList());
+            newTradeModels = await _marketplacesService.BuildTradeModel(paths.Keys.ToList(), ship.Fuel.Capacity, ship.Fuel.Current);
             newBestTrade = _marketplacesService.GetBestTrade(newTradeModels);
         }
         return purchaseCargoResult;
@@ -274,7 +274,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             var waypointSymbolsWithinRangeWithExportsNotMapped = waypointsWithinRangeWithExportsNotMapped.Select(w => w.Symbol);
             if (!waypointSymbolsWithinRangeWithExportsNotMapped.Any())
             {
-                var tradeModels = _marketplacesService.BuildTradeModel(paths.Keys.ToList());
+                var tradeModels = await _marketplacesService.BuildTradeModel(paths.Keys.ToList(), ship.Fuel.Capacity, ship.Fuel.Current);
                 if (ship.Cargo.Units > 0)
                 {
                     tradeModels = tradeModels.Where(tm => tm.TradeSymbol == ship.Cargo.Inventory.OrderByDescending(i => i.Symbol).First().Symbol).ToList();
@@ -832,7 +832,7 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             return (navResponse, fuelResponse, ship.Cooldown, false);
         }
 
-        var tradeModels = _marketplacesService.BuildTradeModel(paths.Keys.ToList());
+        var tradeModels = await _marketplacesService.BuildTradeModel(paths.Keys.ToList(), ship.Fuel.Capacity, ship.Fuel.Current);
         var bestTrade = _marketplacesService.GetBestTrade(tradeModels);
         if (bestTrade is null) return (null, null, null, true);
         if (bestTrade.ExportWaypointSymbol == currentWaypoint.Symbol) return (null, null, null, false);

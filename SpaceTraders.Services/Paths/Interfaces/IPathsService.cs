@@ -13,4 +13,9 @@ public interface IPathsService
         string originWaypoint,
         int fuelMax,
         int fuelCurrent);
+
+    Task<Dictionary<Waypoint, (List<Waypoint>, int)>> BuildSystemPathWithCostWithMemo(
+        string originWaypoint,
+        int fuelMax,
+        int startingFuel);
 }

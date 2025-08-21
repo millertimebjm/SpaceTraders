@@ -3,8 +3,6 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.30907.101
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpaceTraders", "SpaceTraders\SpaceTraders.csproj", "{24EE4885-FE36-4E5D-9230-728F5E39FEEC}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpaceTraders.Models", "SpaceTraders.Models\SpaceTraders.Models.csproj", "{7429D4E5-4FFF-42E8-9BD8-BE42AEF746B8}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpaceTraders.Services", "SpaceTraders.Services\SpaceTraders.Services.csproj", "{48D8973C-16CD-4E4B-BB89-8EC2AA8389A3}"
