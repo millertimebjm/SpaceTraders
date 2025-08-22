@@ -12,6 +12,8 @@ using SpaceTraders.Services.JumpGates;
 using SpaceTraders.Services.JumpGates.Interfaces;
 using SpaceTraders.Services.Marketplaces;
 using SpaceTraders.Services.Marketplaces.Interfaces;
+using SpaceTraders.Services.Paths;
+using SpaceTraders.Services.Paths.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.ShipStatuses;
 using SpaceTraders.Services.Shipyards;
@@ -58,6 +60,7 @@ builder.Services.AddScoped<IShipStatusesCacheService, ShipStatusesCacheService>(
 builder.Services.AddScoped<ISurveysCacheService, SurveysCacheService>();
 builder.Services.AddScoped<ITransactionsService, TransactionsServices>();
 builder.Services.AddScoped<ITradesService, TradesService>();
+builder.Services.AddScoped<IPathsService, PathsService>();
 
 builder.Services.AddLogging();
 Log.Logger = new LoggerConfiguration()
