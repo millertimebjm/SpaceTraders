@@ -1032,15 +1032,15 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             .ThenBy(p => p.Key.Symbol)
             .FirstOrDefault();
 
-        if (WaypointsService.ExtractSystemFromWaypoint(closestUnmappedPath.Value.Item1[1].Symbol) != ship.Nav.SystemSymbol)
-        {
-            var (navJump, cooldown) = await _shipsService.JumpAsync(closestUnmappedPath.Value.Item1[1].Symbol, ship.Symbol);
-            return (navJump, ship.Fuel, cooldown);
-        }
         if (closestUnmappedPath.Value.Item1.Count() == 1)
         {
             await _waypointsService.GetAsync(closestUnmappedPath.Key.Symbol, refresh: true);
             return (null, null, null);
+        }
+        if (WaypointsService.ExtractSystemFromWaypoint(closestUnmappedPath.Value.Item1[1].Symbol) != ship.Nav.SystemSymbol)
+        {
+            var (navJump, cooldown) = await _shipsService.JumpAsync(closestUnmappedPath.Value.Item1[1].Symbol, ship.Symbol);
+            return (navJump, ship.Fuel, cooldown);
         }
         var (nav, fuel) = await _shipsService.NavigateAsync(closestUnmappedPath.Value.Item1[1].Symbol, ship);
         return (nav, fuel, ship.Cooldown);

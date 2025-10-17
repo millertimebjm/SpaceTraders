@@ -72,8 +72,8 @@ public class CommandShipJobService : IShipJobService
             var miningDrones = shipTypesInSystem.SingleOrDefault(st => st.Key == ShipRegistrationRolesEnum.EXCAVATOR.ToString())?.Count() ?? 0;
             var lightHaulers = shipTypesInSystem.SingleOrDefault(st => st.Key == ShipRegistrationRolesEnum.HAULER.ToString())?.Count() ?? 0;
             var surveyShips = shipTypesInSystem.SingleOrDefault(st => st.Key == ShipRegistrationRolesEnum.SURVEYOR.ToString())?.Count() ?? 0;
-            if ((miningDrones < 9
-                || lightHaulers < 5)
+            if (miningDrones < 9
+                || lightHaulers < 5
                 || surveyShips == 0)
             {
                 return new ShipCommand(ship.Symbol, ShipCommandEnum.PurchaseShip);
