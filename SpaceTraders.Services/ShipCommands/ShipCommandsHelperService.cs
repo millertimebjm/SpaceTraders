@@ -458,13 +458,33 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         if (ship.Fuel.Current == ship.Fuel.Capacity
             || ship.Nav.Status != NavStatusEnum.DOCKED.ToString()
             || currentWaypoint.Marketplace is null
-            || currentWaypoint.Marketplace.TradeGoods?.Any(e => e.Symbol == InventoryEnum.FUEL.ToString())== false)
+            || currentWaypoint.Marketplace.TradeGoods?.Any(e => e.Symbol == InventoryEnum.FUEL.ToString()) == false)
         {
             return null;
         }
 
         var refuelResponse = await _marketplacesService.RefuelAsync(ship.Symbol);
         return refuelResponse;
+    }
+
+    public bool IsFuelNeeded(Ship ship)
+    {
+        return ship.Fuel.Current != ship.Fuel.Capacity;
+    }
+    
+    public bool IsWaypointFuelAvailable(Waypoint waypoint)
+    {
+        return waypoint
+            .Marketplace?
+            .TradeGoods?
+            .Any(e => e.Symbol == InventoryEnum.FUEL.ToString()) == true;
+    }
+
+    public bool IsAnyItemToSellAtCurrentWaypoint(Ship ship, Waypoint waypoint)
+    {
+        return ship.Cargo.Inventory.Count > 0
+            && (waypoint.Marketplace?.Imports.Any(i => ship.Cargo.Inventory.Select(i => i.Symbol).Contains(i.Symbol)) == true
+            || waypoint.Marketplace?.Exchange.Any(e => ship.Cargo.Inventory.Select(i => i.Symbol).Contains(e.Symbol)) == true);
     }
 
     public async Task<SellCargoResponse?> Sell(Ship ship, Waypoint currentWaypoint)
@@ -477,15 +497,6 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             return null;
         }
 
-        // var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
-        // var paths = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
-        // var tradeModels = _marketplacesService.BuildTradeModel(paths.Keys.ToList());
-        // var bestTrade = _marketplacesService.GetBestTrade(tradeModels);
-        // if (bestTrade is null) return null;
-
-        // var sellCargoResponse = await _marketplacesService.SellAsync(ship.Symbol, inventory.Symbol, inventory.Units);
-
-        //var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
         var systems = await _systemsService.GetAsync();
         var waypoints = systems.SelectMany(s => s.Waypoints).ToList();
         var paths = await _pathsService.BuildSystemPath(currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
@@ -504,26 +515,6 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
             await _transactionsService.SetAsync(sellCargoResponse.Transaction);
         }
         return sellCargoResponse;
-
-
-        // SellCargoResponse? sellCargoResponse = null;
-        // var cargo = ship.Cargo;
-        // var originalCargoCount = ship.Cargo.Inventory.Count;
-        // foreach (var inventory in ship.Cargo.Inventory)
-        // {
-        //     if (currentWaypoint.Marketplace.Imports.Any(i => i.Symbol == inventory.Symbol))
-        //     {
-        //         var tradeGood = currentWaypoint.Marketplace.TradeGoods.Single(tg => tg.Symbol == inventory.Symbol);
-        //         var units = Math.Min(tradeGood.TradeVolume, inventory.Units);
-        //         sellCargoResponse = await _marketplacesService.SellAsync(ship.Symbol, inventory.Symbol, units);
-        //     }
-        //     if (currentWaypoint.Marketplace.Exchange.Any(e => e.Symbol == inventory.Symbol))
-        //     {
-        //         sellCargoResponse = await _marketplacesService.SellAsync(ship.Symbol, inventory.Symbol, inventory.Units);
-        //     }
-        //     await Task.Delay(1000);
-        // }
-        // return sellCargoResponse;
     }
 
     public async Task<SupplyResult?> SupplyConstructionSite(Ship ship, Waypoint currentWaypoint)
@@ -1051,5 +1042,10 @@ public class ShipCommandsHelperService : IShipCommandsHelperService
         await _pathsService.BuildSystemPath(currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
 
         return (null, null);
+    }
+
+    public async Task<Nav?> Dock(Ship ship, Waypoint waypoint)
+    {
+        return await _shipsService.DockAsync(ship.Symbol);
     }
 }
