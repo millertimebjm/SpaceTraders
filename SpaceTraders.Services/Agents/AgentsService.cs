@@ -1,31 +1,27 @@
 ﻿using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
+using SpaceTraders.Services.MongoCache.Interfaces;
 
 namespace SpaceTraders.Services.Agents;
 
 public class AgentsService : IAgentsService
 {
-    //private const string DIRECTORY_PATH = "/v2/agents";
     private const string DIRECTORY_PATH = "/v2/my/agent";
     private readonly string _apiUrl;
     private readonly HttpClient _httpClient;
     private readonly string _token;
-    private readonly ILogger<AgentsService> _logger;
     private IMongoCollectionFactory _mongoCollectionFactory;
 
     public AgentsService(
         HttpClient httpClient,
         IConfiguration configuration,
-        ILogger<AgentsService> logger,
         IMongoCollectionFactory mongoCollectionFactory)
     {
-        _logger = logger;
         _httpClient = httpClient;
         _apiUrl = configuration[$"SpaceTrader:"+ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
         ArgumentException.ThrowIfNullOrWhiteSpace(_apiUrl);

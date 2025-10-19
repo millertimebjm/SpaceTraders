@@ -3,9 +3,7 @@ using Microsoft.Extensions.Logging;
 using SpaceTraders.Model.Exceptions;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
-using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Interfaces;
-using SpaceTraders.Services.Marketplaces.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.ShipJobs.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
@@ -16,44 +14,17 @@ using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.ShipLoops;
 
-public class ShipLoopsService : IShipLoopsService
+public class ShipLoopsService(
+    IShipStatusesCacheService _shipStatusesCacheService,
+    IShipsService _shipsService,
+    ISystemsService _systemsService,
+    IShipJobsFactory _shipJobsFactory,
+    IShipCommandsServiceFactory _shipCommandsServiceFactory,
+    IWaypointsService _waypointsService,
+    ILogger<ShipLoopsService> _logger,
+    ITradesService _tradesService
+) : IShipLoopsService
 {
-    private readonly IShipStatusesCacheService _shipStatusesCacheService;
-    private readonly IAgentsService _agentsService;
-    private readonly IShipsService _shipsService;
-    private readonly ISystemsService _systemsService;
-    private readonly IShipJobsFactory _shipJobsFactory;
-    private readonly IShipCommandsServiceFactory _shipCommandsServiceFactory;
-    private readonly IWaypointsService _waypointsService;
-    private readonly IMarketplacesService _marketplacesService;
-    private readonly ILogger<ShipLoopsService> _logger;
-    private readonly ITradesService _tradesService;
-
-    public ShipLoopsService(
-        IShipStatusesCacheService shipStatusesCacheService,
-        IAgentsService agentsService,
-        IShipsService shipsService,
-        ISystemsService systemsService,
-        IShipJobsFactory shipJobsFactory,
-        IShipCommandsServiceFactory shipCommandsServiceFactory,
-        IWaypointsService waypointsService,
-        IMarketplacesService marketplacesService,
-        ILogger<ShipLoopsService> logger,
-        ITradesService tradesService
-    )
-    {
-        _shipStatusesCacheService = shipStatusesCacheService;
-        _agentsService = agentsService;
-        _shipsService = shipsService;
-        _systemsService = systemsService;
-        _shipJobsFactory = shipJobsFactory;
-        _shipCommandsServiceFactory = shipCommandsServiceFactory;
-        _waypointsService = waypointsService;
-        _marketplacesService = marketplacesService;
-        _logger = logger;
-        _tradesService = tradesService;
-    }
-
     public async Task Run()
     {
         var ships = await _shipsService.GetAsync();

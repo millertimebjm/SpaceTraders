@@ -1,17 +1,12 @@
 using MongoDB.Driver;
 using SpaceTraders.Models;
+using SpaceTraders.Services.MongoCache.Interfaces;
 using SpaceTraders.Services.Transactions.Interfaces;
 
 namespace SpaceTraders.Services.Transactions;
 
-public class TransactionsServices : ITransactionsService
+public class TransactionsServices(IMongoCollectionFactory _collectionFactory) : ITransactionsService
 {
-    public readonly IMongoCollectionFactory _collectionFactory;
-    public TransactionsServices(IMongoCollectionFactory collectionFactory)
-    {
-        _collectionFactory = collectionFactory;
-    }
-
     public async Task<IReadOnlyList<MarketTransaction>> GetAsync(string shipSymbol, int take = 200)
     {
         var filter = Builders<MarketTransaction>

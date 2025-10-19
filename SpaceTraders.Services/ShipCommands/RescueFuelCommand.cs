@@ -1,5 +1,4 @@
 using SpaceTraders.Models;
-using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Marketplaces.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
@@ -11,36 +10,14 @@ using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.ShipCommands;
 
-public class RescueFuelCommand : IShipCommandsService
+public class RescueFuelCommand(
+    IShipCommandsHelperService _shipCommandsHelperService,
+    IWaypointsService _waypointsService,
+    ISystemsService _systemsService,
+    IAgentsService _agentsService,
+    ITransactionsService _transactionsService
+) : IShipCommandsService
 {
-    private readonly IShipCommandsHelperService _shipCommandsHelperService;
-    private readonly IShipsService _shipsService;
-    private readonly IWaypointsService _waypointsService;
-    private readonly ISystemsService _systemsService;
-    private readonly IAgentsService _agentsService;
-    private readonly IShipStatusesCacheService _shipStatusesCacheService;
-    private readonly ITransactionsService _transactionsService;
-    private readonly IMarketplacesService _marketplacesService;
-    public RescueFuelCommand(
-        IShipCommandsHelperService shipCommandsHelperService,
-        IShipsService shipsService,
-        IWaypointsService waypointsService,
-        ISystemsService systemsService,
-        IShipStatusesCacheService shipStatusesCacheService,
-        IAgentsService agentsService,
-        ITransactionsService transactionsService,
-        IMarketplacesService marketplacesService)
-    {
-        _shipCommandsHelperService = shipCommandsHelperService;
-        _shipsService = shipsService;
-        _waypointsService = waypointsService;
-        _systemsService = systemsService;
-        _shipStatusesCacheService = shipStatusesCacheService;
-        _agentsService = agentsService;
-        _transactionsService = transactionsService;
-        _marketplacesService = marketplacesService;
-    }
-
     private const int COUNT_BEFORE_LOOP = 20;
     private const int LOOP_WAIT_IN_MINUTES = 10;
 

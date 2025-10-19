@@ -1,45 +1,23 @@
 using SpaceTraders.Models;
-using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Paths;
 using SpaceTraders.Services.ShipCommands.Interfaces;
-using SpaceTraders.Services.ShipJobs.Interfaces;
-using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Transactions.Interfaces;
-using SpaceTraders.Services.Waypoints;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.ShipCommands;
 
-public class SupplyConstructionCommand : IShipCommandsService
+public class SupplyConstructionCommand(
+    IShipCommandsHelperService _shipCommandsHelperService,
+    IWaypointsService _waypointsService,
+    ISystemsService _systemsService,
+    IAgentsService _agentsService,
+    IWaypointsCacheService _waypointsCacheService,
+    ITransactionsService _transactionsService
+) : IShipCommandsService
 {
-    private readonly IShipCommandsHelperService _shipCommandsHelperService;
-    private readonly IWaypointsService _waypointsService;
-    private readonly ISystemsService _systemsService;
-    private readonly IShipStatusesCacheService _shipStatusesCacheService;
-    private readonly IAgentsService _agentsService;
-    private readonly IWaypointsCacheService _waypointsCacheService;
-    private readonly ITransactionsService _transactionsService;
-    public SupplyConstructionCommand(
-        IShipCommandsHelperService shipCommandsHelperService,
-        IWaypointsService waypointsService,
-        ISystemsService systemsService,
-        IShipStatusesCacheService shipStatusesCacheService,
-        IAgentsService agentsService,
-        IWaypointsCacheService waypointsCacheService,
-        ITransactionsService transactionsService)
-    {
-        _shipCommandsHelperService = shipCommandsHelperService;
-        _waypointsService = waypointsService;
-        _systemsService = systemsService;
-        _shipStatusesCacheService = shipStatusesCacheService;
-        _agentsService = agentsService;
-        _waypointsCacheService = waypointsCacheService;
-        _transactionsService = transactionsService;
-    }
-
     public async Task<ShipStatus> Run(
         ShipStatus shipStatus,
         Dictionary<string, Ship> shipsDictionary)

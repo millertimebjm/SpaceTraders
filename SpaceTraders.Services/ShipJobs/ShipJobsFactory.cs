@@ -5,15 +5,8 @@ using SpaceTraders.Services.ShipJobs.Interfaces;
 
 namespace SpaceTraders.Services.ShipJobs;
 
-public class ShipJobsFactory : IShipJobsFactory
+public class ShipJobsFactory(IServiceProvider _serviceProvider) : IShipJobsFactory
 {
-    private readonly IServiceProvider _serviceProvider;
-
-    public ShipJobsFactory(IServiceProvider serviceProvider)
-    {
-        _serviceProvider = serviceProvider;
-    }
-
     public IShipJobService? Get(ShipRegistrationRolesEnum shipRegistrationRole)
     {
         return shipRegistrationRole switch

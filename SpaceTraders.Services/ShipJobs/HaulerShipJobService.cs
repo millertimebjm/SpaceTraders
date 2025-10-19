@@ -5,18 +5,11 @@ using SpaceTraders.Services.Systems.Interfaces;
 
 namespace SpaceTraders.Services.ShipJobs.Interfaces;
 
-public class HaulerShipJobService : IShipJobService
+public class HaulerShipJobService(
+    ISystemsService _systemsService,
+    IAgentsService _agentsService
+) : IShipJobService
 {
-    private readonly ISystemsService _systemsService;
-    private readonly IAgentsService _agentsService;
-    public HaulerShipJobService(
-        ISystemsService systemsService,
-        IAgentsService agentsService)
-    {
-        _systemsService = systemsService;
-        _agentsService = agentsService;
-    }
-
     public async Task<ShipCommand> Get(
         IEnumerable<Ship> ships,
         Ship ship)

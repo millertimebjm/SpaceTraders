@@ -17,13 +17,11 @@ public class SystemsApiService : ISystemsApiService
     private readonly HttpClient _httpClient;
     private readonly string _token;
     private readonly ILogger<SystemsService> _logger;
-    private readonly IWaypointsService _waypointsService;
 
     public SystemsApiService(
         HttpClient httpClient,
         IConfiguration configuration,
-        ILogger<SystemsService> logger,
-        IWaypointsService waypointsService)
+        ILogger<SystemsService> logger)
     {
         _logger = logger;
         _httpClient = httpClient;
@@ -31,7 +29,6 @@ public class SystemsApiService : ISystemsApiService
         ArgumentException.ThrowIfNullOrWhiteSpace(_apiUrl);
         _token = configuration[$"SpaceTrader:"+ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
         ArgumentException.ThrowIfNullOrWhiteSpace(_token);
-        _waypointsService = waypointsService;
     }
 
     public async Task<STSystem> GetAsync(string systemSymbol)

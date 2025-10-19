@@ -1,7 +1,7 @@
 using MongoDB.Bson;
 using MongoDB.Driver;
 
-namespace SpaceTraders.Services;
+namespace SpaceTraders.Services.MongoCache.Interfaces;
 
 public interface IMongoCollectionFactory
 {

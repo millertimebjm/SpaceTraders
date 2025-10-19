@@ -1,37 +1,20 @@
-using MongoDB.Driver;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.Shipyards;
-using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Transactions.Interfaces;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.ShipCommands;
 
-public class MiningToSellAnywhereCommand : IShipCommandsService
+public class MiningToSellAnywhereCommand(
+    IShipCommandsHelperService _shipCommandsHelperService,
+    IWaypointsService _waypointsService,
+    IAgentsService _agentsService,
+    ITransactionsService _transactionsService
+) : IShipCommandsService
 {
-    private readonly IShipCommandsHelperService _shipCommandsHelperService;
-    private readonly IWaypointsService _waypointsService;
-    private readonly IAgentsService _agentsService;
-    private readonly IShipStatusesCacheService _shipStatusesCacheService;
-    private readonly ITransactionsService _transactionsService;
-    private readonly ShipCommandEnum _shipCommandEnum = ShipCommandEnum.MiningToSellAnywhere;
-    public MiningToSellAnywhereCommand(
-        IShipCommandsHelperService shipCommandsHelperService,
-        IWaypointsService waypointsService,
-        IShipStatusesCacheService shipStatusesCacheService,
-        IAgentsService agentsService,
-        ITransactionsService transactionsService)
-    {
-        _shipCommandsHelperService = shipCommandsHelperService;
-        _waypointsService = waypointsService;
-        _shipStatusesCacheService = shipStatusesCacheService;
-        _agentsService = agentsService;
-        _transactionsService = transactionsService;
-    }
-
     public async Task<ShipStatus> Run(
         ShipStatus shipStatus,
         Dictionary<string, Ship> shipsDictionary)

@@ -25,49 +25,22 @@ namespace SpaceTraders.Services.ShipCommands;
 // BuyToConstruction,
 // BuyToStorage,
 
-public class ShipCommandsHelperService : IShipCommandsHelperService
+public class ShipCommandsHelperService(
+    IShipsService _shipsService,
+    IMarketplacesService _marketplacesService,
+    ISystemsService _systemsService,
+    IWaypointsService _waypointsService,
+    IAgentsService _agentsService,
+    IConstructionsService _constructionService,
+    ISurveysCacheService _surveysCacheService,
+    IShipyardsService _shipyardsService,
+    IPathsService _pathsService,
+    ITransactionsService _transactionsService,
+    IShipStatusesCacheService _shipStatusesCacheService,
+    ITradesService _tradesService
+) : IShipCommandsHelperService
 {
     private const int minimumFuel = 5;
-    private readonly IShipsService _shipsService;
-    private readonly IMarketplacesService _marketplacesService;
-    private readonly ISystemsService _systemsService;
-    private readonly IWaypointsService _waypointsService;
-    private readonly IAgentsService _agentsService;
-    private readonly IConstructionsService _constructionService;
-    private readonly ISurveysCacheService _surveysCacheService;
-    private readonly IShipyardsService _shipyardsService;
-    private readonly IPathsService _pathsService;
-    private readonly ITransactionsService _transactionsService;
-    private readonly IShipStatusesCacheService _shipStatusesCacheService;
-    private readonly ITradesService _tradesService;
-    public ShipCommandsHelperService(
-        IShipsService shipsService,
-        IMarketplacesService marketplacesService,
-        ISystemsService systemsService,
-        IWaypointsService waypointsService,
-        IAgentsService agentsService,
-        IConstructionsService constructionsService,
-        ISurveysCacheService surveysCacheService,
-        IShipyardsService shipyardsService,
-        IPathsService pathsService,
-        ITransactionsService transactionsService,
-        IShipStatusesCacheService shipStatusesCacheService,
-        ITradesService tradesService)
-    {
-        _shipsService = shipsService;
-        _marketplacesService = marketplacesService;
-        _systemsService = systemsService;
-        _waypointsService = waypointsService;
-        _agentsService = agentsService;
-        _constructionService = constructionsService;
-        _surveysCacheService = surveysCacheService;
-        _shipyardsService = shipyardsService;
-        _pathsService = pathsService;
-        _transactionsService = transactionsService;
-        _shipStatusesCacheService = shipStatusesCacheService;
-        _tradesService = tradesService;
-    }
-
     public async Task<PurchaseCargoResult?> PurchaseCargo(Ship ship, Waypoint currentWaypoint)
     {
         if (ship.Cargo.Inventory.Count > 0

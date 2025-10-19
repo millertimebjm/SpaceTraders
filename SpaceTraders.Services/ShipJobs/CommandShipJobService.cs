@@ -1,34 +1,18 @@
-using System.Security.Cryptography.X509Certificates;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
-using SpaceTraders.Services.Paths;
-using SpaceTraders.Services.Paths.Interfaces;
-using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Waypoints;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.ShipJobs.Interfaces;
 
-public class CommandShipJobService : IShipJobService
+public class CommandShipJobService(
+    IAgentsService _agentsService,
+    ISystemsService _systemsService,
+    IWaypointsService _waypointsService
+) : IShipJobService
 {
-    private readonly IAgentsService _agentsService;
-    private readonly ISystemsService _systemsService;
-    private readonly IWaypointsService _waypointsService;
-    private readonly IPathsService _pathsService;
-    public CommandShipJobService(
-        IAgentsService agentsService,
-        ISystemsService systemsService,
-        IWaypointsService waypointsService,
-        IPathsService pathsService)
-    {
-        _agentsService = agentsService;
-        _systemsService = systemsService;
-        _waypointsService = waypointsService;
-        _pathsService = pathsService;
-    }
-
     public async Task<ShipCommand?> Get(
         IEnumerable<Ship> ships,
         Ship ship)

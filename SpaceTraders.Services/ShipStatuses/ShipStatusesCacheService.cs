@@ -1,17 +1,12 @@
 using MongoDB.Driver;
 using SpaceTraders.Models;
+using SpaceTraders.Services.MongoCache.Interfaces;
 using SpaceTraders.Services.Systems.Interfaces;
 
 namespace SpaceTraders.Services.ShipStatuses;
 
-public class ShipStatusesCacheService : IShipStatusesCacheService
+public class ShipStatusesCacheService(IMongoCollectionFactory _collectionFactory) : IShipStatusesCacheService
 {
-    private readonly IMongoCollectionFactory _collectionFactory;
-    public ShipStatusesCacheService(IMongoCollectionFactory collectionFactory)
-    {
-        _collectionFactory = collectionFactory;
-    }
-
     public async Task<IEnumerable<ShipStatus>> GetAsync()
     {
         var collection = _collectionFactory.GetCollection<ShipStatus>();

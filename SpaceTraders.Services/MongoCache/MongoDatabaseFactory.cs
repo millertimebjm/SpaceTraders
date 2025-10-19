@@ -1,9 +1,9 @@
 using Microsoft.Extensions.Configuration;
-using MongoDB.Bson;
 using MongoDB.Driver;
 using SpaceTraders.Models.Enums;
+using SpaceTraders.Services.MongoCache.Interfaces;
 
-namespace SpaceTraders.Services;
+namespace SpaceTraders.Services.MongoCache;
 
 public class MongoCollectionFactory : IMongoCollectionFactory
 {

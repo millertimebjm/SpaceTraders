@@ -1,28 +1,16 @@
-using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using SpaceTraders.Models;
-using SpaceTraders.Services.Systems;
+using SpaceTraders.Services.MongoCache.Interfaces;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.Waypoints;
 
-public class WaypointsCacheService : IWaypointsCacheService
+public class WaypointsMongoCacheService(
+    IMongoCollectionFactory _mongoCollectionFactory,
+    ISystemsCacheService _systemsCacheService
+) : IWaypointsCacheService
 {
-    private readonly ILogger<WaypointsCacheService> _logger;
-    private readonly IMongoCollectionFactory _mongoCollectionFactory;
-    private readonly ISystemsCacheService _systemsCacheService;
-
-    public WaypointsCacheService(
-        ILogger<WaypointsCacheService> logger,
-        IMongoCollectionFactory mongoCollectionFactory,
-        ISystemsCacheService systemsCacheService)
-    {
-        _logger = logger;
-        _mongoCollectionFactory = mongoCollectionFactory;
-        _systemsCacheService = systemsCacheService;
-    }
-
     public async Task<Waypoint?> GetAsync(string waypointSymbol)
     {
         var filter = Builders<Waypoint>

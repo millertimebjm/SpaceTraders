@@ -4,21 +4,14 @@ using SpaceTraders.Services.ShipCommands.Interfaces;
 
 namespace SpaceTraders.Services.ShipCommands;
 
-public class ShipCommandsServiceFactory : IShipCommandsServiceFactory
+public class ShipCommandsServiceFactory(IServiceProvider _serviceProvider) : IShipCommandsServiceFactory
 {
-    private readonly IServiceProvider _serviceProvider;
-
-    public ShipCommandsServiceFactory(IServiceProvider serviceProvider)
-    {
-        _serviceProvider = serviceProvider;
-    }
-
     public IShipCommandsService Get(ShipCommandEnum command)
     {
         return command switch
         {
             ShipCommandEnum.MiningToSellAnywhere => _serviceProvider.GetRequiredService<MiningToSellAnywhereCommand>(),
-            ShipCommandEnum.BuyToSell => _serviceProvider.GetRequiredService<BuyAndSellCommand>(),
+            ShipCommandEnum.BuyToSell => _serviceProvider.GetRequiredService<BuyAndSellCommandV2>(),
             ShipCommandEnum.SupplyConstruction => _serviceProvider.GetRequiredService<SupplyConstructionCommand>(),
             ShipCommandEnum.Survey => _serviceProvider.GetRequiredService<SurveyCommand>(),
             ShipCommandEnum.PurchaseShip => _serviceProvider.GetRequiredService<PurchaseShipCommand>(),

@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.HttpHelpers;
+using SpaceTraders.Services.MongoCache.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.Waypoints;
 using SpaceTraders.Services.Waypoints.Interfaces;
@@ -18,17 +19,14 @@ public class ShipsService : IShipsService
     private readonly HttpClient _httpClient;
     private readonly string _token;
     private readonly ILogger<ShipsService> _logger;
-    private readonly IMongoCollectionFactory _collectionFactory;
     private readonly IWaypointsService _waypointsService;
 
     public ShipsService(
         HttpClient httpClient,
         IConfiguration configuration,
         ILogger<ShipsService> logger,
-        IMongoCollectionFactory collectionFactory,
         IWaypointsService waypointsService)
     {
-        _collectionFactory = collectionFactory;
         _logger = logger;
         _httpClient = httpClient;
         _apiUrl = configuration[$"SpaceTrader:" + ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;

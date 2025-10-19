@@ -1,5 +1,4 @@
 using SpaceTraders.Models;
-using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.Shipyards;
@@ -8,25 +7,13 @@ using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.ShipCommands;
 
-public class PurchaseShipCommand : IShipCommandsService
+public class PurchaseShipCommand(
+    IShipCommandsHelperService _shipCommandsHelperService,
+    IWaypointsService _waypointsService,
+    IShipStatusesCacheService _shipStatusesCacheService,
+    IAgentsService _agentsService
+) : IShipCommandsService
 {
-    private readonly IShipCommandsHelperService _shipCommandsHelperService;
-    private readonly IWaypointsService _waypointsService;
-    private readonly IShipStatusesCacheService _shipStatusesCacheService;
-    private readonly ShipCommandEnum _shipCommandEnum = ShipCommandEnum.PurchaseShip;
-    private readonly IAgentsService _agentsService;
-    public PurchaseShipCommand(
-        IShipCommandsHelperService shipCommandsHelperService,
-        IWaypointsService waypointsService,
-        IShipStatusesCacheService shipStatusesCacheService,
-        IAgentsService agentsService)
-    {
-        _shipCommandsHelperService = shipCommandsHelperService;
-        _waypointsService = waypointsService;
-        _shipStatusesCacheService = shipStatusesCacheService;
-        _agentsService = agentsService;
-    }
-
     public async Task<ShipStatus> Run(
         ShipStatus shipStatus,
         Dictionary<string, Ship> shipsDictionary)

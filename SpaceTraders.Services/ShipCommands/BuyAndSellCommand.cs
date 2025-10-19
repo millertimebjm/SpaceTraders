@@ -9,27 +9,14 @@ using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.ShipCommands;
 
-public class BuyAndSellCommand : IShipCommandsService
+public class BuyAndSellCommand(
+    IShipCommandsHelperService _shipCommandsHelperService,
+    IWaypointsService _waypointsService,
+    ISystemsService _systemsService,
+    IAgentsService _agentsService,
+    ITransactionsService _transactionsService
+) : IShipCommandsService
 {
-    private readonly IShipCommandsHelperService _shipCommandsHelperService;
-    private readonly IWaypointsService _waypointsService;
-    private readonly ISystemsService _systemsService;
-    private readonly IAgentsService _agentsService;
-    private readonly ITransactionsService _transactionsService;
-    public BuyAndSellCommand(
-        IShipCommandsHelperService shipCommandsHelperService,
-        IWaypointsService waypointsService,
-        ISystemsService systemsService,
-        IAgentsService agentsService,
-        ITransactionsService transactionsService)
-    {
-        _shipCommandsHelperService = shipCommandsHelperService;
-        _waypointsService = waypointsService;
-        _systemsService = systemsService;
-        _agentsService = agentsService;
-        _transactionsService = transactionsService;
-    }
-
     private const int COUNT_BEFORE_LOOP = 20;
     private const int LOOP_WAIT_IN_MINUTES = 10;
 

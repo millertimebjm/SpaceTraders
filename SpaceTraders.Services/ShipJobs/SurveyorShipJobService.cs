@@ -6,13 +6,6 @@ namespace SpaceTraders.Services.ShipJobs.Interfaces;
 
 public class SurveyorShipJobService : IShipJobService
 {
-    private readonly ISystemsService _systemsService;
-    public SurveyorShipJobService(
-        ISystemsService systemsService)
-    {
-        _systemsService = systemsService;
-    }
-
     public Task<ShipCommand?> Get(
         IEnumerable<Ship> ships,
         Ship ship)

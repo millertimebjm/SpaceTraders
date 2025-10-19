@@ -4,22 +4,12 @@ using SpaceTraders.Services.Systems.Interfaces;
 
 namespace SpaceTraders.Services.Systems;
 
-public class SystemsService : ISystemsService
+public class SystemsService(
+    ISystemsApiService _systemsApiService,
+    ISystemsCacheService _systemsCacheService,
+    ILogger<SystemsService> _logger
+) : ISystemsService
 {
-    private readonly ISystemsApiService _systemsApiService;
-    private readonly ISystemsCacheService _systemsCacheService;
-    private readonly ILogger<SystemsService> _logger;
-
-    public SystemsService(
-        ISystemsApiService systemsApiService,
-        ISystemsCacheService systemsCacheService,
-        ILogger<SystemsService> logger)
-    {
-        _systemsApiService = systemsApiService;
-        _systemsCacheService = systemsCacheService;
-        _logger = logger;
-    }
-
     public async Task<IReadOnlyList<STSystem>> GetAsync()
     {
         return await _systemsCacheService.GetAsync();

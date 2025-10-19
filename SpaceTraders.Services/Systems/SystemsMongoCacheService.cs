@@ -1,17 +1,12 @@
 using MongoDB.Driver;
 using SpaceTraders.Models;
+using SpaceTraders.Services.MongoCache.Interfaces;
 using SpaceTraders.Services.Systems.Interfaces;
 
 namespace SpaceTraders.Services.Systems;
 
-public class SystemsCacheService : ISystemsCacheService
+public class SystemsMongoCacheService(IMongoCollectionFactory _collectionFactory) : ISystemsCacheService
 {
-    private readonly IMongoCollectionFactory _collectionFactory;
-    public SystemsCacheService(IMongoCollectionFactory collectionFactory)
-    {
-        _collectionFactory = collectionFactory;
-    }
-
     public async Task<IReadOnlyList<STSystem>> GetAsync()
     {
         var collection = _collectionFactory.GetCollection<STSystem>();

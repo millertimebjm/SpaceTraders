@@ -1,22 +1,16 @@
 using MongoDB.Driver;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
+using SpaceTraders.Services.MongoCache.Interfaces;
 using SpaceTraders.Services.Paths.Interfaces;
 
 namespace SpaceTraders.Services.Trades;
 
-public class TradesService : ITradesService
+public class TradesService(
+    IPathsService _pathsService,
+    IMongoCollectionFactory _collectionFactory
+) : ITradesService
 {
-    private readonly IPathsService _pathsService;
-    private readonly IMongoCollectionFactory _collectionFactory;
-    public TradesService(
-        IPathsService pathsService,
-        IMongoCollectionFactory collectionFactory)
-    {
-        _pathsService = pathsService;
-        _collectionFactory = collectionFactory;
-    }
-
     public async Task<IReadOnlyList<TradeModel>> BuildTradeModel(
         IReadOnlyList<Waypoint> waypoints,
         int fuelMax,

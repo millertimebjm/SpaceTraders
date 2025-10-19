@@ -1,24 +1,15 @@
 using MongoDB.Driver;
 using SpaceTraders.Models;
+using SpaceTraders.Services.MongoCache.Interfaces;
 using SpaceTraders.Services.Surveys.Interfaces;
 
 namespace SpaceTraders.Services.Surveys;
 
-public class SurveysCacheService : ISurveysCacheService
+public class SurveysMongoCacheService(IMongoCollectionFactory _collectionFactory) : ISurveysCacheService
 {
-    private readonly IMongoCollectionFactory _collectionFactory;
-    public SurveysCacheService(IMongoCollectionFactory collectionFactory)
-    {
-        _collectionFactory = collectionFactory;
-    }
-
     public async Task<IEnumerable<Survey>> GetAsync()
     {
         var collection = _collectionFactory.GetCollection<Survey>();
-
-        // var filter = Builders<Survey>
-        //     .Filter
-        //     .Eq(s => s.Symbol, waypoint.SystemSymbol);
         var projection = Builders<Survey>.Projection.Exclude("_id");
         var surveys = await collection
             .Find(FilterDefinition<Survey>.Empty)

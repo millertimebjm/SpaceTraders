@@ -3,37 +3,19 @@ using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.Shipyards;
-using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Transactions.Interfaces;
 using SpaceTraders.Services.Waypoints;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.ShipCommands;
 
-public class ExplorationCommand : IShipCommandsService
+public class ExplorationCommand(
+    IShipCommandsHelperService _shipCommandsHelperService,
+    IWaypointsService _waypointsService,
+    ITransactionsService _transactionsService,
+    IShipsService _shipsService,
+    IWaypointsCacheService _waypointsCacheService) : IShipCommandsService
 {
-    private readonly IShipCommandsHelperService _shipCommandsHelperService;
-    private readonly IWaypointsService _waypointsService;
-    private readonly IShipStatusesCacheService _shipStatusesCacheService;
-    private readonly ITransactionsService _transactionsService;
-    private readonly IShipsService _shipsService;
-    private readonly IWaypointsCacheService _waypointsCacheService;
-    public ExplorationCommand(
-        IShipCommandsHelperService shipCommandsHelperService,
-        IWaypointsService waypointsService,
-        IShipStatusesCacheService shipStatusesCacheService,
-        ITransactionsService transactionsService,
-        IShipsService shipsService,
-        IWaypointsCacheService waypointsCacheService)
-    {
-        _shipCommandsHelperService = shipCommandsHelperService;
-        _waypointsService = waypointsService;
-        _shipStatusesCacheService = shipStatusesCacheService;
-        _transactionsService = transactionsService;
-        _shipsService = shipsService;
-        _waypointsCacheService = waypointsCacheService;
-    }
-
     public async Task<ShipStatus> Run(
         ShipStatus shipStatus,
         Dictionary<string, Ship> shipsDictionary)
@@ -49,8 +31,6 @@ public class ExplorationCommand : IShipCommandsService
                     var chartWaypointResult = await _shipsService.ChartAsync(ship.Symbol);
                     currentWaypoint = chartWaypointResult.Waypoint;
                     await _waypointsCacheService.SetAsync(currentWaypoint);
-                    // currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol, refresh: true);
-                    // return shipStatus;
                 }
                 catch (Exception ex)
                 {
