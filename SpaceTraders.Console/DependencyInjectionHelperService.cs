@@ -60,7 +60,7 @@ public static class DependencyInjectionHelperService
         services.AddSingleton<ISurveysCacheService, SurveysMongoCacheService>();
         services.AddSingleton<IShipLoopsService, ShipLoopsService>();
         services.AddSingleton<IPathsService, PathsService>();
-        services.AddSingleton<ITransactionsService, TransactionsServices>();
+        services.AddSingleton<ITransactionsCacheService, TransactionsFileCacheService>();
         services.AddSingleton<ITradesService, TradesService>();
 
         // Ship Commands

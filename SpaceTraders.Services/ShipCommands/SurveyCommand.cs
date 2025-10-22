@@ -14,7 +14,7 @@ public class SurveyCommand(
     IWaypointsService _waypointsService,
     ISystemsService _systemsService,
     IAgentsService _agentsService,
-    ITransactionsService _transactionsService
+    ITransactionsCacheService _transactionsService
 ) : IShipCommandsService
 {
     public async Task<ShipStatus> Run(

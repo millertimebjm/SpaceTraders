@@ -35,7 +35,7 @@ public class ShipCommandsHelperService(
     ISurveysCacheService _surveysCacheService,
     IShipyardsService _shipyardsService,
     IPathsService _pathsService,
-    ITransactionsService _transactionsService,
+    ITransactionsCacheService _transactionsService,
     IShipStatusesCacheService _shipStatusesCacheService,
     ITradesService _tradesService
 ) : IShipCommandsHelperService

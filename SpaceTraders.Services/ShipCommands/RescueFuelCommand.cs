@@ -15,7 +15,7 @@ public class RescueFuelCommand(
     IWaypointsService _waypointsService,
     ISystemsService _systemsService,
     IAgentsService _agentsService,
-    ITransactionsService _transactionsService
+    ITransactionsCacheService _transactionsService
 ) : IShipCommandsService
 {
     private const int COUNT_BEFORE_LOOP = 20;

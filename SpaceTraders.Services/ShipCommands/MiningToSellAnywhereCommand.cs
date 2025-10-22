@@ -12,7 +12,7 @@ public class MiningToSellAnywhereCommand(
     IShipCommandsHelperService _shipCommandsHelperService,
     IWaypointsService _waypointsService,
     IAgentsService _agentsService,
-    ITransactionsService _transactionsService
+    ITransactionsCacheService _transactionsService
 ) : IShipCommandsService
 {
     public async Task<ShipStatus> Run(

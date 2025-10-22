@@ -9,45 +9,34 @@ using SpaceTraders.Services.MongoCache.Interfaces;
 
 namespace SpaceTraders.Services.Agents;
 
-public class AgentsService : IAgentsService
+public class AgentsService(
+    IConfiguration _config,
+    HttpClient _httpClient,
+    IAgentFileCacheService _agentsCacheService
+) : IAgentsService
 {
     private const string DIRECTORY_PATH = "/v2/my/agent";
-    private readonly string _apiUrl;
-    private readonly HttpClient _httpClient;
-    private readonly string _token;
-    private IMongoCollectionFactory _mongoCollectionFactory;
-
-    public AgentsService(
-        HttpClient httpClient,
-        IConfiguration configuration,
-        IMongoCollectionFactory mongoCollectionFactory)
-    {
-        _httpClient = httpClient;
-        _apiUrl = configuration[$"SpaceTrader:"+ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
-        ArgumentException.ThrowIfNullOrWhiteSpace(_apiUrl);
-        _token = configuration[$"SpaceTrader:"+ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
-        ArgumentException.ThrowIfNullOrWhiteSpace(_token);
-        _mongoCollectionFactory = mongoCollectionFactory;
-    }
+    private string _apiUrl { get { return _config[$"SpaceTrader:" + ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty; } }
+    private string _token { get { return _config[$"SpaceTrader:" + ConfigurationEnums.AgentToken.ToString()] ?? string.Empty; } }
 
     public async Task<Agent> GetAsync(bool refresh = false)
     {
         Agent? agent = null;
         if (!refresh)
         {
-            agent = await GetFromCacheAsync();
+            agent = await _agentsCacheService.GetAsync();
         }
 
         if (agent is null)
         {
             agent = await GetFromApiAsync();
-            await SetAsync(agent);
+            await _agentsCacheService.SetAsync(agent);
         }
-            
+
         return agent;
     }
-        
-    
+
+
 
     private async Task<Agent> GetFromApiAsync()
     {
@@ -63,20 +52,27 @@ public class AgentsService : IAgentsService
         return agentsData.Datum;
     }
 
-    private async Task<Agent?> GetFromCacheAsync()
-    {
-        var collection = _mongoCollectionFactory.GetCollection<Agent>();
-        var projection = Builders<Agent>.Projection.Exclude("_id");
-        return await collection
-            .Find(FilterDefinition<Agent>.Empty)
-            .Project<Agent>(projection)
-            .FirstOrDefaultAsync();
-    }
+    // private async Task<Agent?> GetFromCacheAsync()
+    // {
+    //     var collection = _mongoCollectionFactory.GetCollection<Agent>();
+    //     var projection = Builders<Agent>.Projection.Exclude("_id");
+    //     return await collection
+    //         .Find(FilterDefinition<Agent>.Empty)
+    //         .Project<Agent>(projection)
+    //         .FirstOrDefaultAsync();
+    // }
 
     public async Task SetAsync(Agent agent)
     {
-        var collection = _mongoCollectionFactory.GetCollection<Agent>();
-        await collection.DeleteManyAsync(FilterDefinition<Agent>.Empty, CancellationToken.None);
-        await collection.InsertOneAsync(agent, new InsertOneOptions() { }, CancellationToken.None);
+        await _agentsCacheService.SetAsync(agent);
     }
+
+    // public async Task SetAsync(Agent agent)
+    // {
+    //     var collection = _mongoCollectionFactory.GetCollection<Agent>();
+    //     await collection.DeleteManyAsync(FilterDefinition<Agent>.Empty, CancellationToken.None);
+    //     await collection.InsertOneAsync(agent, new InsertOneOptions() { }, CancellationToken.None);
+    // }
+
+
 }
