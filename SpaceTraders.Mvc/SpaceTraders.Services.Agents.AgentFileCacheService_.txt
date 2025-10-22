@@ -1,0 +1,1 @@
+{"Symbol":"SPATIAL11","AccountId":"cmbztofrd007itm161uk7rdxz","Headquarters":"X1-KX23-A1","Credits":175000,"StartingFaction":"AEGIS","ShipCount":2}

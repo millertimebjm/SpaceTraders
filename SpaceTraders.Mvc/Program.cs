@@ -6,6 +6,8 @@ using SpaceTraders.Services.Constructions;
 using SpaceTraders.Services.Constructions.Interfaces;
 using SpaceTraders.Services.Contracts;
 using SpaceTraders.Services.Contracts.Interfaces;
+using SpaceTraders.Services.IoWrappers;
+using SpaceTraders.Services.IoWrappers.Interfaces;
 using SpaceTraders.Services.JumpGates;
 using SpaceTraders.Services.JumpGates.Interfaces;
 using SpaceTraders.Services.Marketplaces;
@@ -54,9 +56,10 @@ builder.Services.AddScoped<IWaypointsApiService, WaypointsApiService>();
 builder.Services.AddScoped<ISystemsApiService, SystemsApiService>();
 builder.Services.AddScoped<IJumpGatesServices, JumpGatesServices>();
 builder.Services.AddScoped<IConstructionsService, ConstructionsService>();
-builder.Services.AddScoped<ITransactionsService, TransactionsServices>();
+builder.Services.AddScoped<ITransactionsCacheService, TransactionsFileCacheService>();
 builder.Services.AddScoped<ITradesService, TradesService>();
 builder.Services.AddScoped<IPathsService, PathsService>();
+builder.Services.AddSingleton<IFileWrapper, FileWrapper>();
 
 // Mongo Caching
 // builder.Services.AddSingleton<IMongoCollectionFactory, MongoCollectionFactory>();
@@ -68,8 +71,9 @@ builder.Services.AddScoped<IPathsService, PathsService>();
 builder.Services.AddSingleton<ISurveysCacheService, SurveysFileCacheServices>();
 builder.Services.AddSingleton<ISystemsCacheService, SystemsFileCacheService>();
 builder.Services.AddSingleton<IWaypointsCacheService, WaypointsFileCacheService>();
-builder.Services.AddScoped<IShipStatusesCacheService, ShipStatusesFileCacheService>();
-builder.Services.AddScoped<ITradeModelCacheService, TradeModelFileCacheService>();
+builder.Services.AddSingleton<IShipStatusesCacheService, ShipStatusesFileCacheService>();
+builder.Services.AddSingleton<ITradeModelCacheService, TradeModelFileCacheService>();
+builder.Services.AddSingleton<IAgentFileCacheService, AgentFileCacheService>();
 
 builder.Services.AddLogging();
 Log.Logger = new LoggerConfiguration()

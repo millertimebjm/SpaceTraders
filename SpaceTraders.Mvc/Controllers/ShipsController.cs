@@ -24,7 +24,7 @@ public class ShipsController : BaseController
     private readonly IAgentsService _agentsService;
     private readonly IContractsService _contractsService;
     private readonly ISurveysCacheService _surveyCacheService;
-    private readonly ITransactionsService _transactionsService;
+    private readonly ITransactionsCacheService _transactionsService;
     private readonly IShipStatusesCacheService _shipStatusesCacheService;
     private readonly ISystemsService _systemsService;
 
@@ -36,7 +36,7 @@ public class ShipsController : BaseController
         IAgentsService agentsService,
         IContractsService contractsService,
         ISurveysCacheService surveysCacheService,
-        ITransactionsService transactionsService,
+        ITransactionsCacheService transactionsService,
         IShipStatusesCacheService shipStatusesCacheService,
         ISystemsService systemsService) : base(agentsService)
     {
