@@ -56,7 +56,7 @@ builder.Services.AddScoped<ISystemsApiService, SystemsApiService>();
 builder.Services.AddScoped<ISystemsCacheService, SystemsMongoCacheService>();
 builder.Services.AddScoped<IJumpGatesServices, JumpGatesServices>();
 builder.Services.AddScoped<IConstructionsService, ConstructionsService>();
-builder.Services.AddScoped<IShipStatusesCacheService, ShipStatusesCacheService>();
+builder.Services.AddScoped<IShipStatusesCacheService, ShipStatusesMongoCacheService>();
 builder.Services.AddScoped<ISurveysCacheService, SurveysMongoCacheService>();
 builder.Services.AddScoped<ITransactionsService, TransactionsServices>();
 builder.Services.AddScoped<ITradesService, TradesService>();

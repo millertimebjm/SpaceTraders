@@ -1,5 +1,4 @@
 using Microsoft.Extensions.DependencyInjection;
-using SpaceTraders.Services;
 using SpaceTraders.Services.Agents;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Constructions;
@@ -7,6 +6,8 @@ using SpaceTraders.Services.Constructions.Interfaces;
 using SpaceTraders.Services.Contracts;
 using SpaceTraders.Services.Contracts.Interfaces;
 using SpaceTraders.Services.Interfaces;
+using SpaceTraders.Services.IoWrappers;
+using SpaceTraders.Services.IoWrappers.Interfaces;
 using SpaceTraders.Services.JumpGates;
 using SpaceTraders.Services.JumpGates.Interfaces;
 using SpaceTraders.Services.Marketplaces;
@@ -49,15 +50,11 @@ public static class DependencyInjectionHelperService
         services.AddSingleton<IWaypointsService, WaypointsService>();
         services.AddSingleton<IMarketplacesService, MarketplacesService>();
         services.AddSingleton<IWaypointsApiService, WaypointsApiService>();
-        services.AddSingleton<IWaypointsCacheService, WaypointsMongoCacheService>();
-        services.AddSingleton<IMongoCollectionFactory, MongoCollectionFactory>();
         services.AddSingleton<ISystemsApiService, SystemsApiService>();
-        services.AddSingleton<ISystemsCacheService, SystemsMongoCacheService>();
         services.AddSingleton<IJumpGatesServices, JumpGatesServices>();
         services.AddSingleton<IConstructionsService, ConstructionsService>();
         services.AddSingleton<IShipCommandsHelperService, ShipCommandsHelperService>();
         services.AddSingleton<IShipCommandsServiceFactory, ShipCommandsServiceFactory>();
-        services.AddSingleton<IShipStatusesCacheService, ShipStatusesCacheService>();
         services.AddSingleton<IShipJobsFactory, ShipJobsFactory>();
         services.AddSingleton<ISurveysCacheService, SurveysMongoCacheService>();
         services.AddSingleton<IShipLoopsService, ShipLoopsService>();
@@ -78,5 +75,17 @@ public static class DependencyInjectionHelperService
         services.AddSingleton<MiningShipJobService>();
         services.AddSingleton<CommandShipJobService>();
         services.AddSingleton<SurveyorShipJobService>();
+
+        // Mongo Cache
+        // services.AddSingleton<IMongoCollectionFactory, MongoCollectionFactory>();
+        // services.AddSingleton<IWaypointsCacheService, WaypointsMongoCacheService>();
+        // services.AddSingleton<ISystemsCacheService, SystemsMongoCacheService>();
+        // services.AddSingleton<IShipStatusesCacheService, ShipStatusesMongoCacheService>();
+
+        // File Cache
+        services.AddSingleton<IFileWrapper, FileWrapper>();
+        services.AddSingleton<IWaypointsCacheService, WaypointsFileCacheService>();
+        services.AddSingleton<ISystemsCacheService, SystemsFileCacheService>();
+        services.AddSingleton<IShipStatusesCacheService, ShipStatusesFileCacheService>();
     }
 }
