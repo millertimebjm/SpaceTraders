@@ -30,6 +30,7 @@ using SpaceTraders.Services.Surveys.Interfaces;
 using SpaceTraders.Services.Systems;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Trades;
+using SpaceTraders.Services.Trades.Interfaces;
 using SpaceTraders.Services.Transactions;
 using SpaceTraders.Services.Transactions.Interfaces;
 using SpaceTraders.Services.Waypoints;
@@ -87,5 +88,6 @@ public static class DependencyInjectionHelperService
         services.AddSingleton<IWaypointsCacheService, WaypointsFileCacheService>();
         services.AddSingleton<ISystemsCacheService, SystemsFileCacheService>();
         services.AddSingleton<IShipStatusesCacheService, ShipStatusesFileCacheService>();
+        services.AddSingleton<ITradeModelCacheService, TradeModelFileCacheService>();
     }
 }

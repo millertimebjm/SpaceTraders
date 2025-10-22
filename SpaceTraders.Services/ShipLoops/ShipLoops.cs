@@ -10,6 +10,7 @@ using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Trades;
+using SpaceTraders.Services.Trades.Interfaces;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.ShipLoops;
@@ -22,7 +23,8 @@ public class ShipLoopsService(
     IShipCommandsServiceFactory _shipCommandsServiceFactory,
     IWaypointsService _waypointsService,
     ILogger<ShipLoopsService> _logger,
-    ITradesService _tradesService
+    ITradesService _tradesService,
+    ITradeModelCacheService _tradeModelCacheService
 ) : IShipLoopsService
 {
     public async Task Run()
@@ -109,7 +111,7 @@ public class ShipLoopsService(
             //var system = await _systemsService.GetAsync(shipStatuses.First().Ship.Nav.SystemSymbol);
             var systems = await _systemsService.GetAsync();
             var waypoints = systems.SelectMany(s => s.Waypoints).ToList();
-            await _tradesService.SaveTradeModelsAsync(waypoints, 400, 400);
+            await _tradeModelCacheService.SaveTradeModelsAsync(waypoints, 400, 400);
 
             TimeSpan? shortestCooldown = null;
             foreach (var shipStatus in shipStatuses)

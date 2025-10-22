@@ -1,14 +1,18 @@
 using System.Text.Json;
+using Microsoft.Extensions.Configuration;
 using SpaceTraders.Models;
+using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.IoWrappers.Interfaces;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.Waypoints;
 
-public class WaypointsFileCacheService(IFileWrapper _fileWrapper) : IWaypointsCacheService
+public class WaypointsFileCacheService(
+    IFileWrapper _fileWrapper,
+    IConfiguration _config) : IWaypointsCacheService
 {
     private bool _isLoaded = false;
-    private string _filename { get { return $"{this.GetType()}.txt"; } }
+    private string _filename { get { return $"{this.GetType()}_{_config[ConfigurationEnums.AgentToken.ToString()]}.txt"; } }
     private readonly Dictionary<string, Waypoint> _waypoints = new ();
 
     public async Task<Waypoint?> GetAsync(string waypointSymbol)
@@ -43,6 +47,7 @@ public class WaypointsFileCacheService(IFileWrapper _fileWrapper) : IWaypointsCa
     private async Task CheckIsLoaded()
     {
         if (_isLoaded) return;
+        if (!_fileWrapper.Exists(_filename)) return;
 
         var lines = await _fileWrapper.ReadAllLinesAsync(_filename);
         foreach (var line in lines)

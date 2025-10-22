@@ -13,8 +13,6 @@ public interface ITradesService
     SellModel? GetBestSellModel(IReadOnlyList<SellModel> sellModels);
     IReadOnlyList<SellModel> BuildSellModel(
         IReadOnlyList<Waypoint> waypoints);
-    Task SaveTradeModelsAsync(IReadOnlyList<Waypoint> waypoints, int fuelMax, int fuelCurrent);
-    Task<IReadOnlyList<TradeModel>> GetTradeModelsAsync();
     IReadOnlyList<TradeModel> GetBestOrderedTrades(IReadOnlyList<TradeModel> trades);
     IReadOnlyList<TradeModel> GetBestOrderedTradesWithTravelCost(
         IReadOnlyList<TradeModel> trades);

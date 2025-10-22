@@ -18,4 +18,9 @@ public class FileWrapper : IFileWrapper
     {
         await File.WriteAllLinesAsync(path, lines);
     }
+
+    public bool Exists(string path)
+    {
+        return File.Exists(path);
+    }
 }

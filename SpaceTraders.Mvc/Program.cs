@@ -23,6 +23,7 @@ using SpaceTraders.Services.Surveys.Interfaces;
 using SpaceTraders.Services.Systems;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Trades;
+using SpaceTraders.Services.Trades.Interfaces;
 using SpaceTraders.Services.Transactions;
 using SpaceTraders.Services.Transactions.Interfaces;
 using SpaceTraders.Services.Waypoints;
@@ -50,17 +51,25 @@ builder.Services.AddScoped<IShipsService, ShipsService>();
 builder.Services.AddScoped<IWaypointsService, WaypointsService>();
 builder.Services.AddScoped<IMarketplacesService, MarketplacesService>();
 builder.Services.AddScoped<IWaypointsApiService, WaypointsApiService>();
-builder.Services.AddScoped<IWaypointsCacheService, WaypointsMongoCacheService>();
-builder.Services.AddSingleton<IMongoCollectionFactory, MongoCollectionFactory>();
 builder.Services.AddScoped<ISystemsApiService, SystemsApiService>();
-builder.Services.AddScoped<ISystemsCacheService, SystemsMongoCacheService>();
 builder.Services.AddScoped<IJumpGatesServices, JumpGatesServices>();
 builder.Services.AddScoped<IConstructionsService, ConstructionsService>();
-builder.Services.AddScoped<IShipStatusesCacheService, ShipStatusesMongoCacheService>();
-builder.Services.AddScoped<ISurveysCacheService, SurveysMongoCacheService>();
 builder.Services.AddScoped<ITransactionsService, TransactionsServices>();
 builder.Services.AddScoped<ITradesService, TradesService>();
 builder.Services.AddScoped<IPathsService, PathsService>();
+
+// Mongo Caching
+// builder.Services.AddSingleton<IMongoCollectionFactory, MongoCollectionFactory>();
+// builder.Services.AddSingleton<ISurveysCacheService, SurveysMongoCacheService>();
+// builder.Services.AddSingleton<ISystemsCacheService, SystemsMongoCacheService>();
+// builder.Services.AddSingleton<IWaypointsCacheService, WaypointsMongoCacheService>();
+
+// File Caching
+builder.Services.AddSingleton<ISurveysCacheService, SurveysFileCacheServices>();
+builder.Services.AddSingleton<ISystemsCacheService, SystemsFileCacheService>();
+builder.Services.AddSingleton<IWaypointsCacheService, WaypointsFileCacheService>();
+builder.Services.AddScoped<IShipStatusesCacheService, ShipStatusesFileCacheService>();
+builder.Services.AddScoped<ITradeModelCacheService, TradeModelFileCacheService>();
 
 builder.Services.AddLogging();
 Log.Logger = new LoggerConfiguration()
@@ -73,7 +82,6 @@ Log.Logger = new LoggerConfiguration()
     .WriteTo.Console() // Default to console logging
     .CreateLogger();
 builder.Host.UseSerilog();
-
 
 builder
     .Configuration
@@ -134,6 +142,5 @@ app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
-
 
 app.Run();

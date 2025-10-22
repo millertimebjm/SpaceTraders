@@ -1,22 +1,27 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using SpaceTraders.Models;
+using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.EfCache;
 using SpaceTraders.Services.IoWrappers.Interfaces;
 using SpaceTraders.Services.Surveys.Interfaces;
 
 namespace SpaceTraders.Services.Surveys;
 
-public class SurveysFileCacheServices(IFileWrapper fileWrapper) : ISurveysCacheService
+public class SurveysFileCacheServices(
+    IFileWrapper _fileWrapper,
+    IConfiguration _config) : ISurveysCacheService
 {
     private bool _isLoaded = false;
-    private string _filename { get { return $"{this.GetType()}.txt"; } }
-    private readonly IFileWrapper _fileWrapper;
+    private string _filename { get { return $"{this.GetType()}_{_config[ConfigurationEnums.AgentToken.ToString()]}.txt"; } }
+
     private readonly Dictionary<string, Survey> _surveys = new ();
 
     private async Task CheckIsLoaded()
     {
         if (_isLoaded) return;
+        if (!_fileWrapper.Exists(_filename)) return;
         
         var lines = await _fileWrapper.ReadAllLinesAsync(_filename);
         foreach (var line in lines)

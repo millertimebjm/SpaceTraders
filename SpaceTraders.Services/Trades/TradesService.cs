@@ -1,14 +1,12 @@
 using MongoDB.Driver;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
-using SpaceTraders.Services.MongoCache.Interfaces;
 using SpaceTraders.Services.Paths.Interfaces;
 
 namespace SpaceTraders.Services.Trades;
 
 public class TradesService(
-    IPathsService _pathsService,
-    IMongoCollectionFactory _collectionFactory
+    IPathsService _pathsService
 ) : ITradesService
 {
     public async Task<IReadOnlyList<TradeModel>> BuildTradeModel(
@@ -196,28 +194,6 @@ public class TradesService(
                 m.SellPrice
             ).ToList();
         return orderedTrades.FirstOrDefault();
-    }
-
-    public async Task<IReadOnlyList<TradeModel>> GetTradeModelsAsync()
-    {
-        var collection = _collectionFactory.GetCollection<TradeModel>();
-        var projection = Builders<TradeModel>.Projection.Exclude("_id");
-
-        return await collection
-            .Find(FilterDefinition<TradeModel>.Empty)
-            .Project<TradeModel>(projection)
-            .ToListAsync();
-    }
-
-    public async Task SaveTradeModelsAsync(IReadOnlyList<Waypoint> waypoints, int fuelMax, int fuelCurrent)
-    {
-        var tradeModels = await BuildTradeModel(waypoints, fuelMax, fuelCurrent);
-        if (tradeModels.Any())
-        {
-            var collection = _collectionFactory.GetCollection<TradeModel>();
-            await collection.DeleteManyAsync(FilterDefinition<TradeModel>.Empty);
-            await collection.InsertManyAsync(tradeModels, new InsertManyOptions(), CancellationToken.None);
-        }
     }
 }
 

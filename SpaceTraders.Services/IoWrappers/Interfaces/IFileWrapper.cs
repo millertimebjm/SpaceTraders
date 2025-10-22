@@ -5,4 +5,5 @@ public interface IFileWrapper
     Task WriteAllLinesAsync(string path, string[] lines);
     Task WriteAllLinesAsync(string path, IEnumerable<string> lines);
     Task<string[]> ReadAllLinesAsync(string path);
+    bool Exists(string path);
 }
