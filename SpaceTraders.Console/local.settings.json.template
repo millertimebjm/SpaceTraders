@@ -1,7 +1,3 @@
 {
-    "AccountToken": "",
-    "AgentToken": "",
-    "ApiUrl": "https://api.spacetraders.io",
-    "CacheConnectionString": "mongodb://media.bltmiller.com:27017/",
-    "CacheDatabaseName": "SpaceTrader"
+    "AppConfigConnectionString": ""
 }

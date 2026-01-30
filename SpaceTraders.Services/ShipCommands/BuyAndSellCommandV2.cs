@@ -87,8 +87,20 @@ public class BuyAndSellCommandV2(
             }
         }
 
+        if (ship.Cargo.Units == 0)
+        {
+            nav = await _shipCommandsHelperService.Orbit(ship, currentWaypoint);
+            (nav, fuel, cooldown, var nowork) = await _shipCommandsHelperService.NavigateToMarketplaceRandomExport(ship, currentWaypoint);
+            if (nav is not null && fuel is not null)
+            {
+                ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown };
+                return new ShipStatus(ship, $"NavigateToMarketplaceRandomExport {ship.Nav.Route.Destination.Symbol}", DateTime.UtcNow);
+            }
+        }
+
         if (ship.Cargo.Units > 0)
         {
+            nav = await _shipCommandsHelperService.Orbit(ship, currentWaypoint);
             (nav, fuel, cooldown) = await _shipCommandsHelperService.NavigateToMarketplaceImport(ship, currentWaypoint);
             if (nav is not null && fuel is not null)
             {

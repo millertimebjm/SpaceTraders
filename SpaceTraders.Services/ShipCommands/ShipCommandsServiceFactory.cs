@@ -11,7 +11,7 @@ public class ShipCommandsServiceFactory(IServiceProvider _serviceProvider) : ISh
         return command switch
         {
             ShipCommandEnum.MiningToSellAnywhere => _serviceProvider.GetRequiredService<MiningToSellAnywhereCommand>(),
-            ShipCommandEnum.BuyToSell => _serviceProvider.GetRequiredService<BuyAndSellCommandV2>(),
+            ShipCommandEnum.BuyToSell => _serviceProvider.GetRequiredService<BuyAndSellCommand>(),
             ShipCommandEnum.SupplyConstruction => _serviceProvider.GetRequiredService<SupplyConstructionCommand>(),
             ShipCommandEnum.Survey => _serviceProvider.GetRequiredService<SurveyCommand>(),
             ShipCommandEnum.PurchaseShip => _serviceProvider.GetRequiredService<PurchaseShipCommand>(),
