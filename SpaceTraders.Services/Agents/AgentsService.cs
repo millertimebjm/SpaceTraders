@@ -15,19 +15,19 @@ public class AgentsService : IAgentsService
     private readonly string _apiUrl;
     private readonly HttpClient _httpClient;
     private readonly string _token;
-    private IMongoCollectionFactory _mongoCollectionFactory;
+    private readonly IAgentsCacheService _agentsCacheService;
 
     public AgentsService(
         HttpClient httpClient,
         IConfiguration configuration,
-        IMongoCollectionFactory mongoCollectionFactory)
+        IAgentsCacheService agentsCacheService)
     {
         _httpClient = httpClient;
         _apiUrl = configuration[$"SpaceTrader:"+ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
         ArgumentException.ThrowIfNullOrWhiteSpace(_apiUrl);
         _token = configuration[$"SpaceTrader:"+ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
         ArgumentException.ThrowIfNullOrWhiteSpace(_token);
-        _mongoCollectionFactory = mongoCollectionFactory;
+        _agentsCacheService = agentsCacheService;
     }
 
     public async Task<Agent> GetAsync(bool refresh = false)
@@ -41,14 +41,12 @@ public class AgentsService : IAgentsService
         if (agent is null)
         {
             agent = await GetFromApiAsync();
-            await SetAsync(agent);
+            await _agentsCacheService.SetAsync(agent);
         }
             
         return agent;
     }
         
-    
-
     private async Task<Agent> GetFromApiAsync()
     {
         var url = new UriBuilder(_apiUrl);
@@ -65,18 +63,11 @@ public class AgentsService : IAgentsService
 
     private async Task<Agent?> GetFromCacheAsync()
     {
-        var collection = _mongoCollectionFactory.GetCollection<Agent>();
-        var projection = Builders<Agent>.Projection.Exclude("_id");
-        return await collection
-            .Find(FilterDefinition<Agent>.Empty)
-            .Project<Agent>(projection)
-            .FirstOrDefaultAsync();
+        return await _agentsCacheService.GetAsync();
     }
 
     public async Task SetAsync(Agent agent)
     {
-        var collection = _mongoCollectionFactory.GetCollection<Agent>();
-        await collection.DeleteManyAsync(FilterDefinition<Agent>.Empty, CancellationToken.None);
-        await collection.InsertOneAsync(agent, new InsertOneOptions() { }, CancellationToken.None);
+        await _agentsCacheService.SetAsync(agent);
     }
 }

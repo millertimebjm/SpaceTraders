@@ -5,7 +5,7 @@ using SpaceTraders.Services.Systems.Interfaces;
 
 namespace SpaceTraders.Services.ShipStatuses;
 
-public class ShipStatusesCacheService(IMongoCollectionFactory _collectionFactory) : IShipStatusesCacheService
+public class ShipStatusesCacheMongoService(IMongoCollectionFactory _collectionFactory) : IShipStatusesCacheService
 {
     public async Task<IEnumerable<ShipStatus>> GetAsync()
     {

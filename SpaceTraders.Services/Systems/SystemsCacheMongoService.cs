@@ -5,7 +5,7 @@ using SpaceTraders.Services.Systems.Interfaces;
 
 namespace SpaceTraders.Services.Systems;
 
-public class SystemsMongoCacheService(IMongoCollectionFactory _collectionFactory) : ISystemsCacheService
+public class SystemsCacheMongoService(IMongoCollectionFactory _collectionFactory) : ISystemsCacheService
 {
     public async Task<IReadOnlyList<STSystem>> GetAsync()
     {

@@ -50,17 +50,20 @@ builder.Services.AddScoped<IShipsService, ShipsService>();
 builder.Services.AddScoped<IWaypointsService, WaypointsService>();
 builder.Services.AddScoped<IMarketplacesService, MarketplacesService>();
 builder.Services.AddScoped<IWaypointsApiService, WaypointsApiService>();
-builder.Services.AddScoped<IWaypointsCacheService, WaypointsMongoCacheService>();
-builder.Services.AddSingleton<IMongoCollectionFactory, MongoCollectionFactory>();
 builder.Services.AddScoped<ISystemsApiService, SystemsApiService>();
-builder.Services.AddScoped<ISystemsCacheService, SystemsMongoCacheService>();
 builder.Services.AddScoped<IJumpGatesServices, JumpGatesServices>();
 builder.Services.AddScoped<IConstructionsService, ConstructionsService>();
-builder.Services.AddScoped<IShipStatusesCacheService, ShipStatusesCacheService>();
-builder.Services.AddScoped<ISurveysCacheService, SurveysMongoCacheService>();
 builder.Services.AddScoped<ITransactionsService, TransactionsServices>();
 builder.Services.AddScoped<ITradesService, TradesService>();
 builder.Services.AddScoped<IPathsService, PathsService>();
+
+// Cache Services
+builder.Services.AddSingleton<IMongoCollectionFactory, MongoCollectionFactory>();
+builder.Services.AddScoped<IWaypointsCacheService, WaypointsCacheMongoService>();
+builder.Services.AddScoped<ISystemsCacheService, SystemsCacheMongoService>();
+builder.Services.AddScoped<IShipStatusesCacheService, ShipStatusesCacheMongoService>();
+builder.Services.AddScoped<ISurveysCacheService, SurveysCacheMongoService>();
+builder.Services.AddScoped<IAgentsCacheService, AgentsCacheMongoService>();
 
 builder.Services.AddLogging();
 Log.Logger = new LoggerConfiguration()

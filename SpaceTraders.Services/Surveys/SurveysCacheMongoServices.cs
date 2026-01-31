@@ -5,7 +5,7 @@ using SpaceTraders.Services.Surveys.Interfaces;
 
 namespace SpaceTraders.Services.Surveys;
 
-public class SurveysMongoCacheService(IMongoCollectionFactory _collectionFactory) : ISurveysCacheService
+public class SurveysCacheMongoService(IMongoCollectionFactory _collectionFactory) : ISurveysCacheService
 {
     public async Task<IEnumerable<Survey>> GetAsync()
     {

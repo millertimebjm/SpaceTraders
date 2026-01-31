@@ -6,7 +6,7 @@ using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.Waypoints;
 
-public class WaypointsMongoCacheService(
+public class WaypointsCacheMongoService(
     IMongoCollectionFactory _mongoCollectionFactory,
     ISystemsCacheService _systemsCacheService
 ) : IWaypointsCacheService

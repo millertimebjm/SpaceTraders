@@ -5,16 +5,8 @@ using SpaceTraders.Services.Waypoints;
 
 namespace SpaceTraders.Services.Paths;
 
-public class PathsService : IPathsService
+public class PathsService(ISystemsService _systemsService) : IPathsService
 {
-    private readonly ISystemsService _systemsService;
-    public PathsService(
-        ISystemsService systemsService
-    )
-    {
-        _systemsService = systemsService;
-    }
-
     public static IEnumerable<Waypoint>? GetPath(
         Dictionary<Waypoint, (List<Waypoint>, bool, int, int)> waypoints,
         Waypoint origin,
