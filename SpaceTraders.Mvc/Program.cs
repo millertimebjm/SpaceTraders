@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents;
@@ -6,6 +7,7 @@ using SpaceTraders.Services.Constructions;
 using SpaceTraders.Services.Constructions.Interfaces;
 using SpaceTraders.Services.Contracts;
 using SpaceTraders.Services.Contracts.Interfaces;
+using SpaceTraders.Services.EntityFrameworkCache;
 using SpaceTraders.Services.JumpGates;
 using SpaceTraders.Services.JumpGates.Interfaces;
 using SpaceTraders.Services.Marketplaces;
@@ -16,6 +18,7 @@ using SpaceTraders.Services.Paths;
 using SpaceTraders.Services.Paths.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.ShipStatuses;
+using SpaceTraders.Services.ShipStatuses.Interfaces;
 using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Shipyards.Interfaces;
 using SpaceTraders.Services.Surveys;
@@ -53,17 +56,17 @@ builder.Services.AddScoped<IWaypointsApiService, WaypointsApiService>();
 builder.Services.AddScoped<ISystemsApiService, SystemsApiService>();
 builder.Services.AddScoped<IJumpGatesServices, JumpGatesServices>();
 builder.Services.AddScoped<IConstructionsService, ConstructionsService>();
-builder.Services.AddScoped<ITransactionsService, TransactionsServices>();
 builder.Services.AddScoped<ITradesService, TradesService>();
 builder.Services.AddScoped<IPathsService, PathsService>();
 
 // Cache Services
-builder.Services.AddSingleton<IMongoCollectionFactory, MongoCollectionFactory>();
-builder.Services.AddScoped<IWaypointsCacheService, WaypointsCacheMongoService>();
-builder.Services.AddScoped<ISystemsCacheService, SystemsCacheMongoService>();
-builder.Services.AddScoped<IShipStatusesCacheService, ShipStatusesCacheMongoService>();
-builder.Services.AddScoped<ISurveysCacheService, SurveysCacheMongoService>();
-builder.Services.AddScoped<IAgentsCacheService, AgentsCacheMongoService>();
+// builder.Services.AddSingleton<IMongoCollectionFactory, MongoCollectionFactory>();
+// builder.Services.AddScoped<IWaypointsCacheService, WaypointsCacheMongoService>();
+// builder.Services.AddScoped<ISystemsCacheService, SystemsCacheMongoService>();
+// builder.Services.AddScoped<IShipStatusesCacheService, ShipStatusesCacheMongoService>();
+// builder.Services.AddScoped<ISurveysCacheService, SurveysCacheMongoService>();
+// builder.Services.AddScoped<IAgentsCacheService, AgentsCacheMongoService>();
+// builder.Services.AddScoped<ITransactionCacheService, TransactionCacheMongoService>();
 
 builder.Services.AddLogging();
 Log.Logger = new LoggerConfiguration()
@@ -114,6 +117,17 @@ var accountToken = builder.Configuration[$"{_appConfigSectionName}:{Configuratio
 ArgumentException.ThrowIfNullOrWhiteSpace(accountToken);
 var agentToken = builder.Configuration[$"{_appConfigSectionName}:{ConfigurationEnums.AgentToken.ToString()}"];
 ArgumentException.ThrowIfNullOrWhiteSpace(agentToken);
+
+var sqlServerConnectionString = builder.Configuration[$"{_appConfigSectionName}:SqlServerConnectionString"];
+ArgumentNullException.ThrowIfNullOrWhiteSpace(sqlServerConnectionString);
+builder.Services.AddDbContextPool<SpaceTraderDbContext>(options => 
+    options.UseSqlServer(sqlServerConnectionString));
+builder.Services.AddScoped<IAgentsCacheService, AgentsCacheEfService>();
+builder.Services.AddScoped<IShipStatusesCacheService, ShipStatusesCacheEfService>();
+builder.Services.AddScoped<ISurveysCacheService, SurveysCacheEfService>();
+builder.Services.AddScoped<ISystemsCacheService, SystemsCacheEfService>();
+builder.Services.AddScoped<IWaypointsCacheService, WaypointsCacheEfService>();
+builder.Services.AddScoped<ITransactionsCacheService, TransactionsCacheEfServices>();
 
 var app = builder.Build();
 

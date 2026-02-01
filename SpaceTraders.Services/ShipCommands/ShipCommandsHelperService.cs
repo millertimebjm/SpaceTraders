@@ -7,6 +7,7 @@ using SpaceTraders.Services.Paths;
 using SpaceTraders.Services.Paths.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
+using SpaceTraders.Services.ShipStatuses.Interfaces;
 using SpaceTraders.Services.Shipyards.Interfaces;
 using SpaceTraders.Services.Surveys.Interfaces;
 using SpaceTraders.Services.Systems.Interfaces;
@@ -35,7 +36,7 @@ public class ShipCommandsHelperService(
     ISurveysCacheService _surveysCacheService,
     IShipyardsService _shipyardsService,
     IPathsService _pathsService,
-    ITransactionsService _transactionsService,
+    ITransactionsCacheService _transactionsService,
     IShipStatusesCacheService _shipStatusesCacheService,
     ITradesService _tradesService
 ) : IShipCommandsHelperService

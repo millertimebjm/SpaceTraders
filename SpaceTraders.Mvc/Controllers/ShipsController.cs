@@ -1,5 +1,3 @@
-using System.Diagnostics.Contracts;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
@@ -8,6 +6,7 @@ using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Contracts.Interfaces;
 using SpaceTraders.Services.Marketplaces.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
+using SpaceTraders.Services.ShipStatuses.Interfaces;
 using SpaceTraders.Services.Surveys.Interfaces;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Transactions.Interfaces;
@@ -24,7 +23,7 @@ public class ShipsController : BaseController
     private readonly IAgentsService _agentsService;
     private readonly IContractsService _contractsService;
     private readonly ISurveysCacheService _surveyCacheService;
-    private readonly ITransactionsService _transactionsService;
+    private readonly ITransactionsCacheService _transactionsService;
     private readonly IShipStatusesCacheService _shipStatusesCacheService;
     private readonly ISystemsService _systemsService;
 

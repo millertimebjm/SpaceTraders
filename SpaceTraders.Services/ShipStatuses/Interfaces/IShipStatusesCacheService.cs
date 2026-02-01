@@ -1,6 +1,6 @@
 using SpaceTraders.Models;
 
-namespace SpaceTraders.Services.Systems.Interfaces;
+namespace SpaceTraders.Services.ShipStatuses.Interfaces;
 
 public interface IShipStatusesCacheService
 {

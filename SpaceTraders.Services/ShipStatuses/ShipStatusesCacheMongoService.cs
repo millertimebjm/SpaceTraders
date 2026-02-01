@@ -1,7 +1,7 @@
 using MongoDB.Driver;
 using SpaceTraders.Models;
 using SpaceTraders.Services.MongoCache.Interfaces;
-using SpaceTraders.Services.Systems.Interfaces;
+using SpaceTraders.Services.ShipStatuses.Interfaces;
 
 namespace SpaceTraders.Services.ShipStatuses;
 

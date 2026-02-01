@@ -15,7 +15,7 @@ public class SupplyConstructionCommand(
     ISystemsService _systemsService,
     IAgentsService _agentsService,
     IWaypointsCacheService _waypointsCacheService,
-    ITransactionsService _transactionsService
+    ITransactionsCacheService _transactionsService
 ) : IShipCommandsService
 {
     public async Task<ShipStatus> Run(

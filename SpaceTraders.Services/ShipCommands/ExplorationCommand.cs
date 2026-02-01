@@ -12,7 +12,7 @@ namespace SpaceTraders.Services.ShipCommands;
 public class ExplorationCommand(
     IShipCommandsHelperService _shipCommandsHelperService,
     IWaypointsService _waypointsService,
-    ITransactionsService _transactionsService,
+    ITransactionsCacheService _transactionsService,
     IShipsService _shipsService,
     IWaypointsCacheService _waypointsCacheService) : IShipCommandsService
 {
