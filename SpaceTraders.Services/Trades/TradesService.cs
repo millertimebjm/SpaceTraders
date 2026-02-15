@@ -1,14 +1,17 @@
+using System.Collections.Concurrent;
 using MongoDB.Driver;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Paths.Interfaces;
+using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Trades.Interfaces;
 
 namespace SpaceTraders.Services.Trades;
 
 public class TradesService(
     IPathsService _pathsService,
-    ITradesCacheService _tradesCacheService
+    ITradesCacheService _tradesCacheService,
+    ISystemsService _systemsService
 ) : ITradesService
 {
     public async Task<IReadOnlyList<TradeModel>> BuildTradeModel(
@@ -17,14 +20,21 @@ public class TradesService(
         int fuelCurrent)
     {
         var marketplaceWaypoints = waypoints.Where(w => w.Marketplace is not null && w.Marketplace.TradeGoods is not null).ToList();
-        List<TradeModel> tradeModels = new();
-        foreach (var marketplaceWaypointExport in marketplaceWaypoints.Where(w => w.Marketplace.Exports.Any()).ToList())
+        ConcurrentBag<TradeModel> tradeModels = new();
+        var marketplaceWaypointExports = marketplaceWaypoints.Where(w => w.Marketplace.Exports.Any()).ToList();
+        //foreach (var marketplaceWaypointExport in marketplaceWaypointExports)
+        //await Parallel.ForEachAsync(marketplaceWaypointExports, async (marketplaceWaypointExport, CancellationToken) =>
+        foreach (var marketplaceWaypointExport in marketplaceWaypointExports)
         {
-            foreach (var export in marketplaceWaypointExport.Marketplace.TradeGoods.Where(tg => tg.Type == "EXPORT").ToList())
+            var exports = marketplaceWaypointExport.Marketplace.TradeGoods.Where(tg => tg.Type == "EXPORT").ToList();
+            foreach (var export in exports)
             {
-                foreach (var marketplaceWaypointImport in marketplaceWaypoints.Where(w => w.Marketplace.Imports.Any()).ToList())
+                var imports = marketplaceWaypoints.Where(w => w.Marketplace.Imports.Any()).ToList();
+                foreach (var marketplaceWaypointImport in imports)
                 {
-                    foreach (var import in marketplaceWaypointImport.Marketplace.TradeGoods.Where(tg => tg.Type == "IMPORT" && tg.Symbol == export.Symbol))
+                    var navigationFactor = await GetNavigationFactor(waypoints, marketplaceWaypointExport, marketplaceWaypointImport.Symbol, fuelMax, fuelCurrent);
+                    var marketplaceWaypointImports = marketplaceWaypointImport.Marketplace.TradeGoods.Where(tg => tg.Type == "IMPORT" && tg.Symbol == export.Symbol);
+                    foreach (var import in marketplaceWaypointImports)
                     {
                         tradeModels.Add(new TradeModel(
                             export.Symbol,
@@ -36,13 +46,16 @@ public class TradesService(
                             import.SellPrice,
                             Enum.Parse<SupplyEnum>(import.Supply),
                             import.TradeVolume,
-                            await GetNavigationFactor(marketplaceWaypointExport.Symbol, marketplaceWaypointImport.Symbol, fuelMax, fuelCurrent)
+                            navigationFactor
                         ));
                     }
                 }
-                foreach (var marketplaceWaypointExchange in marketplaceWaypoints.Where(w => w.Marketplace.Exchange.Any()).ToList())
+                var exchangeMarketplaceWaypoints = marketplaceWaypoints.Where(w => w.Marketplace.Exchange.Any()).ToList();
+                foreach (var marketplaceWaypointExchange in exchangeMarketplaceWaypoints)
                 {
-                    foreach (var import in marketplaceWaypointExchange.Marketplace.TradeGoods.Where(tg => tg.Type == "EXCHANGE" && tg.Symbol == export.Symbol))
+                    var navigationFactor = await GetNavigationFactor(waypoints, marketplaceWaypointExport, marketplaceWaypointExchange.Symbol, fuelMax, fuelCurrent);
+                    var tradeGoodImports = marketplaceWaypointExchange.Marketplace.TradeGoods.Where(tg => tg.Type == "EXCHANGE" && tg.Symbol == export.Symbol);
+                    foreach (var import in tradeGoodImports)
                     {
                         tradeModels.Add(new TradeModel(
                             export.Symbol,
@@ -54,20 +67,23 @@ public class TradesService(
                             import.SellPrice,
                             Enum.Parse<SupplyEnum>(import.Supply),
                             import.TradeVolume,
-                            await GetNavigationFactor(marketplaceWaypointExport.Symbol, marketplaceWaypointExchange.Symbol, fuelMax, fuelCurrent)
+                            navigationFactor
                         ));
                     }
                 }
             }
+        //});
         }
-        return tradeModels;
+        return tradeModels.ToList();
     }
 
-    public async Task<double> GetNavigationFactor(string exportSymbol, string importSymbol, int fuelMax, int fuelCurrent)
+    public async Task<double> GetNavigationFactor(IReadOnlyList<Waypoint> waypoints, Waypoint exportWaypoint, string importSymbol, int fuelMax, int fuelCurrent)
     {
-        var paths = await _pathsService.BuildSystemPathWithCost(exportSymbol, fuelMax, fuelCurrent);
+        //var paths = await 
+        var paths = await _pathsService.BuildSystemPathWithCost(waypoints.ToList(), exportWaypoint, fuelMax, fuelCurrent);
         var path = paths.Single(p => p.Key.Symbol == importSymbol);
         return NavigationFactor(path.Value.Item2);
+ 
     }
 
     public IReadOnlyList<TradeModel> GetBestOrderedTrades(IReadOnlyList<TradeModel> trades)

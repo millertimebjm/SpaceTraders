@@ -6,7 +6,7 @@ namespace SpaceTraders.Services.Trades;
 
 public class TradesCacheMongoService(IMongoCollectionFactory _collectionFactory) : ITradesCacheService
 {
-     public async Task<IReadOnlyList<TradeModel>> GetTradeModelsAsync()
+    public async Task<IReadOnlyList<TradeModel>> GetTradeModelsAsync()
     {
         var collection = _collectionFactory.GetCollection<TradeModel>();
         var projection = Builders<TradeModel>.Projection.Exclude("_id");
@@ -22,6 +22,5 @@ public class TradesCacheMongoService(IMongoCollectionFactory _collectionFactory)
         var collection = _collectionFactory.GetCollection<TradeModel>();
         await collection.DeleteManyAsync(FilterDefinition<TradeModel>.Empty);
         await collection.InsertManyAsync(tradeModels, new InsertManyOptions(), CancellationToken.None);
-
     }
 }

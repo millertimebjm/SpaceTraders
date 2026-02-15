@@ -67,7 +67,8 @@ public class SystemsCacheEfService(SpaceTraderDbContext _context) : ISystemsCach
         var waypoints = dbSystem.Waypoints.Where(w => w.Symbol != waypoint.Symbol).ToList();
         waypoints.Add(waypoint);
         var newDbSystem = dbSystem with { Waypoints = waypoints };
-        _context.Entry(dbSystem).CurrentValues.SetValues(newDbSystem);
+        var newDbSystemCacheModel = dbSystemCacheModel with { STSystemJson = JsonSerializer.Serialize(newDbSystem) };
+        _context.Entry(dbSystemCacheModel).CurrentValues.SetValues(newDbSystemCacheModel);
         await _context.SaveChangesAsync();
         // var filter = Builders<STSystem>
         //     .Filter

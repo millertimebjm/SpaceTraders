@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SpaceTraders.Models;
+using SpaceTraders.Services.Trades;
 
 namespace SpaceTraders.Services.EntityFrameworkCache;
 
@@ -11,7 +12,9 @@ public class SpaceTraderDbContext : DbContext
     public DbSet<ShipStatusCacheModel> ShipStatuses { get; set; }
     public DbSet<SurveyCacheModel> Surveys { get; set; }
     public DbSet<STSystemCacheModel> STSystems { get; set; }
+    public DbSet<TradeCacheModel> Trades { get; set; }
     public DbSet<WaypointCacheModel> Waypoints { get; set; }
+    public DbSet<TransactionCacheModel> Transactions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -35,5 +38,13 @@ public class SpaceTraderDbContext : DbContext
             .Entity<WaypointCacheModel>()
             .ToTable("Waypoint")
             .HasKey(w => w.Symbol);
+        modelBuilder
+            .Entity<TradeCacheModel>()
+            .ToTable("Trade")
+            .HasKey(t => t.Id);
+        modelBuilder
+            .Entity<TransactionCacheModel>()
+            .ToTable("STTransaction")
+            .HasKey(t => t.Id);
     }
 }

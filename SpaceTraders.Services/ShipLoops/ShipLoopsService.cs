@@ -113,7 +113,10 @@ public class ShipLoopsService(
             var systems = await _systemsService.GetAsync();
             var waypoints = systems.SelectMany(s => s.Waypoints).ToList();
             var tradeModels = await _tradesService.BuildTradeModel(waypoints, 400, 400);
-            await _tradesCacheService.SaveTradeModelsAsync(tradeModels);
+            if (tradeModels.Any())
+            {
+                await _tradesCacheService.SaveTradeModelsAsync(tradeModels);
+            }
 
             TimeSpan? shortestCooldown = null;
             foreach (var shipStatus in shipStatuses)
@@ -131,6 +134,7 @@ public class ShipLoopsService(
             if (shortestCooldown is not null
                 && shortestCooldown.Value.TotalMilliseconds > 0)
             {
+                _logger.LogInformation("Sleeping for {duration}", shortestCooldown.Value.TotalMinutes);
                 await Task.Delay(shortestCooldown.Value);
             }
         }

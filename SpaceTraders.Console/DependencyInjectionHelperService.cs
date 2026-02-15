@@ -78,28 +78,30 @@ public static class DependencyInjectionHelperService
         services.AddSingleton<SurveyorShipJobService>();
 
         // Cache Services
-        // services.AddSingleton<IMongoCollectionFactory, MongoCollectionFactory>();
-        // services.AddSingleton<IAgentsCacheService, AgentsCacheMongoService>();
-        // services.AddSingleton<IShipStatusesCacheService, ShipStatusesCacheMongoService>();
-        // services.AddSingleton<ISurveysCacheService, SurveysCacheMongoService>();
-        // services.AddSingleton<ISystemsCacheService, SystemsCacheMongoService>();
-        // services.AddSingleton<IWaypointsCacheService, WaypointsCacheMongoService>();
-        // services.AddSingleton<ITransactionsCacheService, TransactionsCacheMongoService>();
+        services.AddSingleton<IMongoCollectionFactory, MongoCollectionFactory>();
+        services.AddSingleton<IAgentsCacheService, AgentsCacheMongoService>();
+        services.AddSingleton<IShipStatusesCacheService, ShipStatusesCacheMongoService>();
+        services.AddSingleton<ISurveysCacheService, SurveysCacheMongoService>();
+        services.AddSingleton<ISystemsCacheService, SystemsCacheMongoService>();
+        services.AddSingleton<IWaypointsCacheService, WaypointsCacheMongoService>();
+        services.AddSingleton<ITransactionsCacheService, TransactionsCacheMongoService>();
+        services.AddSingleton<ITradesCacheService, TradesCacheMongoService>();
+        services.AddSingleton<IPathsCacheService, PathsCacheMongoService>();
 
-        services.AddSingleton<IAgentsCacheService, AgentsCacheEfService>();
-        services.AddSingleton<IShipStatusesCacheService, ShipStatusesCacheEfService>();
-        services.AddSingleton<ISurveysCacheService, SurveysCacheEfService>();
-        services.AddSingleton<ISystemsCacheService, SystemsCacheEfService>();
-        services.AddSingleton<IWaypointsCacheService, WaypointsCacheEfService>();
-        services.AddSingleton<ITransactionsCacheService, TransactionsCacheEfServices>();
-        services.AddSingleton<ITradesCacheService, TradesCacheEfService>();
+        // services.AddSingleton<IAgentsCacheService, AgentsCacheEfService>();
+        // services.AddSingleton<IShipStatusesCacheService, ShipStatusesCacheEfService>();
+        // services.AddSingleton<ISurveysCacheService, SurveysCacheEfService>();
+        // services.AddSingleton<ISystemsCacheService, SystemsCacheEfService>();
+        // services.AddSingleton<IWaypointsCacheService, WaypointsCacheEfService>();
+        // services.AddSingleton<ITransactionsCacheService, TransactionsCacheEfServices>();
+        // services.AddSingleton<ITradesCacheService, TradesCacheEfService>();
 
-        var config = services.BuildServiceProvider().GetRequiredService<IConfiguration>();
-        var sqlServerConnectionString = config["SpaceTrader:SqlServerConnectionString"];
-        ArgumentNullException.ThrowIfNullOrWhiteSpace(sqlServerConnectionString);
-        services.AddDbContextPool<SpaceTraderDbContext>(options => 
-            options.UseSqlServer(sqlServerConnectionString));
-        var context = services.BuildServiceProvider().GetRequiredService<SpaceTraderDbContext>();
-        context.Database.EnsureCreated();
+        // var config = services.BuildServiceProvider().GetRequiredService<IConfiguration>();
+        // var sqlServerConnectionString = config["SpaceTrader:SqlServerConnectionString"];
+        // ArgumentNullException.ThrowIfNullOrWhiteSpace(sqlServerConnectionString);
+        // services.AddDbContextPool<SpaceTraderDbContext>(options => 
+        //     options.UseSqlServer(sqlServerConnectionString));
+        // var context = services.BuildServiceProvider().GetRequiredService<SpaceTraderDbContext>();
+        // context.Database.EnsureCreated();
     }
 }

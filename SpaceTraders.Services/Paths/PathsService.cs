@@ -5,10 +5,13 @@ using SpaceTraders.Services.Waypoints;
 
 namespace SpaceTraders.Services.Paths;
 
-public class PathsService(ISystemsService _systemsService) : IPathsService
+public class PathsService(
+    ISystemsService _systemsService,
+    IPathsCacheService _pathsCacheService
+) : IPathsService
 {
     public static IEnumerable<Waypoint>? GetPath(
-        Dictionary<Waypoint, (List<Waypoint>, bool, int, int)> waypoints,
+        Dictionary<Waypoint, ValueTuple<List<Waypoint>, bool, int, int>> waypoints,
         Waypoint origin,
         Waypoint destination,
         int fuelMax)
@@ -77,7 +80,7 @@ public class PathsService(ISystemsService _systemsService) : IPathsService
         return bestPath;
     }
 
-    public async Task<Dictionary<Waypoint, (List<Waypoint>, int)>> BuildSystemPath(
+    public async Task<Dictionary<Waypoint, ValueTuple<List<Waypoint>, int>>> BuildSystemPath(
         string originWaypoint,
         int fuelMax,
         int startingFuel)
@@ -158,14 +161,32 @@ public class PathsService(ISystemsService _systemsService) : IPathsService
     }
 
     public const int JUMP_COST = 1000;
-    public async Task<Dictionary<Waypoint, (List<Waypoint>, int)>> BuildSystemPathWithCost(
+
+    public async Task<Dictionary<Waypoint, ValueTuple<List<Waypoint>, int>>> BuildSystemPathWithCost(
         string originWaypoint,
         int fuelMax,
         int startingFuel)
     {
+        var systemPath = await _pathsCacheService.GetSystemPathWithCost(originWaypoint, fuelMax, startingFuel);
+        if (systemPath is not null) return systemPath;
+
         var systems = await _systemsService.GetAsync();
         var waypoints = systems.SelectMany(s => s.Waypoints).ToList();
         var currentWaypoint = waypoints.Single(w => w.Symbol == originWaypoint);
+
+        systemPath = await BuildSystemPathWithCost(waypoints, currentWaypoint, fuelMax, startingFuel);
+        await _pathsCacheService.SetSystemPathWithCost(currentWaypoint.Symbol, fuelMax, startingFuel, systemPath);
+        return systemPath;
+    }
+    
+    public async Task<Dictionary<Waypoint, ValueTuple<List<Waypoint>, int>>> BuildSystemPathWithCost(
+        List<Waypoint> waypoints,
+        Waypoint currentWaypoint,
+        int fuelMax,
+        int startingFuel)
+    {
+        // var systemPath = await _pathsCacheService.GetSystemPathWithCost(currentWaypoint.Symbol, fuelMax, startingFuel);
+        // if (systemPath is not null) return systemPath;
 
         var currentFuel = startingFuel;
         // Waypoint, (Path, IsSearched, TotalFuel, RemainingFuel, Cost)
@@ -223,11 +244,14 @@ public class PathsService(ISystemsService _systemsService) : IPathsService
             }
             bestPath[waypointToSearch.Key] = (waypointToSearch.Value.Item1, true, waypointToSearch.Value.Item3, waypointToSearch.Value.Item4, waypointToSearch.Value.Item5);
         }
-        return bestPath.ToDictionary(p => p.Key, p => (p.Value.Item1, p.Value.Item5));
+        var systemPath = bestPath.ToDictionary(p => p.Key, p => (p.Value.Item1, p.Value.Item5));
+
+        //await _pathsCacheService.SetSystemPathWithCost(currentWaypoint.Symbol, fuelMax, startingFuel, systemPath);
+        return systemPath;
     }
 
-    private readonly Dictionary<(string, int, int), Dictionary<Waypoint, (List<Waypoint>, int)>> SystemPathMemo = new ();
-    public async Task<Dictionary<Waypoint, (List<Waypoint>, int)>> BuildSystemPathWithCostWithMemo(
+    private readonly Dictionary<(string, int, int), Dictionary<Waypoint, ValueTuple<List<Waypoint>, int>>> SystemPathMemo = new ();
+    public async Task<Dictionary<Waypoint, ValueTuple<List<Waypoint>, int>>> BuildSystemPathWithCostWithMemo(
         string originWaypoint,
         int fuelMax,
         int startingFuel)

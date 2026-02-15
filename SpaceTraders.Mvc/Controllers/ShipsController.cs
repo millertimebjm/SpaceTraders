@@ -35,7 +35,7 @@ public class ShipsController : BaseController
         IAgentsService agentsService,
         IContractsService contractsService,
         ISurveysCacheService surveysCacheService,
-        ITransactionsService transactionsService,
+        ITransactionsCacheService transactionsService,
         IShipStatusesCacheService shipStatusesCacheService,
         ISystemsService systemsService) : base(agentsService)
     {

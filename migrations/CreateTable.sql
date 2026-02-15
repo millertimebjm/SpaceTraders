@@ -1,0 +1,99 @@
+SET ANSI_NULLS ON
+GO
+SET QUOTED_IDENTIFIER ON
+GO
+CREATE TABLE [dbo].[ShipStatus](
+	[Symbol] [nvarchar](450) NOT NULL,
+	[ShipStatusJson] [nvarchar](max) NOT NULL
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+ALTER TABLE [dbo].[ShipStatus] ADD  CONSTRAINT [PK_ShipStatus] PRIMARY KEY CLUSTERED 
+(
+	[Symbol] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ONLINE = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+
+
+
+CREATE TABLE [dbo].[STSystem](
+	[Symbol] [nvarchar](450) NOT NULL,
+	[Waypoints] [nvarchar](max) NOT NULL,
+	[STSystemJson] [nvarchar](max) NOT NULL
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+ALTER TABLE [dbo].[STSystem] ADD  CONSTRAINT [PK_STSystem] PRIMARY KEY CLUSTERED 
+(
+	[Symbol] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ONLINE = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+
+
+
+CREATE TABLE [dbo].[STTransaction](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[ShipSymbol] [nvarchar](450) NOT NULL,
+	[Timestamp] [datetime] NOT NULL,
+	[TransactionJson] [nvarchar](max) NULL
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+
+
+
+CREATE TABLE [dbo].[Survey](
+	[Signature] [nvarchar](450) NOT NULL,
+	[WaypointSymbol] [nvarchar](max) NOT NULL,
+	[SurveyJson] [nvarchar](max) NOT NULL
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+ALTER TABLE [dbo].[Survey] ADD  CONSTRAINT [PK_Survey] PRIMARY KEY CLUSTERED 
+(
+	[Signature] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ONLINE = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+
+
+
+CREATE TABLE [dbo].[Trade](
+	[Id] [int] IDENTITY(1,1) NOT NULL,
+	[TradesJson] [nvarchar](max) NOT NULL
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+
+
+
+CREATE TABLE [dbo].[Waypoint](
+	[Symbol] [nvarchar](450) NOT NULL,
+	[Type] [nvarchar](max) NOT NULL,
+	[Traits] [nvarchar](max) NOT NULL,
+	[SystemSymbol] [nvarchar](max) NOT NULL,
+	[WaypointJson] [nvarchar](max) NOT NULL
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+ALTER TABLE [dbo].[Waypoint] ADD  CONSTRAINT [PK_Waypoint] PRIMARY KEY CLUSTERED 
+(
+	[Symbol] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ONLINE = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO
+
+
+
+CREATE TABLE [dbo].[Agent](
+	[Symbol] [nvarchar](450) NOT NULL,
+	[AgentJson] [nvarchar](max) NOT NULL
+) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+SET ANSI_PADDING ON
+GO
+ALTER TABLE [dbo].[Agent] ADD  CONSTRAINT [PK_Agent] PRIMARY KEY CLUSTERED 
+(
+	[Symbol] ASC
+)WITH (STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ONLINE = OFF, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+GO

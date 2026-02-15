@@ -25,7 +25,7 @@ public class MarketplacesServicesTests
         var loggerSub = Substitute.For<ILogger<MarketplacesService>>();
         var pathsServiceSub = Substitute.For<IPathsService>();
         pathsServiceSub.BuildSystemPathWithCostWithMemo("A1-AB1-ABC1", 10, 10).Returns(
-            new Dictionary<Waypoint, (List<Waypoint>, int)>
+            new Dictionary<Waypoint, ValueTuple<List<Waypoint>, int>>
             {
                 [new Waypoint("A1-AB1-ABC2", "A1-AB1", "", 0, 0, null, null, null, null, null, null, false, null)] = ([], 1000),
                 [new Waypoint("A1-AB1-ABC3", "A1-AB1", "", 0, 0, null, null, null, null, null, null, false, null)] = ([], 10)

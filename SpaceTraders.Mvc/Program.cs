@@ -26,6 +26,7 @@ using SpaceTraders.Services.Surveys.Interfaces;
 using SpaceTraders.Services.Systems;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Trades;
+using SpaceTraders.Services.Trades.Interfaces;
 using SpaceTraders.Services.Transactions;
 using SpaceTraders.Services.Transactions.Interfaces;
 using SpaceTraders.Services.Waypoints;
@@ -60,13 +61,15 @@ builder.Services.AddScoped<ITradesService, TradesService>();
 builder.Services.AddScoped<IPathsService, PathsService>();
 
 // Cache Services
-// builder.Services.AddSingleton<IMongoCollectionFactory, MongoCollectionFactory>();
-// builder.Services.AddScoped<IWaypointsCacheService, WaypointsCacheMongoService>();
-// builder.Services.AddScoped<ISystemsCacheService, SystemsCacheMongoService>();
-// builder.Services.AddScoped<IShipStatusesCacheService, ShipStatusesCacheMongoService>();
-// builder.Services.AddScoped<ISurveysCacheService, SurveysCacheMongoService>();
-// builder.Services.AddScoped<IAgentsCacheService, AgentsCacheMongoService>();
-// builder.Services.AddScoped<ITransactionCacheService, TransactionCacheMongoService>();
+builder.Services.AddSingleton<IMongoCollectionFactory, MongoCollectionFactory>();
+builder.Services.AddScoped<IWaypointsCacheService, WaypointsCacheMongoService>();
+builder.Services.AddScoped<ISystemsCacheService, SystemsCacheMongoService>();
+builder.Services.AddScoped<IShipStatusesCacheService, ShipStatusesCacheMongoService>();
+builder.Services.AddScoped<ISurveysCacheService, SurveysCacheMongoService>();
+builder.Services.AddScoped<IAgentsCacheService, AgentsCacheMongoService>();
+builder.Services.AddScoped<ITransactionsCacheService, TransactionsCacheMongoService>();
+builder.Services.AddScoped<ITradesCacheService, TradesCacheMongoService>();
+builder.Services.AddScoped<IPathsCacheService, PathsCacheMongoService>();
 
 builder.Services.AddLogging();
 Log.Logger = new LoggerConfiguration()
@@ -118,16 +121,17 @@ ArgumentException.ThrowIfNullOrWhiteSpace(accountToken);
 var agentToken = builder.Configuration[$"{_appConfigSectionName}:{ConfigurationEnums.AgentToken.ToString()}"];
 ArgumentException.ThrowIfNullOrWhiteSpace(agentToken);
 
-var sqlServerConnectionString = builder.Configuration[$"{_appConfigSectionName}:SqlServerConnectionString"];
-ArgumentNullException.ThrowIfNullOrWhiteSpace(sqlServerConnectionString);
-builder.Services.AddDbContextPool<SpaceTraderDbContext>(options => 
-    options.UseSqlServer(sqlServerConnectionString));
-builder.Services.AddScoped<IAgentsCacheService, AgentsCacheEfService>();
-builder.Services.AddScoped<IShipStatusesCacheService, ShipStatusesCacheEfService>();
-builder.Services.AddScoped<ISurveysCacheService, SurveysCacheEfService>();
-builder.Services.AddScoped<ISystemsCacheService, SystemsCacheEfService>();
-builder.Services.AddScoped<IWaypointsCacheService, WaypointsCacheEfService>();
-builder.Services.AddScoped<ITransactionsCacheService, TransactionsCacheEfServices>();
+// var sqlServerConnectionString = builder.Configuration[$"{_appConfigSectionName}:SqlServerConnectionString"];
+// ArgumentNullException.ThrowIfNullOrWhiteSpace(sqlServerConnectionString);
+// builder.Services.AddDbContext<SpaceTraderDbContext>(options => 
+//     options.UseSqlServer(sqlServerConnectionString), ServiceLifetime.Transient, ServiceLifetime.Transient);
+// builder.Services.AddScoped<IAgentsCacheService, AgentsCacheEfService>();
+// builder.Services.AddScoped<IShipStatusesCacheService, ShipStatusesCacheEfService>();
+// builder.Services.AddScoped<ISurveysCacheService, SurveysCacheEfService>();
+// builder.Services.AddScoped<ISystemsCacheService, SystemsCacheEfService>();
+// builder.Services.AddScoped<IWaypointsCacheService, WaypointsCacheEfService>();
+// builder.Services.AddScoped<ITransactionsCacheService, TransactionsCacheEfServices>();
+// builder.Services.AddScoped<ITradesCacheService, TradesCacheEfService>();
 
 var app = builder.Build();
 

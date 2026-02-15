@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Marketplaces.Interfaces;
 using SpaceTraders.Services.Trades;
+using SpaceTraders.Services.Trades.Interfaces;
 
 namespace SpaceTraders.Mvc.Controllers;
 
@@ -10,16 +11,19 @@ public class MarketplacesController : BaseController
     private readonly ILogger<MarketplacesController> _logger;
     private readonly IMarketplacesService _marketplacesService;
     private readonly ITradesService _tradesService;
+    private readonly ITradesCacheService _tradesCacheService;
 
     public MarketplacesController(
         ILogger<MarketplacesController> logger,
         IMarketplacesService marketplacesService,
         IAgentsService agentsService,
-        ITradesService tradesService) : base(agentsService)
+        ITradesService tradesService,
+	ITradesCacheService tradesCacheService) : base(agentsService)
     {
         _logger = logger;
         _marketplacesService = marketplacesService;
         _tradesService = tradesService;
+	_tradesCacheService = tradesCacheService;
     }
 
     [Route("/marketplaces/{marketplaceWaypointSymbol}")]
@@ -44,7 +48,8 @@ public class MarketplacesController : BaseController
     [Route("/marketplaces/{systemSymbol}/trademodels")]
     public async Task<IActionResult> TradeModels(string systemSymbol)
     {
-        var modelTrades = await _tradesService.GetTradeModelsAsync();
+        var modelTrades = await _tradesCacheService.GetTradeModelsAsync();
+        await _tradesCacheService.SaveTradeModelsAsync(modelTrades);
         var orderedModelTrades = _tradesService.GetBestOrderedTrades(modelTrades);
         return View((systemSymbol, orderedModelTrades));
     }

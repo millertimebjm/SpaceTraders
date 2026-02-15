@@ -1,3 +1,6 @@
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Microsoft.EntityFrameworkCore;
 using MongoDB.Driver;
 using SpaceTraders.Models;
 using SpaceTraders.Services.EntityFrameworkCache;
@@ -10,7 +13,14 @@ public class TransactionsCacheEfServices(SpaceTraderDbContext _context) : ITrans
 {
     public async Task<IReadOnlyList<MarketTransaction>> GetAsync(string shipSymbol, int take = 200)
     {
-        throw new NotImplementedException();
+        return (await _context
+            .Transactions
+            .Where(t => t.ShipSymbol == shipSymbol)
+            .OrderByDescending(t => t.Timestamp)
+            .Take(take)
+            .ToListAsync())
+            .Select(t => JsonSerializer.Deserialize<MarketTransaction>(t.TransactionJson))
+            .ToList();
         // var filter = Builders<MarketTransaction>
         //     .Filter
         //     .Eq(w => w.ShipSymbol, shipSymbol);
@@ -28,7 +38,8 @@ public class TransactionsCacheEfServices(SpaceTraderDbContext _context) : ITrans
 
     public async Task SetAsync(MarketTransaction transaction)
     {
-        throw new NotImplementedException();
+        await _context.AddAsync(new TransactionCacheModel(0, transaction.ShipSymbol, transaction.Timestamp, JsonSerializer.Serialize(transaction)));
+        await _context.SaveChangesAsync();
         // var collection = _collectionFactory.GetCollection<MarketTransaction>();
         // await collection.InsertOneAsync(transaction);
     }

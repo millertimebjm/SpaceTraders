@@ -5,7 +5,7 @@ using SpaceTraders.Services.Transactions.Interfaces;
 
 namespace SpaceTraders.Services.Transactions;
 
-public class TransactionsCacheMongoServices(IMongoCollectionFactory _collectionFactory) : ITransactionsCacheService
+public class TransactionsCacheMongoService(IMongoCollectionFactory _collectionFactory) : ITransactionsCacheService
 {
     public async Task<IReadOnlyList<MarketTransaction>> GetAsync(string shipSymbol, int take = 200)
     {

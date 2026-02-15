@@ -4,17 +4,23 @@ namespace SpaceTraders.Services.Paths.Interfaces;
 
 public interface IPathsService
 {
-    Task<Dictionary<Waypoint, (List<Waypoint>, int)>> BuildSystemPath(
+    Task<Dictionary<Waypoint, ValueTuple<List<Waypoint>, int>>> BuildSystemPath(
         string originWaypoint,
         int fuelMax,
         int fuelCurrent);
 
-    Task<Dictionary<Waypoint, (List<Waypoint>, int)>> BuildSystemPathWithCost(
+    Task<Dictionary<Waypoint, ValueTuple<List<Waypoint>, int>>> BuildSystemPathWithCost(
         string originWaypoint,
         int fuelMax,
         int fuelCurrent);
 
-    Task<Dictionary<Waypoint, (List<Waypoint>, int)>> BuildSystemPathWithCostWithMemo(
+    Task<Dictionary<Waypoint, ValueTuple<List<Waypoint>, int>>> BuildSystemPathWithCost(
+        List<Waypoint> waypoints,
+        Waypoint currentWaypoint,
+        int fuelMax,
+        int startingFuel);
+
+    Task<Dictionary<Waypoint, ValueTuple<List<Waypoint>, int>>> BuildSystemPathWithCostWithMemo(
         string originWaypoint,
         int fuelMax,
         int startingFuel);
