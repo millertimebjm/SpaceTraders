@@ -185,8 +185,8 @@ public class PathsService(
         int fuelMax,
         int startingFuel)
     {
-        // var systemPath = await _pathsCacheService.GetSystemPathWithCost(currentWaypoint.Symbol, fuelMax, startingFuel);
-        // if (systemPath is not null) return systemPath;
+        var systemPath = await _pathsCacheService.GetSystemPathWithCost(currentWaypoint.Symbol, fuelMax, startingFuel);
+        if (systemPath is not null) return systemPath;
 
         var currentFuel = startingFuel;
         // Waypoint, (Path, IsSearched, TotalFuel, RemainingFuel, Cost)
@@ -244,9 +244,9 @@ public class PathsService(
             }
             bestPath[waypointToSearch.Key] = (waypointToSearch.Value.Item1, true, waypointToSearch.Value.Item3, waypointToSearch.Value.Item4, waypointToSearch.Value.Item5);
         }
-        var systemPath = bestPath.ToDictionary(p => p.Key, p => (p.Value.Item1, p.Value.Item5));
+        systemPath = bestPath.ToDictionary(p => p.Key, p => (p.Value.Item1, p.Value.Item5));
 
-        //await _pathsCacheService.SetSystemPathWithCost(currentWaypoint.Symbol, fuelMax, startingFuel, systemPath);
+        await _pathsCacheService.SetSystemPathWithCost(currentWaypoint.Symbol, fuelMax, startingFuel, systemPath);
         return systemPath;
     }
 

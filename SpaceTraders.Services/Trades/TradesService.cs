@@ -11,7 +11,8 @@ namespace SpaceTraders.Services.Trades;
 public class TradesService(
     IPathsService _pathsService,
     ITradesCacheService _tradesCacheService,
-    ISystemsService _systemsService
+    ISystemsService _systemsService,
+    IPathsCacheService _pathsCacheService
 ) : ITradesService
 {
     public async Task<IReadOnlyList<TradeModel>> BuildTradeModel(
@@ -77,26 +78,30 @@ public class TradesService(
         return tradeModels.ToList();
     }
 
-    public async Task<double> GetNavigationFactor(IReadOnlyList<Waypoint> waypoints, Waypoint exportWaypoint, string importSymbol, int fuelMax, int fuelCurrent)
+    public async Task<decimal> GetNavigationFactor(IReadOnlyList<Waypoint> waypoints, Waypoint exportWaypoint, string importSymbol, int fuelMax, int fuelCurrent)
     {
-        //var paths = await 
+        var navigationFactorCache = await _pathsCacheService.GetNavigationFactor(exportWaypoint.Symbol, importSymbol, fuelMax, fuelCurrent);
+        if (navigationFactorCache is not null) return navigationFactorCache.Value; 
+
         var paths = await _pathsService.BuildSystemPathWithCost(waypoints.ToList(), exportWaypoint, fuelMax, fuelCurrent);
         var path = paths.Single(p => p.Key.Symbol == importSymbol);
-        return NavigationFactor(path.Value.Item2);
- 
+        var navigationFactor = NavigationFactor(path.Value.Item2);
+
+        await _pathsCacheService.SetNavigationFactor(exportWaypoint.Symbol, importSymbol, fuelMax, fuelCurrent, navigationFactor);
+        return navigationFactor;
     }
 
     public IReadOnlyList<TradeModel> GetBestOrderedTrades(IReadOnlyList<TradeModel> trades)
     {
-        const double profitWeight = 0.5;
-        const double marginWeight = 0.5;
+        const decimal profitWeight = 0.5m;
+        const decimal marginWeight = 0.5m;
 
         var orderedTrades = trades
             .Where(t => t.ImportSellPrice > t.ExportBuyPrice)
             .OrderByDescending(t =>
             {
                 var profit = t.ImportSellPrice - t.ExportBuyPrice;
-                var marginPercent = (double)profit / t.ExportBuyPrice;
+                var marginPercent = (decimal)profit / t.ExportBuyPrice;
 
                 var score =
                     (profitWeight * profit) +
@@ -111,15 +116,15 @@ public class TradesService(
     public IReadOnlyList<TradeModel> GetBestOrderedTradesWithTravelCost(
         IReadOnlyList<TradeModel> trades)
     {
-        const double profitWeight = 0.5;
-        const double marginWeight = 0.5;
+        const decimal profitWeight = 0.5m;
+        const decimal marginWeight = 0.5m;
 
         var orderedTrades = trades
             .Where(t => t.ImportSellPrice > t.ExportBuyPrice)
             .OrderByDescending(t =>
             {
                 var profit = t.ImportSellPrice - t.ExportBuyPrice;
-                var marginPercent = (double)profit / t.ExportBuyPrice;
+                var marginPercent = (decimal)profit / t.ExportBuyPrice;
 
                 var score =
                     (profitWeight * profit) +
@@ -149,40 +154,40 @@ public class TradesService(
         return orderedTrades.FirstOrDefault();
     }
 
-    private static double SupplyFactor(SupplyEnum export, SupplyEnum import)
+    private static decimal SupplyFactor(SupplyEnum export, SupplyEnum import)
     {
         // Assign numeric values to supply levels (tune these based on game logic)
-        double exportMultiplier = export switch
+        decimal exportMultiplier = export switch
         {
             SupplyEnum.ABUNDANT => 5,
             SupplyEnum.HIGH => 3,
             SupplyEnum.MODERATE => 1,
-            SupplyEnum.LIMITED => 0.5,
-            SupplyEnum.SCARCE => 0.3,
+            SupplyEnum.LIMITED => 0.5m,
+            SupplyEnum.SCARCE => 0.3m,
             _ => 0
         };
 
-        double importMultiplier = import switch
+        decimal importMultiplier = import switch
         {
-            SupplyEnum.ABUNDANT => 0.3,
-            SupplyEnum.HIGH => 0.5,
-            SupplyEnum.MODERATE => 0.8,
-            SupplyEnum.LIMITED => 1.0,
-            SupplyEnum.SCARCE => 1.2,
+            SupplyEnum.ABUNDANT => 0.3m,
+            SupplyEnum.HIGH => 0.5m,
+            SupplyEnum.MODERATE => 0.8m,
+            SupplyEnum.LIMITED => 1.0m,
+            SupplyEnum.SCARCE => 1.2m,
             _ => 0
         };
 
         return exportMultiplier * importMultiplier;
     }
 
-    private static double NavigationFactor(int cost)
+    private static decimal NavigationFactor(int cost)
     {
         if (cost <= 400) return 1;
-        if (cost <= 800) return .85;
-        if (cost <= 1600) return .7;
-        if (cost <= 3200) return .55;
-        if (cost <= 6400) return .4;
-        return .25;
+        if (cost <= 800) return .85m;
+        if (cost <= 1600) return .7m;
+        if (cost <= 3200) return .55m;
+        if (cost <= 6400) return .4m;
+        return .25m;
     }
 
     public IReadOnlyList<SellModel> BuildSellModel(
@@ -225,7 +230,7 @@ public record TradeModel(
     int ImportSellPrice,
     SupplyEnum ImportSupplyEnum,
     int ImportTradeVolume,
-    double NavigationFactor
+    decimal NavigationFactor
 );
 
 public record SellModel(

@@ -134,7 +134,7 @@ public class ShipLoopsService(
             if (shortestCooldown is not null
                 && shortestCooldown.Value.TotalMilliseconds > 0)
             {
-                _logger.LogInformation("Sleeping for {duration}", shortestCooldown.Value.TotalMinutes);
+                _logger.LogInformation("Sleeping for {duration}", Math.Round(shortestCooldown.Value.TotalMinutes, 2));
                 await Task.Delay(shortestCooldown.Value);
             }
         }

@@ -44,6 +44,33 @@ public class PathsCacheMongoService(IMongoCollectionFactory _collectionFactory) 
         var collection = _collectionFactory.GetCollection<SystemPathCacheModel>();
         await collection.InsertManyAsync(systemPathList);
     }
+
+    public async Task<decimal?> GetNavigationFactor(string exportSymbol, string importSymbol, int fuelMax, int fuelCurrent)
+    {
+        var key = $"{exportSymbol}-{importSymbol}-{fuelMax}-{fuelCurrent}";
+        var filter = Builders<NavigationFactorModel>
+            .Filter
+            .Eq(w => w.Key, key);
+
+        var collection = _collectionFactory.GetCollection<NavigationFactorModel>();
+        var projection = Builders<NavigationFactorModel>.Projection.Exclude("_id");
+
+        var navigationFactorModel = await collection
+            .Find(filter)
+            .Project<NavigationFactorModel>(projection)
+            .FirstOrDefaultAsync();
+        return navigationFactorModel?.NavigationFactor;
+    }
+
+    public async Task SetNavigationFactor(string exportSymbol, string importSymbol, int fuelMax, int fuelCurrent, decimal navigationFactor)
+    {
+        var key = $"{exportSymbol}-{importSymbol}-{fuelMax}-{fuelCurrent}";
+        var navigationFactorModel = new NavigationFactorModel(key, navigationFactor);
+        var collection = _collectionFactory.GetCollection<NavigationFactorModel>();
+        await collection.InsertOneAsync(navigationFactorModel);
+    }
 }
 
 public record SystemPathCacheModel(string Key, Waypoint DestinationWaypoint, List<Waypoint> Waypoints, int FuelCost) {}
+
+public record NavigationFactorModel(string Key, decimal NavigationFactor);
