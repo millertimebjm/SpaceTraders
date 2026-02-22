@@ -1,4 +1,5 @@
 using DnsClient.Internal;
+using Microsoft.EntityFrameworkCore.Update.Internal;
 using Microsoft.Extensions.Logging;
 using SpaceTraders.Model.Exceptions;
 using SpaceTraders.Models;
@@ -38,20 +39,10 @@ public class ShipLoopsService(
             await _shipStatusesCacheService.SetAsync(shipStatus);
         }
 
-        var systemSymbols = ships.Select(s => s.Nav.SystemSymbol).ToList();
-        foreach (var systemSymbol in systemSymbols)
-        {
-            var systemCache = await _systemsService.GetAsync(systemSymbol);
-            foreach (var waypoint in systemCache.Waypoints.Where(w => w.SystemSymbol is null).ToList())
-            {
-                _logger.LogInformation("Refreshing Waypoint {waypoint}", waypoint.Symbol);
-                await _waypointsService.GetAsync(waypoint.Symbol, refresh: true);
-                await Task.Delay(500);
-            }
-        }
-
         while (true)
         {
+            await UpdateSystemWaypoints(ships);
+
             var shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
             shipStatuses = shipStatuses.Where(ss => ss.Ship.Registration.Role != ShipRegistrationRolesEnum.SATELLITE.ToString()).ToList();
             for (int i = 0; i < shipStatuses.Count(); i++)
@@ -59,6 +50,20 @@ public class ShipLoopsService(
                 var ship = shipStatuses[i].Ship;
                 var shipStatus = shipStatuses[i];
                 if (ShipsService.GetShipCooldown(ship) is not null) continue;
+                if (ship.Registration.Role != ShipRegistrationRolesEnum.COMMAND.ToString()
+                    && shipStatuses.Single(ss => ss.Ship.Registration.Role == ShipRegistrationRolesEnum.COMMAND.ToString()).Ship.ShipCommand?.ShipCommandEnum == ShipCommandEnum.Exploration)
+                {
+                    _logger.LogInformation("Waiting for Exploration to complete.");
+                    var cooldown = new Cooldown(ship.Symbol, 10 * 60, 10 * 60, DateTime.UtcNow.AddSeconds(10 * 60));
+                    ship = ship with { Cooldown = cooldown };
+                    shipStatus = shipStatus with { 
+                        Ship = ship,
+                        DateTimeOfLastInstruction = DateTime.UtcNow,
+                        LastMessage = "Waiting for Exploration"
+                    };
+                    shipStatuses[i] = shipStatus;
+                    continue;
+                }
 
                 if (ship.ShipCommand is null)
                 {
@@ -140,6 +145,24 @@ public class ShipLoopsService(
         }
     }
     
+    public async Task UpdateSystemWaypoints(IEnumerable<Ship> ships)
+    {
+        var systemSymbols = ships
+            .Select(s => s.Nav.SystemSymbol)
+            .Distinct()
+            .ToList();
+        foreach (var systemSymbol in systemSymbols)
+        {
+            var systemCache = await _systemsService.GetAsync(systemSymbol);
+            foreach (var waypoint in systemCache.Waypoints.Where(w => w.SystemSymbol is null).ToList())
+            {
+                _logger.LogInformation("Refreshing Waypoint {waypoint}", waypoint.Symbol);
+                await _waypointsService.GetAsync(waypoint.Symbol, refresh: true);
+                await Task.Delay(500);
+            }
+        }
+    }
+
     public static DateTime? MinimumDate(DateTime? d1, DateTime? d2)
     {
         if (d1 is null) return d2;

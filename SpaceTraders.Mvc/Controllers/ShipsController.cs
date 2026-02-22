@@ -225,15 +225,41 @@ public class ShipsController : BaseController
     public async Task<IActionResult> NavToggle(string shipSymbol)
     {
         var ship = await _shipsService.GetAsync(shipSymbol);
+        Nav nav;
         if (ship.Nav.FlightMode == NavFlightModeEnum.CRUISE.ToString())
         {
-            await _shipsService.NavToggleAsync(shipSymbol, NavFlightModeEnum.DRIFT.ToString());
+            nav = await _shipsService.NavToggleAsync(shipSymbol, NavFlightModeEnum.DRIFT.ToString());
         }
         else
         {
-            await _shipsService.NavToggleAsync(shipSymbol, NavFlightModeEnum.CRUISE.ToString());
+            nav = await _shipsService.NavToggleAsync(shipSymbol, NavFlightModeEnum.CRUISE.ToString());
         }
+        var shipStatuses = await _shipStatusesCacheService.GetAsync(shipSymbol);
+        shipStatuses = shipStatuses with { Ship = ship };
+        await _shipStatusesCacheService.SetAsync(shipStatuses);
 
+        return RedirectToRoute(new
+        {
+            controller = "Ships",
+            action = "Ship",
+            shipSymbol
+        });
+    }
+
+    [Route("/ships/{shipSymbol}/refresh")]
+    public async Task<IActionResult> Refresh(string shipSymbol)
+    {
+        var ship = await _shipsService.GetAsync(shipSymbol);
+        var shipStatus = await _shipStatusesCacheService.GetAsync(shipSymbol);
+        shipStatus = shipStatus with { Ship = ship };
+        await _shipStatusesCacheService.SetAsync(shipStatus);
+
+        var currentShipSymbol = SessionHelper.Get<string>(HttpContext, SessionEnum.CurrentShipSymbol);
+        if (currentShipSymbol == shipSymbol)
+        {
+            SessionHelper.Set(HttpContext, SessionEnum.CurrentWaypointSymbol, ship.Nav.WaypointSymbol);
+        }
+        
         return RedirectToRoute(new
         {
             controller = "Ships",

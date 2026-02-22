@@ -119,7 +119,7 @@ public static class HttpHelperService
         }
     }
 
-    internal static async Task<string> HttpPatchHelper(
+    internal static async Task<T> HttpPatchHelper<T>(
         string url,
         HttpClient httpClient,
         HttpContent? content,
@@ -131,7 +131,7 @@ public static class HttpHelperService
         try
         {
             response.EnsureSuccessStatusCode();
-            var data = await response.Content.ReadAsStringAsync();
+            var data = await response.Content.ReadFromJsonAsync<T>();
             if (data is null) throw new HttpRequestException("HttpPost returned null data.");
             return data;
         }

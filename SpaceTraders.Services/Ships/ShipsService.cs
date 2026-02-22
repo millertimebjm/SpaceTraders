@@ -5,8 +5,8 @@ using Microsoft.Extensions.Logging;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.HttpHelpers;
-using SpaceTraders.Services.MongoCache.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
+using SpaceTraders.Services.ShipStatuses.Interfaces;
 using SpaceTraders.Services.Waypoints;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
@@ -20,12 +20,14 @@ public class ShipsService : IShipsService
     private readonly string _token;
     private readonly ILogger<ShipsService> _logger;
     private readonly IWaypointsService _waypointsService;
+    private readonly IShipStatusesCacheService _shipStatusesCacheService;
 
     public ShipsService(
         HttpClient httpClient,
         IConfiguration configuration,
         ILogger<ShipsService> logger,
-        IWaypointsService waypointsService)
+        IWaypointsService waypointsService,
+        IShipStatusesCacheService shipStatusesCacheService)
     {
         _logger = logger;
         _httpClient = httpClient;
@@ -34,6 +36,7 @@ public class ShipsService : IShipsService
         _token = configuration[$"SpaceTrader:" + ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
         ArgumentException.ThrowIfNullOrWhiteSpace(_token);
         _waypointsService = waypointsService;
+        _shipStatusesCacheService = shipStatusesCacheService;
     }
 
     public async Task<IEnumerable<Ship>> GetAsync()
@@ -311,16 +314,17 @@ public class ShipsService : IShipsService
         // return waypoint;
     }
 
-    public async Task NavToggleAsync(string shipSymbol, string flightMode)
+    public async Task<Nav> NavToggleAsync(string shipSymbol, string flightMode)
     {
         var ship = await this.GetAsync(shipSymbol);
         if (ship.Nav.FlightMode != flightMode)
         {
-            await NavToggleAsync(ship, flightMode);
+            return await NavToggleAsync(ship, flightMode);
         }
+        return ship.Nav;
     }
 
-    public async Task NavToggleAsync(Ship ship, string flightMode)
+    public async Task<Nav> NavToggleAsync(Ship ship, string flightMode)
     {
         var url = new UriBuilder(_apiUrl)
         {
@@ -329,11 +333,13 @@ public class ShipsService : IShipsService
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);
         var content = JsonContent.Create(new { flightMode });
-        await HttpHelperService.HttpPatchHelper(
+        var data = await HttpHelperService.HttpPatchHelper<DataSingle<NavToggleResult>>(
             url.ToString(),
             _httpClient,
             content,
             _logger);
+        if (data.Datum is null) throw new HttpRequestException("Nav Toggle not retrieved");
+        return data.Datum.Nav;
     }
 
     public async Task<ChartWaypointResult> ChartAsync(string shipSymbol)
@@ -376,7 +382,10 @@ public class ShipsService : IShipsService
         {
             return;
         }
-        await NavToggleAsync(ship.Symbol, flightMode.ToString());
+        var nav = await NavToggleAsync(ship.Symbol, flightMode.ToString());
+        var shipStatuses = await _shipStatusesCacheService.GetAsync(ship.Symbol);
+        shipStatuses = shipStatuses with { Ship = ship };
+        await _shipStatusesCacheService.SetAsync(shipStatuses);
         await Task.Delay(500);
     }
 }
