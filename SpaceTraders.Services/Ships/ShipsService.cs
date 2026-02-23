@@ -1,10 +1,12 @@
 ﻿using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.HttpHelpers;
+using SpaceTraders.Services.ShipLogs.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.ShipStatuses.Interfaces;
 using SpaceTraders.Services.Waypoints;
@@ -21,13 +23,15 @@ public class ShipsService : IShipsService
     private readonly ILogger<ShipsService> _logger;
     private readonly IWaypointsService _waypointsService;
     private readonly IShipStatusesCacheService _shipStatusesCacheService;
+    private readonly IShipLogsService _shipLogsService;
 
     public ShipsService(
         HttpClient httpClient,
         IConfiguration configuration,
         ILogger<ShipsService> logger,
         IWaypointsService waypointsService,
-        IShipStatusesCacheService shipStatusesCacheService)
+        IShipStatusesCacheService shipStatusesCacheService,
+        IShipLogsService shipLogsService)
     {
         _logger = logger;
         _httpClient = httpClient;
@@ -37,6 +41,7 @@ public class ShipsService : IShipsService
         ArgumentException.ThrowIfNullOrWhiteSpace(_token);
         _waypointsService = waypointsService;
         _shipStatusesCacheService = shipStatusesCacheService;
+        _shipLogsService = shipLogsService;
     }
 
     public async Task<IEnumerable<Ship>> GetAsync()
@@ -147,7 +152,26 @@ public class ShipsService : IShipsService
             content,
             _logger);
         if (data is null) throw new HttpRequestException("Nav error");
+        AddNavigateLog(ship, data.Datum.Nav, data.Datum.Fuel);
         return (data.Datum.Nav, data.Datum.Fuel);
+    }
+
+    private void AddNavigateLog(Ship ship, Nav nav, Fuel fuel)
+    {
+        var shipLog = new ShipLog(
+            ship.Symbol,
+            ShipLogEnum.Navigate,
+            JsonSerializer.Serialize(new
+            {
+                OriginWaypointSymbol = nav.Route.Origin,
+                DestinationWaypointSymbol = nav.Route.Destination,
+                CurrentFuel = fuel.Current,
+                OriginalFuel = fuel.Current + fuel.Consumed.Amount,
+            }),
+            nav.Route.DepartureTime,
+            nav.Route.Arrival
+        );
+        _shipLogsService.AddAsync(shipLog);
     }
 
     public async Task<(Nav, Cooldown)> JumpAsync(string waypointSymbol, string shipSymbol)
@@ -165,7 +189,24 @@ public class ShipsService : IShipsService
             content,
             _logger);
         if (data.Datum is null) throw new HttpRequestException("Jump Nav not retrieved");
+        AddJumpLog(shipSymbol, data.Datum.Nav, data.Datum.Cooldown);
         return (data.Datum.Nav, data.Datum.Cooldown);
+    }
+
+    private void AddJumpLog(string shipSymbol, Nav nav, Cooldown cooldown)
+    {
+        var shipLog = new ShipLog(
+            shipSymbol,
+            ShipLogEnum.Jump,
+            JsonSerializer.Serialize(new
+            {
+                OriginWaypointSymbol = nav.Route.Origin,
+                DestinationWaypointSymbol = nav.Route.Destination,
+            }),
+            nav.Route.DepartureTime,
+            cooldown.Expiration
+        );
+        _shipLogsService.AddAsync(shipLog);
     }
 
     public async Task<ExtractionResult> ExtractAsync(string shipSymbol)

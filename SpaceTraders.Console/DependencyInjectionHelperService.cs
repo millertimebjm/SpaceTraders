@@ -21,6 +21,8 @@ using SpaceTraders.Services.ShipCommands;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.ShipJobs;
 using SpaceTraders.Services.ShipJobs.Interfaces;
+using SpaceTraders.Services.ShipLogs;
+using SpaceTraders.Services.ShipLogs.Interfaces;
 using SpaceTraders.Services.ShipLoops;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.ShipStatuses;
@@ -42,7 +44,7 @@ namespace SpaceTraders.Console;
 
 public static class DependencyInjectionHelperService
 {
-    public static async Task AddDependencies(IServiceCollection services)
+    public static void AddDependencies(IServiceCollection services)
     {
         services.AddHttpClient();
         services.AddSingleton<IAgentsService, AgentsService>();
@@ -62,6 +64,7 @@ public static class DependencyInjectionHelperService
         services.AddSingleton<IShipLoopsService, ShipLoopsService>();
         services.AddSingleton<IPathsService, PathsService>();
         services.AddSingleton<ITradesService, TradesService>();
+        services.AddSingleton<IShipLogsService, ShipLogsChannelService>();
 
         // Ship Commands
         services.AddSingleton<MiningToSellAnywhereCommand>();
@@ -87,6 +90,7 @@ public static class DependencyInjectionHelperService
         services.AddSingleton<ITransactionsCacheService, TransactionsCacheMongoService>();
         services.AddSingleton<ITradesCacheService, TradesCacheMongoService>();
         services.AddSingleton<IPathsCacheService, PathsCacheMongoService>();
+        services.AddSingleton<IShipLogsStorageService, ShipLogsStorageMongoService>();
 
         // services.AddSingleton<IAgentsCacheService, AgentsCacheEfService>();
         // services.AddSingleton<IShipStatusesCacheService, ShipStatusesCacheEfService>();
@@ -95,6 +99,7 @@ public static class DependencyInjectionHelperService
         // services.AddSingleton<IWaypointsCacheService, WaypointsCacheEfService>();
         // services.AddSingleton<ITransactionsCacheService, TransactionsCacheEfServices>();
         // services.AddSingleton<ITradesCacheService, TradesCacheEfService>();
+        // services.AddSingleton<IShipLogsService, ShipLogsEfService>();
 
         // var config = services.BuildServiceProvider().GetRequiredService<IConfiguration>();
         // var sqlServerConnectionString = config["SpaceTrader:SqlServerConnectionString"];

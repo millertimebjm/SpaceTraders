@@ -5,6 +5,7 @@ using Serilog;
 using SpaceTraders.Console;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Interfaces;
+using SpaceTraders.Services.ShipLogs.Interfaces;
 
 public class Program
 {
@@ -57,6 +58,17 @@ public class Program
             .Enrich.WithProperty("Application", "Companion.ChatFrontendBackend")
             .WriteTo.Console() // Default to console logging
             .CreateLogger();
+
+        _ = Task.Run(async () =>
+        {
+            using var timer = new PeriodicTimer(TimeSpan.FromMinutes(1)); 
+            var shipLogsService = serviceBuilder.Services.GetRequiredService<IShipLogsService>();
+
+            while (await timer.WaitForNextTickAsync(CancellationToken.None))
+            {
+                await shipLogsService.WriterAsync();
+            }
+        });
 
         var shipLoopsService = serviceBuilder.Services.GetRequiredService<IShipLoopsService>();
         await shipLoopsService.Run();
