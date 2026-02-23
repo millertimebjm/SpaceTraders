@@ -12,10 +12,10 @@ public class ShipLogsStorageMongoService(IMongoCollectionFactory _collectionFact
 
     public async Task<IEnumerable<ShipLog>> GetAsync(ShipLogsFilterModel model)
     {
-        var filter = Builders<ShipLog>.Filter.Eq(f => 1, 1);
+        var filter = Builders<ShipLog>.Filter.Empty;
 
         var shipSymbolFilter = filter;
-        if (string.IsNullOrWhiteSpace(model.ShipSymbol))
+        if (!string.IsNullOrWhiteSpace(model.ShipSymbol))
         {
             shipSymbolFilter = Builders<ShipLog>.Filter.Eq(s => s.ShipSymbol, model.ShipSymbol);
         }
@@ -26,7 +26,7 @@ public class ShipLogsStorageMongoService(IMongoCollectionFactory _collectionFact
             shipLogEnumFilter = Builders<ShipLog>.Filter.Eq(s => s.ShipLogEnum, model.ShipLogEnum);
         }
 
-        var shipLogSortFilter = Builders<ShipLog>.Sort.Descending("StartedDateTimeUtc");
+        var sort = Builders<ShipLog>.Sort.Descending(s => s.StartedDateTimeUtc);
         // if (model.ShipLogsFilterSortModel == ShipLogsFilterSortModel.DateDescending)
         // {
         //     shipLogSortFilter = Builders<ShipLog>.Sort.Descending("StartedDateTimeUtc");
@@ -34,20 +34,14 @@ public class ShipLogsStorageMongoService(IMongoCollectionFactory _collectionFact
 
         filter = shipSymbolFilter & shipLogEnumFilter;
 
-        var take = model.Take;
-        take ??= TAKE_DEFAULT;
-        if (take > 200) take = 200;
-        if (take < 1) take = 1;
-
-        var skip = model.Skip;
-        skip ??= SKIP_DEFAULT;
-        if (skip < 0) skip = 0;
+        int take = Math.Clamp(model.Take ?? TAKE_DEFAULT, 1, 200);
+        int skip = Math.Max(model.Skip ?? SKIP_DEFAULT, 0);
         
         var collection = _collectionFactory.GetCollection<ShipLog>();
         var projection = Builders<ShipLog>.Projection.Exclude("_id");
         return await collection
             .Find(filter)
-            .Sort(shipLogSortFilter)
+            .Sort(sort)
             .Skip(skip)
             .Limit(take)
             .Project<ShipLog>(projection)

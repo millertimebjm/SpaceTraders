@@ -16,6 +16,8 @@ using SpaceTraders.Services.MongoCache;
 using SpaceTraders.Services.MongoCache.Interfaces;
 using SpaceTraders.Services.Paths;
 using SpaceTraders.Services.Paths.Interfaces;
+using SpaceTraders.Services.ShipLogs;
+using SpaceTraders.Services.ShipLogs.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.ShipStatuses;
 using SpaceTraders.Services.ShipStatuses.Interfaces;
@@ -59,6 +61,8 @@ builder.Services.AddScoped<IJumpGatesServices, JumpGatesServices>();
 builder.Services.AddScoped<IConstructionsService, ConstructionsService>();
 builder.Services.AddScoped<ITradesService, TradesService>();
 builder.Services.AddScoped<IPathsService, PathsService>();
+builder.Services.AddSingleton<IShipLogsService, ShipLogsChannelService>();
+builder.Services.AddSingleton<IShipLogsStorageService, ShipLogsStorageMongoService>();
 
 // Cache Services
 builder.Services.AddSingleton<IMongoCollectionFactory, MongoCollectionFactory>();

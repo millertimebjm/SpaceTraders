@@ -8,4 +8,5 @@ public enum ShipLogEnum
     Navigate,
     Explore,
     SupplyConstruction,
+    Jump,
 }

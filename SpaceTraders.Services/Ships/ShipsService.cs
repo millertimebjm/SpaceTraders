@@ -163,8 +163,8 @@ public class ShipsService : IShipsService
             ShipLogEnum.Navigate,
             JsonSerializer.Serialize(new
             {
-                OriginWaypointSymbol = nav.Route.Origin,
-                DestinationWaypointSymbol = nav.Route.Destination,
+                OriginWaypointSymbol = nav.Route.Origin.Symbol,
+                DestinationWaypointSymbol = nav.Route.Destination.Symbol,
                 CurrentFuel = fuel.Current,
                 OriginalFuel = fuel.Current + fuel.Consumed.Amount,
             }),
@@ -200,8 +200,8 @@ public class ShipsService : IShipsService
             ShipLogEnum.Jump,
             JsonSerializer.Serialize(new
             {
-                OriginWaypointSymbol = nav.Route.Origin,
-                DestinationWaypointSymbol = nav.Route.Destination,
+                OriginWaypointSymbol = nav.Route.Origin.Symbol,
+                DestinationWaypointSymbol = nav.Route.Destination.Symbol,
             }),
             nav.Route.DepartureTime,
             cooldown.Expiration
