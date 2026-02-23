@@ -98,7 +98,7 @@ public class SupplyConstructionCommand(
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel };
-                return new ShipStatus(ship, $"NavigateToStartWaypoint {constructionWaypoint.Symbol}", DateTime.UtcNow);
+                return new ShipStatus(ship, $"Navigate To Start Waypoint {constructionWaypoint.Symbol}", DateTime.UtcNow);
             }
 
             (nav, fuel) = await _shipCommandsHelperService.NavigateToMarketplaceExport(ship, currentWaypoint, constructionWaypoint);

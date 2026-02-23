@@ -94,7 +94,7 @@ public class BuyAndSellCommandV2(
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown };
-                return new ShipStatus(ship, $"NavigateToMarketplaceRandomExport {ship.Nav.Route.Destination.Symbol}", DateTime.UtcNow);
+                return new ShipStatus(ship, $"Navigate To Marketplace Random Export {ship.Nav.Route.Destination.Symbol}", DateTime.UtcNow);
             }
         }
 
@@ -105,7 +105,7 @@ public class BuyAndSellCommandV2(
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown };
-                return new ShipStatus(ship, $"NavigateToMarketplaceImport {ship.Nav.Route.Destination.Symbol}", DateTime.UtcNow);
+                return new ShipStatus(ship, $"Navigate To Marketplace Import {ship.Nav.Route.Destination.Symbol}", DateTime.UtcNow);
             }
         }
 
@@ -121,7 +121,7 @@ public class BuyAndSellCommandV2(
             else if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown};
-                return new ShipStatus(ship, $"NavigateToMarketplaceRandomExport {nav.Route.Destination.Symbol}", DateTime.UtcNow);
+                return new ShipStatus(ship, $"Navigate To Marketplace Random Export {nav.Route.Destination.Symbol}", DateTime.UtcNow);
             }
         }
         
@@ -135,7 +135,7 @@ public class BuyAndSellCommandV2(
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown };
-                return new ShipStatus(ship, $"NavigateToMarketplaceImport {ship.Nav.Route.Destination.Symbol}", DateTime.UtcNow);
+                return new ShipStatus(ship, $"Navigate To Marketplace Import {ship.Nav.Route.Destination.Symbol}", DateTime.UtcNow);
             }
         }
 

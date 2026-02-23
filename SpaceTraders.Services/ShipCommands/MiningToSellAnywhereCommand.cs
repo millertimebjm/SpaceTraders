@@ -52,7 +52,7 @@ public class MiningToSellAnywhereCommand(
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel, Error = null };
-                return new ShipStatus(ship, $"NavigateToStartWaypoint {nav.WaypointSymbol}", DateTime.Now);
+                return new ShipStatus(ship, $"Navigate To Start Waypoint {nav.WaypointSymbol}", DateTime.Now);
             }
 
             (var cargo, Cooldown? cooldown) = await _shipCommandsHelperService.Extract(ship, currentWaypoint);
@@ -66,7 +66,7 @@ public class MiningToSellAnywhereCommand(
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown };
-                return new ShipStatus(ship, $"NavigateToMarketplaceImport {nav.Route.Destination.Symbol}", DateTime.UtcNow);
+                return new ShipStatus(ship, $"Navigate To Marketplace Import {nav.Route.Destination.Symbol}", DateTime.UtcNow);
             }
 
             var sellCargoResponse = await _shipCommandsHelperService.Sell(ship, currentWaypoint);
