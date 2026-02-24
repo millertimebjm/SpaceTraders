@@ -167,5 +167,6 @@ public class MarketplacesService : IMarketplacesService
             transaction.Timestamp,
             transaction.Timestamp
         );
+        await _shipLogsService.AddAsync(shipLog);
     }
 }
