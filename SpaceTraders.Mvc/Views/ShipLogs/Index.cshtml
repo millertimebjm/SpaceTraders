@@ -1,24 +1,33 @@
 @using SpaceTraders.Models
 @using System.Text.Json
 @using System.Dynamic
+@using SpaceTraders.Mvc.Services
 @model ShipLogsViewModel
 @{
     ViewData["Title"] = "Ship Logs";
 }
 
-@{
-    string shipSymbol = Model.FilterModel.ShipSymbol ?? "";
-}
-<h3><u>Ship Logs @shipSymbol</u></h6>
+<h3><u>Ship Logs</u></h6>
 
-<table class="table">
+<span>
+    <select class="select" onchange="reload(this.value)">
+        @foreach (var shipStatus in ShipSortHelper.ShipStatusSort(await Model.ShipStatusesTask))
+        {
+            var selected = shipStatus.Ship.Symbol == Model.FilterModel.ShipSymbol;
+            <option value="@shipStatus.Ship.Symbol" selected="@selected">@shipStatus.Ship.Symbol (@shipStatus.Ship.Registration.Role)</option>
+        }
+    </select>
+</span>
+
+<table class="table" style="font-size: 0.8em;">
     <thead>
         <tr>
-            <th>ShipSymbol</th>
+            <th style="width: 100px;">ShipSymbol</th>
             <th>Type</th>
             <th>Start</th>
             <th>End</th>
             <th>Data</th>
+            <th>@((await Model.ShipLogsTask).Count())</th>
         </tr>
     </thead>
     <tbody>
@@ -46,3 +55,9 @@
         }
     </tbody>
 </table>
+
+<script>
+    function reload(value) {
+        window.location.href = "/shiplogs/?shipsymbol=" + value;
+    }
+</script>

@@ -9,4 +9,6 @@ public enum ShipLogEnum
     Explore,
     SupplyConstruction,
     Jump,
+    Extract,
+    Jettison,
 }

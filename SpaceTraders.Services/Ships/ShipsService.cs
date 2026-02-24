@@ -193,7 +193,7 @@ public class ShipsService : IShipsService
         return (data.Datum.Nav, data.Datum.Cooldown);
     }
 
-    private void AddJumpLog(string shipSymbol, Nav nav, Cooldown cooldown)
+    private async Task AddJumpLog(string shipSymbol, Nav nav, Cooldown cooldown)
     {
         var shipLog = new ShipLog(
             shipSymbol,
@@ -206,7 +206,7 @@ public class ShipsService : IShipsService
             nav.Route.DepartureTime,
             cooldown.Expiration
         );
-        _shipLogsService.AddAsync(shipLog);
+        await _shipLogsService.AddAsync(shipLog);
     }
 
     public async Task<ExtractionResult> ExtractAsync(string shipSymbol)
@@ -223,7 +223,26 @@ public class ShipsService : IShipsService
             null,
             _logger);
         if (data.Datum is null) throw new HttpRequestException("Jump Nav not retrieved");
+        await AddExtractLog(shipSymbol, data.Datum.Cooldown, data.Datum.Extraction, data.Datum.Cargo);
         return data.Datum;
+    }
+
+    private async Task AddExtractLog(string shipSymbol, Cooldown cooldown, Extraction extraction, Cargo cargo)
+    {
+        var shipLog = new ShipLog(
+            shipSymbol,
+            ShipLogEnum.Extract,
+            JsonSerializer.Serialize(new
+            {
+                ExtractionYieldSymbol = extraction.Yield.Symbol,
+                ExtractionYieldAmount = extraction.Yield.Units,
+                CargoUnits = cargo.Units,
+                CargoCapacity = cargo.Capacity,
+            }),
+            cooldown.Expiration.AddSeconds(-cooldown.TotalSeconds),
+            cooldown.Expiration
+        );
+        await _shipLogsService.AddAsync(shipLog);
     }
 
     public async Task<ExtractionResult> ExtractAsync(string shipSymbol, Survey survey)
@@ -241,6 +260,7 @@ public class ShipsService : IShipsService
             content,
             _logger);
         if (data.Datum is null) throw new HttpRequestException("Survey not retrieved");
+        await AddExtractLog(shipSymbol, data.Datum.Cooldown, data.Datum.Extraction, data.Datum.Cargo);
         return data.Datum;
     }
 
@@ -258,7 +278,24 @@ public class ShipsService : IShipsService
             _httpClient,
             content,
             _logger);
+        await AddJettisonLog(shipSymbol, inventorySymbol, units);
         _logger.LogInformation("Data returned from Jettison: {response}", response);
+    }
+
+    private async Task AddJettisonLog(string shipSymbol, string inventorySymbol, int units)
+    {
+        var datetime = DateTime.Now;
+        var shipLog = new ShipLog(
+            shipSymbol,
+            ShipLogEnum.Jettison,
+            JsonSerializer.Serialize(new
+            {
+                InventorySymbol = inventorySymbol,
+                Units = units,
+            }),
+            datetime,
+            datetime
+        );
     }
 
     public static TimeSpan? GetShipCooldown(Ship ship)

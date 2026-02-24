@@ -17,7 +17,7 @@ public class ShipLogsStorageMongoService(IMongoCollectionFactory _collectionFact
         var shipSymbolFilter = filter;
         if (!string.IsNullOrWhiteSpace(model.ShipSymbol))
         {
-            shipSymbolFilter = Builders<ShipLog>.Filter.Eq(s => s.ShipSymbol, model.ShipSymbol);
+            shipSymbolFilter = Builders<ShipLog>.Filter.Eq(s => s.ShipSymbol, model.ShipSymbol.ToUpper());
         }
 
         var shipLogEnumFilter = filter;
