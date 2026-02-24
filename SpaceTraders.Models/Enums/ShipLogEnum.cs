@@ -11,4 +11,6 @@ public enum ShipLogEnum
     Jump,
     Extract,
     Jettison,
+    Refuel,
+    Chart,
 }

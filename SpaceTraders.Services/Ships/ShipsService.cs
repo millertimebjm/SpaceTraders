@@ -296,6 +296,7 @@ public class ShipsService : IShipsService
             datetime,
             datetime
         );
+        await _shipLogsService.AddAsync(shipLog);
     }
 
     public static TimeSpan? GetShipCooldown(Ship ship)
@@ -434,7 +435,24 @@ public class ShipsService : IShipsService
             null,
             _logger);
         if (data.Datum is null) throw new HttpRequestException("Scan not retrieved");
+        await AddChartShipLog(shipSymbol, data.Datum.Waypoint);
         return data.Datum;
+    }
+
+    private async Task AddChartShipLog(string shipSymbol, Waypoint waypoint)
+    {
+        var datetime = DateTime.UtcNow;
+        var shipLog = new ShipLog(
+            shipSymbol,
+            ShipLogEnum.Chart,
+            JsonSerializer.Serialize(new
+            {
+                Waypoint = waypoint.Symbol
+            }),
+            datetime,
+            datetime
+        );
+        await _shipLogsService.AddAsync(shipLog);
     }
 
     public async Task<ScanSystemsResult> ScanSystemsAsync(string shipSymbol)

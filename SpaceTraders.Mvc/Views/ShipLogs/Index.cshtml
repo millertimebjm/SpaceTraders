@@ -9,15 +9,19 @@
 
 <h3><u>Ship Logs</u></h6>
 
+<br/>
 <span>
     <select class="select" onchange="reload(this.value)">
+        <option value="" selected="@(string.IsNullOrWhiteSpace(Model.FilterModel.ShipSymbol))">Pick a Ship</option>
         @foreach (var shipStatus in ShipSortHelper.ShipStatusSort(await Model.ShipStatusesTask))
         {
             var selected = shipStatus.Ship.Symbol == Model.FilterModel.ShipSymbol;
             <option value="@shipStatus.Ship.Symbol" selected="@selected">@shipStatus.Ship.Symbol (@shipStatus.Ship.Registration.Role)</option>
         }
-    </select>
+    </select> <button onclick="reset()">Clear</button>
 </span>
+</br>
+</br>
 
 <table class="table" style="font-size: 0.8em;">
     <thead>
@@ -34,7 +38,7 @@
         @foreach (ShipLog shipLog in await Model.ShipLogsTask)
         {
             <tr>
-                <td>@shipLog.ShipSymbol</td>
+                <td><a href="/shiplogs/?shipsymbol=@shipLog.ShipSymbol">@shipLog.ShipSymbol</a></td>
                 <td>@shipLog.ShipLogEnum</td>
                 <td>@shipLog.StartedDateTimeUtc</td>
                 <td>@shipLog.CompletedDateTimeUtc</td>
@@ -59,5 +63,8 @@
 <script>
     function reload(value) {
         window.location.href = "/shiplogs/?shipsymbol=" + value;
+    }
+    function reset() {
+        window.location.href = "/shiplogs/";
     }
 </script>
