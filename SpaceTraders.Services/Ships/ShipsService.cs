@@ -133,11 +133,13 @@ public class ShipsService : IShipsService
         var distance = WaypointsService.CalculateDistance(waypoint.X, currentWaypoint.X, waypoint.Y, currentWaypoint.Y);
         if (distance > ship.Fuel.Current)
         {
-            await this.SwitchShipFlightMode(ship, NavFlightModeEnum.DRIFT);
+            var flightMode = NavFlightModeEnum.DRIFT;
+            await this.SwitchShipFlightMode(ship, flightMode);
         }
         else
         {
-            await this.SwitchShipFlightMode(ship, NavFlightModeEnum.CRUISE);
+            var flightMode = NavFlightModeEnum.CRUISE;
+            await this.SwitchShipFlightMode(ship, flightMode);
         }
         var url = new UriBuilder(_apiUrl)
         {
@@ -152,11 +154,27 @@ public class ShipsService : IShipsService
             content,
             _logger);
         if (data is null) throw new HttpRequestException("Nav error");
-        AddNavigateLog(ship, data.Datum.Nav, data.Datum.Fuel);
+        await AddNavigateLog(ship, data.Datum.Nav, data.Datum.Fuel);
         return (data.Datum.Nav, data.Datum.Fuel);
     }
 
-    private void AddNavigateLog(Ship ship, Nav nav, Fuel fuel)
+    private async Task AddFlightModeShipLog(string symbol, NavFlightModeEnum flightMode)
+    {
+        var datetime = DateTime.UtcNow;
+        var shipLog = new ShipLog(
+            symbol,
+            ShipLogEnum.Navigate,
+            JsonSerializer.Serialize(new
+            {
+                FlightMode = flightMode,
+            }),
+            datetime,
+            datetime
+        );
+        await _shipLogsService.AddAsync(shipLog);
+    }
+
+    private async Task AddNavigateLog(Ship ship, Nav nav, Fuel fuel)
     {
         var shipLog = new ShipLog(
             ship.Symbol,
@@ -171,7 +189,7 @@ public class ShipsService : IShipsService
             nav.Route.DepartureTime,
             nav.Route.Arrival
         );
-        _shipLogsService.AddAsync(shipLog);
+        await _shipLogsService.AddAsync(shipLog);
     }
 
     public async Task<(Nav, Cooldown)> JumpAsync(string waypointSymbol, string shipSymbol)
@@ -189,7 +207,7 @@ public class ShipsService : IShipsService
             content,
             _logger);
         if (data.Datum is null) throw new HttpRequestException("Jump Nav not retrieved");
-        AddJumpLog(shipSymbol, data.Datum.Nav, data.Datum.Cooldown);
+        await AddJumpLog(shipSymbol, data.Datum.Nav, data.Datum.Cooldown);
         return (data.Datum.Nav, data.Datum.Cooldown);
     }
 
@@ -284,7 +302,7 @@ public class ShipsService : IShipsService
 
     private async Task AddJettisonLog(string shipSymbol, string inventorySymbol, int units)
     {
-        var datetime = DateTime.Now;
+        var datetime = DateTime.UtcNow;
         var shipLog = new ShipLog(
             shipSymbol,
             ShipLogEnum.Jettison,
@@ -325,9 +343,25 @@ public class ShipsService : IShipsService
             _httpClient,
             null,
             _logger);
-        if (data is null) throw new HttpRequestException("Survey not retrieved");
-        if (data.Datum is null) throw new HttpRequestException("Survey not retrieved");
+        if (data?.Datum is null) throw new HttpRequestException("Survey not retrieved");
+        await AddSurveyShipLog(shipSymbol, data.Datum.Surveys, data.Datum.Cooldown);
         return data.Datum;
+    }
+
+    private async Task AddSurveyShipLog(string shipSymbol, IEnumerable<Survey> surveys, Cooldown cooldown)
+    {
+        var datetime = DateTime.Now;
+        var shipLog = new ShipLog(
+            shipSymbol,
+            ShipLogEnum.Survey,
+            JsonSerializer.Serialize(new
+            {
+                Survey = string.Join(",", surveys.Select(s => s.Symbol))
+            }),
+            cooldown.Expiration.AddSeconds(-cooldown.TotalSeconds),
+            cooldown.Expiration
+        );
+        await _shipLogsService.AddAsync(shipLog);
     }
 
     public async Task<ScanWaypointsResult> ScanWaypointsAsync(string shipSymbol)
@@ -393,31 +427,33 @@ public class ShipsService : IShipsService
         // return waypoint;
     }
 
-    public async Task<Nav> NavToggleAsync(string shipSymbol, string flightMode)
+    public async Task<Nav> NavToggleAsync(string shipSymbol, NavFlightModeEnum flightMode)
     {
         var ship = await this.GetAsync(shipSymbol);
-        if (ship.Nav.FlightMode != flightMode)
+        if (ship.Nav.FlightMode != flightMode.ToString())
         {
             return await NavToggleAsync(ship, flightMode);
         }
         return ship.Nav;
     }
 
-    public async Task<Nav> NavToggleAsync(Ship ship, string flightMode)
+    private async Task<Nav> NavToggleAsync(Ship ship, NavFlightModeEnum flightMode)
     {
+        var flightModeString = flightMode.ToString();
         var url = new UriBuilder(_apiUrl)
         {
             Path = $"/my/ships/{ship.Symbol}/nav"
         };
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);
-        var content = JsonContent.Create(new { flightMode });
+        var content = JsonContent.Create(new { flightMode = flightModeString });
         var data = await HttpHelperService.HttpPatchHelper<DataSingle<NavToggleResult>>(
             url.ToString(),
             _httpClient,
             content,
             _logger);
         if (data.Datum is null) throw new HttpRequestException("Nav Toggle not retrieved");
+        await AddFlightModeShipLog(ship.Symbol, flightMode);
         return data.Datum.Nav;
     }
 
@@ -478,7 +514,7 @@ public class ShipsService : IShipsService
         {
             return;
         }
-        var nav = await NavToggleAsync(ship.Symbol, flightMode.ToString());
+        var nav = await NavToggleAsync(ship.Symbol, flightMode);
         var shipStatuses = await _shipStatusesCacheService.GetAsync(ship.Symbol);
         shipStatuses = shipStatuses with { Ship = ship };
         await _shipStatusesCacheService.SetAsync(shipStatuses);

@@ -6,11 +6,11 @@ public enum ShipLogEnum
     BuyShip,
     SellCommodity,
     Navigate,
-    Explore,
     SupplyConstruction,
     Jump,
     Extract,
     Jettison,
     Refuel,
     Chart,
+    Survey,
 }

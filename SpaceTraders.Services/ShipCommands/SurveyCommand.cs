@@ -60,7 +60,7 @@ public class SurveyCommand(
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel };
-                return new ShipStatus(ship, $"NavigateToSurvey {nav.WaypointSymbol}", DateTime.UtcNow);
+                return new ShipStatus(ship, $"Navigate To Survey {nav.WaypointSymbol}", DateTime.UtcNow);
             }
 
             var cooldown = await _shipCommandsHelperService.Survey(ship);

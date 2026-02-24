@@ -13,42 +13,43 @@ public class CommandShipJobService(
     IWaypointsService _waypointsService
 ) : IShipJobService
 {
+    private const long PURCHASE_SHIP_CREDITS_THRESHOLD = 800_000;
+
+    private const int MINING_DRONE_MAX_SHIP_COUNT = 9;
+
+    private const int LIGHT_HAULER_MAX_SHIP_COUNT = 5;
+
+    private const int SURVEY_MAX_SHIP_COUNT = 1;
+
     public async Task<ShipCommand?> Get(
         IEnumerable<Ship> ships,
         Ship ship)
     {
         var systems = await _systemsService.GetAsync();
         var waypoints = systems.SelectMany(s => s.Waypoints).ToList();
-        var currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol);
-        var unchartedWaypoints =
-            waypoints
-                .Where(w => !WaypointsService.IsVisited(w) || w.Traits?.Any(t => t.Symbol == WaypointTraitsEnum.UNCHARTED.ToString()) == true)
-                .Select(w => w.Symbol)
-                .ToList();
-        if (unchartedWaypoints.Any())
+        
+        if (IsExplorationAvailableInCurrentSystem(ship.Nav.SystemSymbol, waypoints))
         {
             return new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration);
         }
 
-        var jumpGate = waypoints.SingleOrDefault(w =>
-            w.Type == WaypointTypesEnum.JUMP_GATE.ToString()
-            && w.JumpGate is not null
-            && !w.IsUnderConstruction);
-        if (jumpGate is not null)
+        if (await IsExplorationAvailableOutsideCurrentSystem(ship.Nav.SystemSymbol, waypoints))
         {
-            var jumpSystems = jumpGate.JumpGate.Connections;
-            foreach (var jumpSystem in jumpSystems)
-            {
-                var cacheSystem = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(jumpSystem));
-                if (cacheSystem.Waypoints.Any(w => w.Traits is null || !w.Traits.Any()))
-                {
-                    return new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration);
-                }
-            }
+            return new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration);
         }
 
+        if (await IsPurchaseShip(ships))
+        {
+            return new ShipCommand(ship.Symbol, ShipCommandEnum.PurchaseShip);
+        }
+
+        return new ShipCommand(ship.Symbol, ShipCommandEnum.BuyToSell);
+    }
+
+    private async Task<bool> IsPurchaseShip(IEnumerable<Ship> ships)
+    {
         var agent = await _agentsService.GetAsync();
-        if (agent.Credits > 800_000)
+        if (agent.Credits > PURCHASE_SHIP_CREDITS_THRESHOLD)
         {
             var shipTypesInSystem = ships
                 //.Where(s => s.Nav.SystemSymbol == ship.Nav.SystemSymbol)
@@ -56,14 +57,53 @@ public class CommandShipJobService(
             var miningDrones = shipTypesInSystem.SingleOrDefault(st => st.Key == ShipRegistrationRolesEnum.EXCAVATOR.ToString())?.Count() ?? 0;
             var lightHaulers = shipTypesInSystem.SingleOrDefault(st => st.Key == ShipRegistrationRolesEnum.HAULER.ToString())?.Count() ?? 0;
             var surveyShips = shipTypesInSystem.SingleOrDefault(st => st.Key == ShipRegistrationRolesEnum.SURVEYOR.ToString())?.Count() ?? 0;
-            if (miningDrones < 9
-                || lightHaulers < 5
-                || surveyShips == 0)
+            if (miningDrones < MINING_DRONE_MAX_SHIP_COUNT
+                || lightHaulers < LIGHT_HAULER_MAX_SHIP_COUNT
+                || surveyShips < SURVEY_MAX_SHIP_COUNT)
             {
-                return new ShipCommand(ship.Symbol, ShipCommandEnum.PurchaseShip);
+                return true;
             }
         }
+        return false;
+    }
 
-        return new ShipCommand(ship.Symbol, ShipCommandEnum.BuyToSell);
+    private async Task<bool> IsExplorationAvailableOutsideCurrentSystem(string systemSymbol, List<Waypoint> waypoints)
+    {
+        var jumpGate = waypoints.SingleOrDefault(w =>
+            WaypointsService.ExtractSystemFromWaypoint(w.Symbol) == systemSymbol
+            && w.Type == WaypointTypesEnum.JUMP_GATE.ToString()
+            && w.JumpGate is not null
+            && !w.IsUnderConstruction);
+        if (jumpGate is not null)
+        {
+            var jumpSystems = jumpGate.JumpGate.Connections;
+            foreach (var jumpSystem in jumpSystems)
+            {
+                var jumpGateConnection = waypoints.SingleOrDefault(w => 
+                    WaypointsService.ExtractSystemFromWaypoint(w.Symbol) == WaypointsService.ExtractSystemFromWaypoint(jumpSystem)
+                    && w.Type == WaypointTypesEnum.JUMP_GATE.ToString()
+                    && w.JumpGate is not null
+                    && !w.IsUnderConstruction);
+                if (jumpGateConnection is not null)
+                {
+                    var cacheSystem = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(jumpSystem));
+                    if (cacheSystem.Waypoints.Any(w => w.Traits is null || !w.Traits.Any()))
+                    {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    private static bool IsExplorationAvailableInCurrentSystem(string systemSymbol, List<Waypoint> waypoints)
+    {
+        var unchartedWaypoints =
+            waypoints
+                .Where(w => !WaypointsService.IsVisited(w) || w.Traits?.Any(t => t.Symbol == WaypointTraitsEnum.UNCHARTED.ToString()) == true)
+                .Select(w => w.Symbol)
+                .ToList();
+        return unchartedWaypoints.Any(uw => uw.Contains(systemSymbol));
     }
 }

@@ -228,11 +228,11 @@ public class ShipsController : BaseController
         Nav nav;
         if (ship.Nav.FlightMode == NavFlightModeEnum.CRUISE.ToString())
         {
-            nav = await _shipsService.NavToggleAsync(shipSymbol, NavFlightModeEnum.DRIFT.ToString());
+            nav = await _shipsService.NavToggleAsync(shipSymbol, NavFlightModeEnum.DRIFT);
         }
         else
         {
-            nav = await _shipsService.NavToggleAsync(shipSymbol, NavFlightModeEnum.CRUISE.ToString());
+            nav = await _shipsService.NavToggleAsync(shipSymbol, NavFlightModeEnum.CRUISE);
         }
         var shipStatuses = await _shipStatusesCacheService.GetAsync(shipSymbol);
         shipStatuses = shipStatuses with { Ship = ship };
