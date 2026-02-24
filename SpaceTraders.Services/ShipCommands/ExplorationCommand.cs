@@ -39,7 +39,7 @@ public class ExplorationCommand(
             }
         }
         if (ShipsService.GetShipCooldown(ship) is not null) return shipStatus;
-        await Task.Delay(1000);
+        await Task.Delay(500);
         currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol, refresh: true);
 
         while (true)

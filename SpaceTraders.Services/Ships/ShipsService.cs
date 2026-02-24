@@ -163,10 +163,10 @@ public class ShipsService : IShipsService
         var datetime = DateTime.UtcNow;
         var shipLog = new ShipLog(
             symbol,
-            ShipLogEnum.Navigate,
+            ShipLogEnum.FlightMode,
             JsonSerializer.Serialize(new
             {
-                FlightMode = flightMode,
+                FlightMode = flightMode.ToString(),
             }),
             datetime,
             datetime
@@ -245,7 +245,12 @@ public class ShipsService : IShipsService
         return data.Datum;
     }
 
-    private async Task AddExtractLog(string shipSymbol, Cooldown cooldown, Extraction extraction, Cargo cargo)
+    private async Task AddExtractLog(
+        string shipSymbol, 
+        Cooldown cooldown, 
+        Extraction extraction, 
+        Cargo cargo,
+        Survey survey = null)
     {
         var shipLog = new ShipLog(
             shipSymbol,
@@ -256,6 +261,7 @@ public class ShipsService : IShipsService
                 ExtractionYieldAmount = extraction.Yield.Units,
                 CargoUnits = cargo.Units,
                 CargoCapacity = cargo.Capacity,
+                SurveySymbol = survey?.Symbol ?? "",
             }),
             cooldown.Expiration.AddSeconds(-cooldown.TotalSeconds),
             cooldown.Expiration
@@ -278,7 +284,7 @@ public class ShipsService : IShipsService
             content,
             _logger);
         if (data.Datum is null) throw new HttpRequestException("Survey not retrieved");
-        await AddExtractLog(shipSymbol, data.Datum.Cooldown, data.Datum.Extraction, data.Datum.Cargo);
+        await AddExtractLog(shipSymbol, data.Datum.Cooldown, data.Datum.Extraction, data.Datum.Cargo, survey);
         return data.Datum;
     }
 
@@ -350,7 +356,7 @@ public class ShipsService : IShipsService
 
     private async Task AddSurveyShipLog(string shipSymbol, IEnumerable<Survey> surveys, Cooldown cooldown)
     {
-        var datetime = DateTime.Now;
+        var datetime = DateTime.UtcNow;
         var shipLog = new ShipLog(
             shipSymbol,
             ShipLogEnum.Survey,

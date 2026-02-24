@@ -52,7 +52,7 @@ public class MiningToSellAnywhereCommand(
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel, Error = null };
-                return new ShipStatus(ship, $"Navigate To Start Waypoint {nav.WaypointSymbol}", DateTime.Now);
+                return new ShipStatus(ship, $"Navigate To Start Waypoint {nav.WaypointSymbol}", DateTime.UtcNow);
             }
 
             (var cargo, Cooldown? cooldown) = await _shipCommandsHelperService.Extract(ship, currentWaypoint);

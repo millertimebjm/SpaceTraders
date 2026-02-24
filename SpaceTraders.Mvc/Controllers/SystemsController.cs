@@ -135,7 +135,7 @@ public class SystemsController : BaseController
                 }
             }
 
-            // Wait one second for 429-Rate Limit issues
+            // Wait for 429-Rate Limit issues
             await Task.Delay(2000);
             index++;
         }

@@ -49,7 +49,7 @@ public class BuyAndSellCommand(
 
             // var paths = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
 
-            await Task.Delay(1000);
+            await Task.Delay(500);
 
             var refuelResponse = await _shipCommandsHelperService.Refuel(ship, currentWaypoint);
             if (refuelResponse is not null)

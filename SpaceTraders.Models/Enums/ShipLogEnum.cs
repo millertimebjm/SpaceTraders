@@ -13,4 +13,5 @@ public enum ShipLogEnum
     Refuel,
     Chart,
     Survey,
+    FlightMode,
 }
