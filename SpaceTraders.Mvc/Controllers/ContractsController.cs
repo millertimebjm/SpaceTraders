@@ -3,28 +3,19 @@ using SpaceTraders.Models;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Contracts.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
+using SpaceTraders.Services.ShipStatuses.Interfaces;
+using SpaceTraders.Services.Systems.Interfaces;
 
 namespace SpaceTraders.Mvc.Controllers;
 
-public class ContractsController : BaseController
+public class ContractsController(
+    IContractsService _contractsService,
+    IShipsService _shipsService,
+    IAgentsService _agentsService,
+    IShipStatusesCacheService _shipStatusesCacheService,
+    ISystemsService _systemsService
+) : BaseController(_agentsService, _shipStatusesCacheService, _systemsService)
 {
-    private readonly ILogger<ContractsController> _logger;
-    private readonly IContractsService _contractsService;
-    private readonly IShipsService _shipsService;
-    private readonly IAgentsService _agentsService;
-
-    public ContractsController(
-        ILogger<ContractsController> logger,
-        IContractsService contractsService,
-        IShipsService shipsService,
-        IAgentsService agentsService) : base(agentsService)
-    {
-        _logger = logger;
-        _contractsService = contractsService;
-        _shipsService = shipsService;
-        _agentsService = agentsService;
-    }
-
     public async Task<IActionResult> Index()
     {
         var contracts = await _contractsService.GetAsync();

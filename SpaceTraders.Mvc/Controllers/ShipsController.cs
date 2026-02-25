@@ -14,43 +14,18 @@ using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Mvc.Controllers;
 
-public class ShipsController : BaseController
+public class ShipsController(
+    IShipsService _shipsService,
+    IWaypointsService _waypointsService,
+    IMarketplacesService _marketplacesService,
+    IAgentsService _agentsService,
+    IContractsService _contractsService,
+    ISurveysCacheService _surveysCacheService,
+    ITransactionsCacheService _transactionsService,
+    IShipStatusesCacheService _shipStatusesCacheService,
+    ISystemsService _systemsService
+) : BaseController(_agentsService, _shipStatusesCacheService, _systemsService)
 {
-    private readonly ILogger<ShipsController> _logger;
-    private readonly IShipsService _shipsService;
-    private readonly IWaypointsService _waypointsService;
-    private readonly IMarketplacesService _marketplacesService;
-    private readonly IAgentsService _agentsService;
-    private readonly IContractsService _contractsService;
-    private readonly ISurveysCacheService _surveyCacheService;
-    private readonly ITransactionsCacheService _transactionsService;
-    private readonly IShipStatusesCacheService _shipStatusesCacheService;
-    private readonly ISystemsService _systemsService;
-
-    public ShipsController(
-        ILogger<ShipsController> logger,
-        IShipsService shipsService,
-        IWaypointsService waypointsService,
-        IMarketplacesService marketplacesService,
-        IAgentsService agentsService,
-        IContractsService contractsService,
-        ISurveysCacheService surveysCacheService,
-        ITransactionsCacheService transactionsService,
-        IShipStatusesCacheService shipStatusesCacheService,
-        ISystemsService systemsService) : base(agentsService)
-    {
-        _logger = logger;
-        _shipsService = shipsService;
-        _waypointsService = waypointsService;
-        _marketplacesService = marketplacesService;
-        _agentsService = agentsService;
-        _contractsService = contractsService;
-        _surveyCacheService = surveysCacheService;
-        _transactionsService = transactionsService;
-        _shipStatusesCacheService = shipStatusesCacheService;
-        _systemsService = systemsService;
-    }
-
     [Route("/ships")]
     public async Task<IActionResult> Index()
     {
@@ -117,7 +92,7 @@ public class ShipsController : BaseController
         var (_, surveys) = await _shipsService.SurveyAsync(shipSymbol);
         foreach (var survey in surveys)
         {
-            await _surveyCacheService.SetAsync(survey);
+            await _surveysCacheService.SetAsync(survey);
         }
         return Redirect($"/ships/{shipSymbol}");
     }

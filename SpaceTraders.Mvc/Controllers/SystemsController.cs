@@ -4,41 +4,25 @@ using SpaceTraders.Models;
 using SpaceTraders.Mvc.Models;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
+using SpaceTraders.Services.ShipStatuses.Interfaces;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Waypoints;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Mvc.Controllers;
 
-public class SystemsController : BaseController
+public class SystemsController(
+    ILogger<SystemsController> _logger,
+    ISystemsService _systemsService,
+    IWaypointsService _waypointsService,
+    IAgentsService _agentsService,
+    ISystemsApiService _systemsApiService,
+    IShipsService _shipsService,
+    IWaypointsApiService _waypointsApiService,
+    ISystemsCacheService _systemsCacheService,
+    IShipStatusesCacheService _shipStatusesCacheService
+) : BaseController(_agentsService, _shipStatusesCacheService, _systemsService)
 {
-    private readonly ILogger<SystemsController> _logger;
-    private readonly ISystemsService _systemsService;
-    private readonly IWaypointsService _waypointsService;
-    private readonly ISystemsApiService _systemsApiService;
-    private readonly IShipsService _shipsService;
-    private readonly IWaypointsApiService _waypointsApiService;
-    private readonly ISystemsCacheService _systemsCacheService;
-
-    public SystemsController(
-        ILogger<SystemsController> logger,
-        ISystemsService systemsService,
-        IWaypointsService waypointsService,
-        IAgentsService agentsService,
-        ISystemsApiService systemsApiService,
-        IShipsService shipsService,
-        IWaypointsApiService waypointsApiService,
-        ISystemsCacheService systemsCacheService) : base(agentsService)
-    {
-        _logger = logger;
-        _systemsService = systemsService;
-        _waypointsService = waypointsService;
-        _systemsApiService = systemsApiService;
-        _shipsService = shipsService;
-        _waypointsApiService = waypointsApiService;
-        _systemsCacheService = systemsCacheService;
-    }
-
     [Route("/systems/{systemSymbol}")]
     public async Task<IActionResult> Index(
         string systemSymbol,
@@ -56,6 +40,7 @@ public class SystemsController : BaseController
             ? Task.FromResult<Ship?>(null)
             : _shipsService.GetAsync(currentShipSymbol);
         var systemTask = _systemsService.GetAsync(systemSymbol);
+        var shipStatuses = _shipStatusesCacheService.GetAsync();
 
         if (!string.IsNullOrWhiteSpace(type))
         {
@@ -87,7 +72,9 @@ public class SystemsController : BaseController
         SystemViewModel systemModel = new(
             systemTask,
             currentShipTask,
-            currentWaypointTask);
+            currentWaypointTask,
+            shipStatuses
+        );
 
         return View(systemModel);
     }

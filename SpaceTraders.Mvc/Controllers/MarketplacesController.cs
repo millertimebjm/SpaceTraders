@@ -1,31 +1,22 @@
 using Microsoft.AspNetCore.Mvc;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Marketplaces.Interfaces;
+using SpaceTraders.Services.ShipStatuses.Interfaces;
+using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Trades;
 using SpaceTraders.Services.Trades.Interfaces;
 
 namespace SpaceTraders.Mvc.Controllers;
 
-public class MarketplacesController : BaseController
+public class MarketplacesController(
+    IMarketplacesService _marketplacesService,
+    IAgentsService _agentsService,
+    ITradesService _tradesService,
+    ITradesCacheService _tradesCacheService,
+    IShipStatusesCacheService _shipstatusesCacheService,
+    ISystemsService _systemsService
+) : BaseController(_agentsService, _shipstatusesCacheService, _systemsService)
 {
-    private readonly ILogger<MarketplacesController> _logger;
-    private readonly IMarketplacesService _marketplacesService;
-    private readonly ITradesService _tradesService;
-    private readonly ITradesCacheService _tradesCacheService;
-
-    public MarketplacesController(
-        ILogger<MarketplacesController> logger,
-        IMarketplacesService marketplacesService,
-        IAgentsService agentsService,
-        ITradesService tradesService,
-	ITradesCacheService tradesCacheService) : base(agentsService)
-    {
-        _logger = logger;
-        _marketplacesService = marketplacesService;
-        _tradesService = tradesService;
-	_tradesCacheService = tradesCacheService;
-    }
-
     [Route("/marketplaces/{marketplaceWaypointSymbol}")]
     public async Task<IActionResult> Index(string marketplaceWaypointSymbol)
     {

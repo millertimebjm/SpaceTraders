@@ -5,5 +5,6 @@ namespace SpaceTraders.Mvc.Models;
 public record SystemViewModel(
     Task<STSystem> SystemTask,
     Task<Ship?> ShipTask,
-    Task<Waypoint?> WaypointTask
+    Task<Waypoint?> WaypointTask,
+    Task<IEnumerable<ShipStatus>>? ShipStatusesTask = null
 );

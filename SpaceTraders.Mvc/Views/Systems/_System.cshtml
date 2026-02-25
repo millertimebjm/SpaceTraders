@@ -10,6 +10,13 @@
     {
         sortedWaypoints = WaypointsService.SortWaypoints(sortedWaypoints.ToList(), currentWaypoint.X, currentWaypoint.Y, currentWaypoint.Symbol);
     }
+
+    var systemShipCount = 0;
+    if (Model.ShipStatusesTask is not null)
+    {
+        var shipStatuses = await Model.ShipStatusesTask;
+        systemShipCount = shipStatuses.Count(ss => ss.Ship.Nav.SystemSymbol == system.Symbol);
+    }
 }
 
 <h6><u>System @system.Symbol</u> (<a href="/systems/@system.Symbol/reset" target="_blank">reset</a>)</h6>
@@ -20,7 +27,7 @@
     <li><b>X:</b> @system.X</li>
     <li><b>Y:</b> @system.Y</li>
     <li><b>Name:</b> @system.Name</li>
-    <li><a href="/map/?systemSymbol=@system.Symbol">Get Map</a></li>
+    <li><a href="/map/?systemSymbol=@system.Symbol">Get Map (@systemShipCount Ships)</a></li>
     <li><a href="/systems/@system.Symbol?traits=@WaypointTypesEnum.SHIPYARD">Get Shipyards</a></li>
     <li><a href="/systems/@system.Symbol?type=@WaypointTypesEnum.JUMP_GATE">Get Jump Gates</a></li>
     <li><a href="/systems/@system.Symbol?type=@WaypointTypesEnum.ASTEROID">Get Asteroids</a></li>

@@ -1,38 +1,24 @@
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using SpaceTraders.Models;
 using SpaceTraders.Mvc.Models;
-using SpaceTraders.Mvc.Services;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
+using SpaceTraders.Services.ShipStatuses.Interfaces;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Waypoints;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Mvc.Controllers;
 
-public class WaypointsController : BaseController
+public class WaypointsController(
+    ILogger<WaypointsController> _logger,
+    IWaypointsService _waypointsService,
+    IShipsService _shipsService,
+    IAgentsService _agentsService,
+    ISystemsService _systemsService,
+    IShipStatusesCacheService _shipStatusesCacheService
+) : BaseController(_agentsService, _shipStatusesCacheService, _systemsService)
 {
-    private readonly ILogger<WaypointsController> _logger;
-    private readonly IWaypointsService _waypointsService;
-    private readonly IShipsService _shipsService;
-    private readonly IAgentsService _agentsService;
-    private readonly ISystemsService _systemsService;
-
-    public WaypointsController(
-        ILogger<WaypointsController> logger,
-        IWaypointsService waypointsService,
-        IShipsService shipsService,
-        IAgentsService agentsService,
-        ISystemsService systemsService) : base(agentsService)
-    {
-        _logger = logger;
-        _waypointsService = waypointsService;
-        _shipsService = shipsService;
-        _agentsService = agentsService;
-        _systemsService = systemsService;
-    }
-
     [Route("/waypoints/{waypointSymbol}")]
     public IActionResult Index(string waypointSymbol)
     {

@@ -1,26 +1,19 @@
 using Microsoft.AspNetCore.Mvc;
 using SpaceTraders.Models;
 using SpaceTraders.Services.Agents.Interfaces;
+using SpaceTraders.Services.ShipStatuses.Interfaces;
 using SpaceTraders.Services.Shipyards.Interfaces;
+using SpaceTraders.Services.Systems.Interfaces;
 
 namespace SpaceTraders.Mvc.Controllers;
 
-public class ShipyardsController : BaseController
+public class ShipyardsController(
+    IShipyardsService _shipyardsService,
+    IAgentsService _agentsService,
+    IShipStatusesCacheService _shipStatusesCacheService,
+    ISystemsService _systemsService
+) : BaseController(_agentsService, _shipStatusesCacheService, _systemsService)
 {
-    private readonly ILogger<ShipyardsController> _logger;
-    private readonly IShipyardsService _shipyardsService;
-    private readonly IAgentsService _agentsService;
-
-    public ShipyardsController(
-        ILogger<ShipyardsController> logger,
-        IShipyardsService shipyardsService,
-        IAgentsService agentsService) : base(agentsService)
-    {
-        _logger = logger;
-        _shipyardsService = shipyardsService;
-        _agentsService = agentsService;
-    }
-
     [Route("/systems/{systemSymbol}/waypoints/{shipyardWaypointSymbol}/shipyard")]
     public async Task<IActionResult> Index(string systemSymbol, string shipyardWaypointSymbol)
     {

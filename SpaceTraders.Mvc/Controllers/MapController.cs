@@ -9,7 +9,7 @@ namespace SpaceTraders.Mvc.Controllers;
 public class MapController(
     IAgentsService _agentsService,
     ISystemsService _systemsService,
-    IShipStatusesCacheService _shipStatusesCacheService) : BaseController(_agentsService)
+    IShipStatusesCacheService _shipStatusesCacheService) : BaseController(_agentsService, _shipStatusesCacheService, _systemsService)
 {
     public async Task<IActionResult> Index(string systemSymbol)
     {
