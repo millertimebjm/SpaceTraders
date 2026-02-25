@@ -85,7 +85,6 @@ public class WaypointsService : IWaypointsService
 
     public static double CalculateDistance(double x1, double y1, double x2, double y2)
     {
-        // Using the distance formula: sqrt((x2 - x1)^2 + (y2 - y1)^2)
         double deltaX = x2 - x1;
         double deltaY = y2 - y1;
 

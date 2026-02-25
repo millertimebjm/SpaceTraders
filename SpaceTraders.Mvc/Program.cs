@@ -80,7 +80,7 @@ Log.Logger = new LoggerConfiguration()
     .MinimumLevel.Information()
     .ReadFrom.Configuration(builder.Configuration)
     .Enrich.FromLogContext()
-    .Enrich.WithProperty("Application", "Companion.ChatFrontendBackend")
+    .Enrich.WithProperty("Application", "SpaceTrader.Mvc")
     .Enrich.WithMachineName()
     .Enrich.WithThreadId()
     .WriteTo.Console() // Default to console logging

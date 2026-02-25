@@ -522,6 +522,7 @@ public class ShipsService : IShipsService
         }
         var nav = await NavToggleAsync(ship.Symbol, flightMode);
         var shipStatuses = await _shipStatusesCacheService.GetAsync(ship.Symbol);
+        ship = ship with { Nav = nav };
         shipStatuses = shipStatuses with { Ship = ship };
         await _shipStatusesCacheService.SetAsync(shipStatuses);
         await Task.Delay(500);
