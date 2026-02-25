@@ -38,7 +38,8 @@
     <strong>Grid Navigator</strong><br>
     • Scroll to Zoom<br>
     • Click & Drag to Pan<br>
-    <span id="stats">Zoom: 1.00x</span>
+    <span id="stats">Zoom: 1.00x</span><br/>
+    <span id="coords">0, 0</span>
 </div>
 
 <canvas id="gridCanvas"></canvas>
@@ -46,25 +47,25 @@
 <script>
     @{
         const int GRID_SIZE = 2000;
-        var systems = await Model.SystemsTask;
-        var waypoints = systems.SelectMany(s => s.Waypoints);
-        var shipStatuses = await Model.ShipStatusesTask;
-        var usedSystemSymbols = shipStatuses.Select(ss => ss.Ship.Nav.SystemSymbol).Distinct().ToList();
-        var usedSystems = systems.Where(s => usedSystemSymbols.Contains(s.Symbol)).ToList();
-        var firstCoordinate = usedSystems.First().Waypoints.First();
-        var staticObjects = usedSystems.SelectMany(s => s.Waypoints.Select(w => new MapStaticObjectsViewModel(w.X + (GRID_SIZE / 2), w.Y + (GRID_SIZE / 2), w.Symbol, "#ffffff")));
+        var system = await Model.SystemTask;
+        var waypoints = system.Waypoints;
+        var staticObjects = waypoints.Select(w => new MapStaticObjectsViewModel(w.X + (GRID_SIZE / 2), w.Y + (GRID_SIZE / 2), w.Symbol.Substring(w.Symbol.LastIndexOf("-") + 1, w.Symbol.Length - (w.Symbol.LastIndexOf("-")+1)), "#ffffff"));
+        var distinctStaticObjects = staticObjects
+            .GroupBy(so => (so.X, so.Y))
+            .Select(so => new MapStaticObjectsViewModel(so.Key.X, so.Key.Y, string.Join(",", so.Select(item => item.Label)), so.First().Color));
     }
-    const staticObjects = @(Html.Raw(JsonSerializer.Serialize(staticObjects, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping })))
+    const staticObjects = @(Html.Raw(JsonSerializer.Serialize(distinctStaticObjects, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping })))
 
     @{
-        
+        var shipStatuses = await Model.ShipStatusesTask;
+        var shipStatusesInSystem = shipStatuses.Where(ss => ss.Ship.Nav.SystemSymbol == system.Symbol);
         var drones = new List<MapDronesViewModel>();
-        foreach (var shipStatus in shipStatuses)
+        foreach (var shipStatus in shipStatusesInSystem)
         {
             var fromX = shipStatus.Ship.Nav.Route.Origin.X;
             var fromY = shipStatus.Ship.Nav.Route.Origin.Y;
-            var toX = shipStatus.Ship.Nav.Route.Origin.X;
-            var toY = shipStatus.Ship.Nav.Route.Origin.Y;
+            var toX = shipStatus.Ship.Nav.Route.Destination.X;
+            var toY = shipStatus.Ship.Nav.Route.Destination.Y;
             var startDateTime = shipStatus.Ship.Nav.Route.DepartureTime;
             var endDateTime = shipStatus.Ship.Nav.Route.Arrival;
             DateTime now = DateTime.UtcNow;
@@ -79,7 +80,7 @@
             double currentX = fromX + (toX - fromX) * progress;
             double currentY = fromY + (toY - fromY) * progress;
             
-            drones.Add(new MapDronesViewModel((int)currentX + (GRID_SIZE / 2), (int)currentY + (GRID_SIZE / 2), shipStatus.Ship.Symbol, 4));
+            drones.Add(new MapDronesViewModel((int)currentX + (GRID_SIZE / 2), (int)currentY + (GRID_SIZE / 2), shipStatus.Ship.Symbol.Substring(shipStatus.Ship.Symbol.LastIndexOf("-")+1, shipStatus.Ship.Symbol.Length - (shipStatus.Ship.Symbol.LastIndexOf("-")+1)), 4));
         }
     }
     var drones = @(Html.Raw(JsonSerializer.Serialize(drones, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping })));
@@ -87,6 +88,7 @@
     const canvas = document.getElementById('gridCanvas');
     const ctx = canvas.getContext('2d');
     const statsEl = document.getElementById('stats');
+    const coordsEl = document.getElementById('coords');
 
     // Configuration
     const GRID_SIZE = @GRID_SIZE;
@@ -159,6 +161,7 @@
         cameraY = (mouseY - height / 2) / zoom - worldY;
 
         statsEl.innerText = `Zoom: ${zoom.toFixed(2)}x`;
+        coordsEl.innerText = `(${Math.round(cameraX)}, ${Math.round(cameraY)})`;
     }
 
     function handleMouseDown(e) {
@@ -179,6 +182,8 @@
         
         lastMouseX = e.clientX;
         lastMouseY = e.clientY;
+
+        coordsEl.innerText = `(${Math.round(cameraX)}, ${Math.round(cameraY)})`;
     }
 
     // --- Update & Draw ---

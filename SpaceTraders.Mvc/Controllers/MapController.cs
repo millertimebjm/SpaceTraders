@@ -11,10 +11,10 @@ public class MapController(
     ISystemsService _systemsService,
     IShipStatusesCacheService _shipStatusesCacheService) : BaseController(_agentsService)
 {
-    public async Task<IActionResult> Index()
+    public async Task<IActionResult> Index(string systemSymbol)
     {
         var model = new MapViewModel(
-            _systemsService.GetAsync(),
+            _systemsService.GetAsync(systemSymbol),
             _shipStatusesCacheService.GetAsync()
         );
         return View(model);

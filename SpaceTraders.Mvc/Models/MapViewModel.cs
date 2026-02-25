@@ -3,6 +3,6 @@ using SpaceTraders.Models;
 namespace SpaceTraders.Mvc.Models;
 
 public record MapViewModel(
-    Task<IReadOnlyList<STSystem>> SystemsTask,
+    Task<STSystem> SystemTask,
     Task<IEnumerable<ShipStatus>> ShipStatusesTask
 );
