@@ -1,20 +1,15 @@
 using System.Collections.Concurrent;
-using DnsClient.Internal;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Paths.Interfaces;
-using SpaceTraders.Services.Systems.Interfaces;
-using SpaceTraders.Services.Trades.Interfaces;
 
 namespace SpaceTraders.Services.Trades;
 
 public class TradesService(
     ILogger<TradesService> _logger,
     IPathsService _pathsService,
-    ITradesCacheService _tradesCacheService,
-    ISystemsService _systemsService,
     IPathsCacheService _pathsCacheService
 ) : ITradesService
 {
@@ -27,8 +22,8 @@ public class TradesService(
         ConcurrentBag<TradeModel> tradeModels = new();
         var marketplaceWaypointExports = marketplaceWaypoints.Where(w => w.Marketplace.Exports.Any()).ToList();
         //foreach (var marketplaceWaypointExport in marketplaceWaypointExports)
-        //await Parallel.ForEachAsync(marketplaceWaypointExports, async (marketplaceWaypointExport, CancellationToken) =>
-        foreach (var marketplaceWaypointExport in marketplaceWaypointExports)
+        await Parallel.ForEachAsync(marketplaceWaypointExports, async (marketplaceWaypointExport, CancellationToken) =>
+        //foreach (var marketplaceWaypointExport in marketplaceWaypointExports)
         {
             var exports = marketplaceWaypointExport.Marketplace.TradeGoods.Where(tg => tg.Type == "EXPORT").ToList();
             foreach (var export in exports)
@@ -76,8 +71,8 @@ public class TradesService(
                     }
                 }
             }
-        //});
-        }
+        });
+        //}
         return tradeModels.ToList();
     }
 
@@ -89,7 +84,7 @@ public class TradesService(
         try
         {
             var paths = await _pathsService.BuildSystemPathWithCost(waypoints.ToList(), exportWaypoint, fuelMax, fuelCurrent);
-            var path = paths.Single(p => p.Key.Symbol == importSymbol);
+            var path = paths.Single(p => p.Key == importSymbol);
             var navigationFactor = NavigationFactor(path.Value.Item2);
             await _pathsCacheService.SetNavigationFactor(exportWaypoint.Symbol, importSymbol, fuelMax, fuelCurrent, navigationFactor);
             return navigationFactor;
@@ -100,7 +95,7 @@ public class TradesService(
             await _pathsCacheService.ClearAllCachedSystemPaths();
 
             var paths = await _pathsService.BuildSystemPathWithCost(waypoints.ToList(), exportWaypoint, fuelMax, fuelCurrent);
-            var path = paths.Single(p => p.Key.Symbol == importSymbol);
+            var path = paths.Single(p => p.Key == importSymbol);
             var navigationFactor = NavigationFactor(path.Value.Item2);
             await _pathsCacheService.SetNavigationFactor(exportWaypoint.Symbol, importSymbol, fuelMax, fuelCurrent, navigationFactor);
             return navigationFactor;

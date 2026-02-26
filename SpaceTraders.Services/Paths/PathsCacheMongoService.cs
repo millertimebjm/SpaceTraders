@@ -8,7 +8,7 @@ namespace SpaceTraders.Services.Paths;
 
 public class PathsCacheMongoService(IMongoCollectionFactory _collectionFactory) : IPathsCacheService
 {
-    public async Task<Dictionary<Waypoint, ValueTuple<List<Waypoint>, int>>?> GetSystemPathWithCost(
+    public async Task<Dictionary<string, ValueTuple<List<string>, int>>?> GetSystemPathWithCost(
         string originWaypoint,
         int fuelMax,
         int startingFuel)
@@ -34,7 +34,7 @@ public class PathsCacheMongoService(IMongoCollectionFactory _collectionFactory) 
         string originWaypoint,
         int fuelMax,
         int startingFuel,
-        Dictionary<Waypoint, ValueTuple<List<Waypoint>, int>> systemPath)
+        Dictionary<string, ValueTuple<List<string>, int>> systemPath)
     {
         var key = $"{originWaypoint}-{fuelMax}-{startingFuel}";
         var systemPathList = systemPath
@@ -79,6 +79,6 @@ public class PathsCacheMongoService(IMongoCollectionFactory _collectionFactory) 
     }
 }
 
-public record SystemPathCacheModel(string Key, Waypoint DestinationWaypoint, List<Waypoint> Waypoints, int FuelCost) {}
+public record SystemPathCacheModel(string Key, string DestinationWaypoint, List<string> Waypoints, int FuelCost) {}
 
 public record NavigationFactorModel(string Key, decimal NavigationFactor);

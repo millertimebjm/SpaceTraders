@@ -4,7 +4,7 @@ namespace SpaceTraders.Services.Paths.Interfaces;
 
 public interface IPathsCacheService
 {
-    Task<Dictionary<Waypoint, ValueTuple<List<Waypoint>, int>>?> GetSystemPathWithCost(
+    Task<Dictionary<string, ValueTuple<List<string>, int>>?> GetSystemPathWithCost(
         string originWaypoint,
         int fuelMax,
         int startingFuel
@@ -14,7 +14,7 @@ public interface IPathsCacheService
         string originWaypoint,
         int fuelMax,
         int startingFuel,
-        Dictionary<Waypoint, ValueTuple<List<Waypoint>, int>> systemPath
+        Dictionary<string, ValueTuple<List<string>, int>> systemPath
     );
 
     Task ClearAllCachedSystemPaths();
