@@ -108,38 +108,47 @@ public class ShipLoopsService(
                 await Task.Delay(1000);
             }
 
-            var systems = await _systemsService.GetAsync();
-            var agent = await _agentsService.GetAsync();
-            var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters));
-            var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
-            var tradeModels = await _tradesService.BuildTradeModel(waypoints, 400, 400);
-            if (tradeModels.Any())
-            {
-                await _tradesCacheService.SaveTradeModelsAsync(tradeModels);
-            }
-
-            TimeSpan? shortestCooldown = null;
-            foreach (var shipStatus in shipStatuses)
-            {
-                var cooldown = ShipsService.GetShipCooldown(shipStatus.Ship);
-                if (cooldown is null || cooldown.Value.TotalSeconds < 0)
-                {
-                    shortestCooldown = null;
-                    break;
-                }
-
-                if (shortestCooldown is null || cooldown.Value < shortestCooldown.Value)
-                    shortestCooldown = cooldown.Value;
-            }
-            if (shortestCooldown is not null
-                && shortestCooldown.Value.TotalMilliseconds > 0)
-            {
-                _logger.LogInformation("Sleeping for {duration}", Math.Round(shortestCooldown.Value.TotalMinutes, 2));
-                await Task.Delay(shortestCooldown.Value);
-            }
+            await UpdateTradeModelCache();
+            await SleepUntilNextShipReady(shipStatuses);
         }
     }
-    
+
+    private async Task SleepUntilNextShipReady(List<ShipStatus> shipStatuses)
+    {
+        TimeSpan? shortestCooldown = null;
+        foreach (var shipStatus in shipStatuses)
+        {
+            var cooldown = ShipsService.GetShipCooldown(shipStatus.Ship);
+            if (cooldown is null || cooldown.Value.TotalSeconds < 0)
+            {
+                shortestCooldown = null;
+                break;
+            }
+
+            if (shortestCooldown is null || cooldown.Value < shortestCooldown.Value)
+                shortestCooldown = cooldown.Value;
+        }
+        if (shortestCooldown is not null
+            && shortestCooldown.Value.TotalMilliseconds > 0)
+        {
+            _logger.LogInformation("Sleeping for {duration}", Math.Round(shortestCooldown.Value.TotalMinutes, 2));
+            await Task.Delay(shortestCooldown.Value);
+        }
+    }
+
+    private async Task UpdateTradeModelCache()
+    {
+        var systems = await _systemsService.GetAsync();
+        var agent = await _agentsService.GetAsync();
+        var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters));
+        var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
+        var tradeModels = await _tradesService.BuildTradeModel(waypoints, 400, 400);
+        if (tradeModels.Any())
+        {
+            await _tradesCacheService.SaveTradeModelsAsync(tradeModels);
+        }
+    }
+
     public async Task UpdateSystemWaypoints(IEnumerable<Ship> ships)
     {
         var systemSymbols = ships

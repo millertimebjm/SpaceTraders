@@ -1,12 +1,20 @@
 ﻿@using SpaceTraders.Models
+@using SpaceTraders.Services.Systems
 @{
+    var agent = (Agent)ViewBag.AgentTask;
     var shipStatuses = (IEnumerable<ShipStatus>)ViewBag.ShipStatuses;
     var systems = (IReadOnlyList<STSystem>)ViewBag.Systems;
+    var reachableSystems = SystemsService.Traverse(systems, agent.Headquarters);
     Dictionary<string, string> systemStrings = new ();
     foreach (var system in systems.OrderByDescending(s => shipStatuses.Count(ss => ss.Ship.Nav.SystemSymbol == s.Symbol)))
     {
         var shipCount = shipStatuses.Count(ss => ss.Ship.Nav.SystemSymbol == system.Symbol);
-        var shipCountString = shipCount > 0 ? $"({shipCount} ships)" : "";
+        var shipCountString = 
+            shipCount > 0 
+            ? $"({shipCount} ships)" 
+            : !systems.Any(s => s.Symbol == system.Symbol) 
+            ? " unreachable"
+            : "";
         systemStrings.Add(system.Symbol, $"{system.Symbol} {shipCountString}");
     }
 }
@@ -56,11 +64,15 @@
                                 Maps
                             </a>
                             <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                <li><a class="dropdown-item" href="/map/galaxy">Galaxy</a></li>
                                 @foreach (var systemString in systemStrings)
                                 {
                                     <li><a class="dropdown-item" href="/map/?systemsymbol=@systemString.Key">@systemString.Value</a></li>
                                 }
                             </ul>
+                        </li>
+                        <li class="nav-item"></li>
+                            <a class="nav-link text-dark" href="/shiplogs">Logs</a>
                         </li>
                         <li class="nav-item"></li>
                             <a class="nav-link text-dark" href="/marketplaces/asdf/trademodels">Trade Models</a>

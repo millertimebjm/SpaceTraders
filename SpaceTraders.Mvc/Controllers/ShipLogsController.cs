@@ -18,7 +18,6 @@ public class ShipLogsController(
     public async Task<IActionResult> Index(ShipLogsFilterModel filterModel)
     {
         var viewModel = new ShipLogsViewModel(
-        
             _shipLogsStorageService.GetAsync(filterModel),
             filterModel,
             _shipStatusesCacheService.GetAsync()

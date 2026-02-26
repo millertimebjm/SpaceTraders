@@ -5,6 +5,8 @@ using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.ShipStatuses.Interfaces;
 using SpaceTraders.Services.Systems.Interfaces;
 
+namespace SpaceTraders.Mvc.Controllers;
+
 public class BaseController(
     IAgentsService _agentsService,
     IShipStatusesCacheService _shipStatusCacheService,
@@ -19,6 +21,7 @@ public class BaseController(
         var shipStatusesTask = _shipStatusCacheService.GetAsync();
         var systemsTask = _systemsService.GetAsync();
         await Task.WhenAll(agentTask, shipStatusesTask, systemsTask);
+        ViewBag.Agent = agentTask.Result;
         ViewBag.CurrentCredits = agentTask.Result.Credits;
         ViewBag.ShipStatuses = shipStatusesTask.Result;
         ViewBag.Systems = systemsTask.Result;
