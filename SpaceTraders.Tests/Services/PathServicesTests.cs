@@ -72,6 +72,7 @@ public class PathsServicesTests
         var firstWaypointCompletedJumpGate = new Waypoint(firstWaypointSymbol, WaypointsService.ExtractSystemFromWaypoint(firstWaypointSymbol), "", 0, 0, null, "", null, null, null, jumpgate, false, null);
         var firstSystem = new STSystem("Constellation", "A1-AB1", "A1", "", 0, 0, new List<Waypoint> { firstWaypointCompletedJumpGate }, null, "");
 
+        IPathsCacheService pathsCacheService = Substitute.For<IPathsCacheService>();
         ISystemsService systemsServiceSub = Substitute.For<ISystemsService>();
         systemsServiceSub
             .GetAsync()
@@ -79,7 +80,7 @@ public class PathsServicesTests
 
         var ship = new Ship("", null, null, null, null, null, null, null, null, null, new Fuel(10, 10, null), null, null, null);
 
-        IPathsService pathsService = new PathsService(systemsServiceSub);
+        IPathsService pathsService = new PathsService(systemsServiceSub, pathsCacheService);
         var systemPath = await pathsService.BuildSystemPath(
             firstWaypointSymbol,
             ship.Fuel.Capacity, ship.Fuel.Current);
@@ -102,6 +103,7 @@ public class PathsServicesTests
         var firstWaypointIncompleteJumpGate = new Waypoint(firstWaypointSymbol, WaypointsService.ExtractSystemFromWaypoint(firstWaypointSymbol), "", 0, 0, null, "", null, null, null, jumpgate, IS_UNDER_CONSTRUCTION, null);
         var firstSystem = new STSystem("Constellation", "A1-AB1", "A1", "", 0, 0, new List<Waypoint> { firstWaypointIncompleteJumpGate }, null, "");
 
+        IPathsCacheService pathsCacheService = Substitute.For<IPathsCacheService>();
         ISystemsService systemsServiceSub = Substitute.For<ISystemsService>();
         systemsServiceSub
             .GetAsync()
@@ -109,7 +111,7 @@ public class PathsServicesTests
 
         var ship = new Ship("", null, null, null, null, null, null, null, null, null, new Fuel(10, 10, null), null, null, null);
 
-        IPathsService pathsService = new PathsService(systemsServiceSub);
+        IPathsService pathsService = new PathsService(systemsServiceSub, pathsCacheService);
         var systemPath = await pathsService.BuildSystemPath(
             firstWaypointSymbol,
             ship.Fuel.Capacity, ship.Fuel.Current);
@@ -126,7 +128,7 @@ public class PathsServicesTests
         var secondWaypoint = new Waypoint(secondWaypointSymbol, WaypointsService.ExtractSystemFromWaypoint(secondWaypointSymbol), "", 1, 1, null, "", null, null, null, null, false, null);
         var firstSystem = new STSystem("Constellation", "A1-AB1", "A1", "", 0, 0, new List<Waypoint> { firstWaypoint, secondWaypoint }, null, "");
 
-
+        IPathsCacheService pathsCacheService = Substitute.For<IPathsCacheService>();
         ISystemsService systemsServiceSub = Substitute.For<ISystemsService>();
         systemsServiceSub
             .GetAsync()
@@ -134,7 +136,7 @@ public class PathsServicesTests
 
         var ship = new Ship("", null, null, null, null, null, null, null, null, null, new Fuel(10, 10, null), null, null, null);
 
-        IPathsService pathsService = new PathsService(systemsServiceSub);
+        IPathsService pathsService = new PathsService(systemsServiceSub, pathsCacheService);
         var systemPath = await pathsService.BuildSystemPathWithCost(
             firstWaypointSymbol,
             ship.Fuel.Capacity, ship.Fuel.Current);
@@ -153,6 +155,7 @@ public class PathsServicesTests
         var secondWaypoint = new Waypoint(secondWaypointSymbol, WaypointsService.ExtractSystemFromWaypoint(secondWaypointSymbol), "", 100, 100, null, "", null, null, null, null, false, null);
         var firstSystem = new STSystem("Constellation", "A1-AB1", "A1", "", 0, 0, new List<Waypoint> { firstWaypoint, secondWaypoint }, null, "");
 
+        IPathsCacheService pathsCacheService = Substitute.For<IPathsCacheService>();
         ISystemsService systemsServiceSub = Substitute.For<ISystemsService>();
         systemsServiceSub
             .GetAsync()
@@ -160,7 +163,7 @@ public class PathsServicesTests
 
         var ship = new Ship("", null, null, null, null, null, null, null, null, null, new Fuel(10, 10, null), null, null, null);
 
-        IPathsService pathsService = new PathsService(systemsServiceSub);
+        IPathsService pathsService = new PathsService(systemsServiceSub, pathsCacheService);
         var systemPath = await pathsService.BuildSystemPathWithCost(
             firstWaypointSymbol,
             ship.Fuel.Capacity, ship.Fuel.Current);
@@ -181,6 +184,7 @@ public class PathsServicesTests
         var thirdWaypoint = new Waypoint(thirdWaypointSymbol, WaypointsService.ExtractSystemFromWaypoint(thirdWaypointSymbol), "", 105, 100, null, "", null, null, null, null, false, null);
         var firstSystem = new STSystem("Constellation", "A1-AB1", "A1", "", 0, 0, new List<Waypoint> { firstWaypoint, secondWaypoint, thirdWaypoint }, null, "");
 
+        IPathsCacheService pathsCacheService = Substitute.For<IPathsCacheService>();
         ISystemsService systemsServiceSub = Substitute.For<ISystemsService>();
         systemsServiceSub
             .GetAsync()
@@ -188,7 +192,7 @@ public class PathsServicesTests
 
         var ship = new Ship("", null, null, null, null, null, null, null, null, null, new Fuel(10, 10, null), null, null, null);
 
-        IPathsService pathsService = new PathsService(systemsServiceSub);
+        IPathsService pathsService = new PathsService(systemsServiceSub, pathsCacheService);
         var systemPath = await pathsService.BuildSystemPathWithCost(
             firstWaypointSymbol,
             ship.Fuel.Capacity, ship.Fuel.Current);
@@ -214,6 +218,7 @@ public class PathsServicesTests
         var secondWaypoint = new Waypoint(secondWaypointSymbol, WaypointsService.ExtractSystemFromWaypoint(secondWaypointSymbol), "", 100, 100, null, "", null, null, null, new JumpGate(secondWaypointSymbol, new List<string> { thirdWaypointSymbol }), false, null);
         var firstSystem = new STSystem("Constellation", "A1-AB1", "A1", "", 0, 0, new List<Waypoint> { firstWaypoint, secondWaypoint }, null, "");
 
+        IPathsCacheService pathsCacheService = Substitute.For<IPathsCacheService>();
         ISystemsService systemsServiceSub = Substitute.For<ISystemsService>();
         systemsServiceSub
             .GetAsync()
@@ -221,7 +226,7 @@ public class PathsServicesTests
 
         var ship = new Ship("", null, null, null, null, null, null, null, null, null, new Fuel(10, 10, null), null, null, null);
 
-        IPathsService pathsService = new PathsService(systemsServiceSub);
+        IPathsService pathsService = new PathsService(systemsServiceSub, pathsCacheService);
         var systemPath = await pathsService.BuildSystemPathWithCost(
             firstWaypointSymbol,
             ship.Fuel.Capacity, ship.Fuel.Current);

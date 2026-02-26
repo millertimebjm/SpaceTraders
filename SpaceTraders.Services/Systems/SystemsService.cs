@@ -1,6 +1,7 @@
 using Microsoft.Extensions.Logging;
 using SpaceTraders.Models;
 using SpaceTraders.Services.Systems.Interfaces;
+using SpaceTraders.Services.Waypoints;
 
 namespace SpaceTraders.Services.Systems;
 
@@ -28,5 +29,38 @@ public class SystemsService(
         system = await _systemsApiService.GetAsync(systemSymbol);
         await _systemsCacheService.SetAsync(system);
         return system;
+    }
+
+    public static IEnumerable<STSystem> Traverse(IEnumerable<STSystem> systems, string startingSystemString)
+    {
+        var traversableSystems = new List<STSystem>();
+        var startingSystem = systems.Single(s => s.Symbol == startingSystemString);
+        var systemsToTraverse = new Queue<STSystem>();
+        systemsToTraverse.Enqueue(startingSystem);
+        
+        while (systemsToTraverse.Count != 0)
+        {
+            var nextSystem = systemsToTraverse.Dequeue();
+            traversableSystems.Add(nextSystem);
+            var jumpGateWaypoints = nextSystem.Waypoints.Where(w => !w.IsUnderConstruction && w.JumpGate is not null);
+            foreach (var jumpGateWaypoint in jumpGateWaypoints)
+            {
+                foreach (var connection in jumpGateWaypoint.JumpGate.Connections)
+                {
+                    var connectionSystem = systems.Single(s => s.Symbol == WaypointsService.ExtractSystemFromWaypoint(connection));
+                    var connectionSystemJumpGates = connectionSystem.Waypoints.Where(w => !w.IsUnderConstruction && w.JumpGate is not null).ToList();
+                    
+                    foreach (var connectionSystemWaypoint in connectionSystem.Waypoints.Where(w => !w.IsUnderConstruction && w.JumpGate is not null).ToList())
+                    {
+                        if (connectionSystemWaypoint.JumpGate.Connections.Select(c => WaypointsService.ExtractSystemFromWaypoint(c)).Contains(nextSystem.Symbol)
+                            && !traversableSystems.Any(ts => ts.Symbol == connectionSystem.Symbol))
+                        {
+                            systemsToTraverse.Enqueue(connectionSystem);
+                        }
+                    }
+                }
+            }
+        }
+        return traversableSystems;
     }
 }
