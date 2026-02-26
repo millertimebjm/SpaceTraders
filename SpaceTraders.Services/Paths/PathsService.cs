@@ -1,5 +1,6 @@
 using SpaceTraders.Models;
 using SpaceTraders.Services.Paths.Interfaces;
+using SpaceTraders.Services.Systems;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Waypoints;
 
@@ -86,6 +87,7 @@ public class PathsService(
         int startingFuel)
     {
         var systems = await _systemsService.GetAsync();
+        var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(originWaypoint));
         var waypoints = systems.SelectMany(s => s.Waypoints).ToList();
         var currentWaypoint = waypoints.Single(w => w.Symbol == originWaypoint);
 

@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using DnsClient.Internal;
+using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
@@ -9,6 +11,7 @@ using SpaceTraders.Services.Trades.Interfaces;
 namespace SpaceTraders.Services.Trades;
 
 public class TradesService(
+    ILogger<TradesService> _logger,
     IPathsService _pathsService,
     ITradesCacheService _tradesCacheService,
     ISystemsService _systemsService,
@@ -83,12 +86,25 @@ public class TradesService(
         var navigationFactorCache = await _pathsCacheService.GetNavigationFactor(exportWaypoint.Symbol, importSymbol, fuelMax, fuelCurrent);
         if (navigationFactorCache is not null) return navigationFactorCache.Value; 
 
-        var paths = await _pathsService.BuildSystemPathWithCost(waypoints.ToList(), exportWaypoint, fuelMax, fuelCurrent);
-        var path = paths.Single(p => p.Key.Symbol == importSymbol);
-        var navigationFactor = NavigationFactor(path.Value.Item2);
+        try
+        {
+            var paths = await _pathsService.BuildSystemPathWithCost(waypoints.ToList(), exportWaypoint, fuelMax, fuelCurrent);
+            var path = paths.Single(p => p.Key.Symbol == importSymbol);
+            var navigationFactor = NavigationFactor(path.Value.Item2);
+            await _pathsCacheService.SetNavigationFactor(exportWaypoint.Symbol, importSymbol, fuelMax, fuelCurrent, navigationFactor);
+            return navigationFactor;
+        }
+        catch(Exception ex)
+        {
+            _logger.LogError("Paths were not updated because a new system became available.");
+            await _pathsCacheService.ClearAllCachedSystemPaths();
 
-        await _pathsCacheService.SetNavigationFactor(exportWaypoint.Symbol, importSymbol, fuelMax, fuelCurrent, navigationFactor);
-        return navigationFactor;
+            var paths = await _pathsService.BuildSystemPathWithCost(waypoints.ToList(), exportWaypoint, fuelMax, fuelCurrent);
+            var path = paths.Single(p => p.Key.Symbol == importSymbol);
+            var navigationFactor = NavigationFactor(path.Value.Item2);
+            await _pathsCacheService.SetNavigationFactor(exportWaypoint.Symbol, importSymbol, fuelMax, fuelCurrent, navigationFactor);
+            return navigationFactor;
+        }
     }
 
     public IReadOnlyList<TradeModel> GetBestOrderedTrades(IReadOnlyList<TradeModel> trades)

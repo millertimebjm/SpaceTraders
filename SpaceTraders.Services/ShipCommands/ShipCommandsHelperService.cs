@@ -10,6 +10,7 @@ using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.ShipStatuses.Interfaces;
 using SpaceTraders.Services.Shipyards.Interfaces;
 using SpaceTraders.Services.Surveys.Interfaces;
+using SpaceTraders.Services.Systems;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Trades;
 using SpaceTraders.Services.Transactions.Interfaces;
@@ -51,12 +52,11 @@ public class ShipCommandsHelperService(
         {
             return null;
         }
-
-        var systems = await _systemsService.GetAsync();
-        var waypoints = systems.SelectMany(s => s.Waypoints).ToList();
-        var paths = await _pathsService.BuildSystemPath(currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
-
         var agent = await _agentsService.GetAsync();
+        var systems = await _systemsService.GetAsync();
+        var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(currentWaypoint.Symbol));
+        var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
+        var paths = await _pathsService.BuildSystemPath(currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
 
         var tradeModels = await _tradesService.BuildTradeModel(paths.Keys.ToList(), ship.Fuel.Capacity, ship.Fuel.Current);
         var bestTrade = _tradesService.GetBestTrade(tradeModels);

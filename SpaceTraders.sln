@@ -13,8 +13,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpaceTraders.Mvc", "SpaceTr
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpaceTraders.Tests", "SpaceTraders.Tests\SpaceTraders.Tests.csproj", "{86EBD617-29F2-42E7-BB22-932F18AF3578}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SpaceTraders.Wasm", "SpaceTraders.Wasm\SpaceTraders.Wasm.csproj", "{87B292EA-371D-4A29-983A-39C9CD91A09C}"
-EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

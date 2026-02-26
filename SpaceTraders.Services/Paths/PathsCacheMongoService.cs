@@ -45,6 +45,14 @@ public class PathsCacheMongoService(IMongoCollectionFactory _collectionFactory) 
         await collection.InsertManyAsync(systemPathList);
     }
 
+    public async Task ClearAllCachedSystemPaths()
+    {
+        var filter = FilterDefinition<SystemPathCacheModel>.Empty;
+
+        var collection = _collectionFactory.GetCollection<SystemPathCacheModel>();
+        await collection.DeleteManyAsync(filter);
+    }
+
     public async Task<decimal?> GetNavigationFactor(string exportSymbol, string importSymbol, int fuelMax, int fuelCurrent)
     {
         var key = $"{exportSymbol}-{importSymbol}-{fuelMax}-{fuelCurrent}";

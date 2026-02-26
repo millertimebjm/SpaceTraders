@@ -17,6 +17,8 @@ public interface IPathsCacheService
         Dictionary<Waypoint, ValueTuple<List<Waypoint>, int>> systemPath
     );
 
+    Task ClearAllCachedSystemPaths();
+
     public Task<decimal?> GetNavigationFactor(string exportSymbol, string importSymbol, int fuelMax, int fuelCurrent);
 
     public Task SetNavigationFactor(string exportSymbol, string importSymbol, int fuelMax, int fuelCurrent, decimal factor);

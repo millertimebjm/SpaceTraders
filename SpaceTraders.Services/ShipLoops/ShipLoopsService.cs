@@ -4,15 +4,18 @@ using Microsoft.Extensions.Logging;
 using SpaceTraders.Model.Exceptions;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
+using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.ShipJobs.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.ShipStatuses.Interfaces;
 using SpaceTraders.Services.Shipyards;
+using SpaceTraders.Services.Systems;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Trades;
 using SpaceTraders.Services.Trades.Interfaces;
+using SpaceTraders.Services.Waypoints;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.ShipLoops;
@@ -26,7 +29,8 @@ public class ShipLoopsService(
     IWaypointsService _waypointsService,
     ILogger<ShipLoopsService> _logger,
     ITradesService _tradesService,
-    ITradesCacheService _tradesCacheService
+    ITradesCacheService _tradesCacheService,
+    IAgentsService _agentsService
 ) : IShipLoopsService
 {
     public async Task Run()
@@ -50,20 +54,20 @@ public class ShipLoopsService(
                 var ship = shipStatuses[i].Ship;
                 var shipStatus = shipStatuses[i];
                 if (ShipsService.GetShipCooldown(ship) is not null) continue;
-                if (ship.Registration.Role != ShipRegistrationRolesEnum.COMMAND.ToString()
-                    && shipStatuses.Single(ss => ss.Ship.Registration.Role == ShipRegistrationRolesEnum.COMMAND.ToString()).Ship.ShipCommand?.ShipCommandEnum == ShipCommandEnum.Exploration)
-                {
-                    _logger.LogInformation("Waiting for Exploration to complete.");
-                    var cooldown = new Cooldown(ship.Symbol, 10 * 60, 10 * 60, DateTime.UtcNow.AddSeconds(10 * 60));
-                    ship = ship with { Cooldown = cooldown };
-                    shipStatus = shipStatus with { 
-                        Ship = ship,
-                        DateTimeOfLastInstruction = DateTime.UtcNow,
-                        LastMessage = "Waiting for Exploration"
-                    };
-                    shipStatuses[i] = shipStatus;
-                    continue;
-                }
+                // if (ship.Registration.Role != ShipRegistrationRolesEnum.COMMAND.ToString()
+                //     && shipStatuses.Single(ss => ss.Ship.Registration.Role == ShipRegistrationRolesEnum.COMMAND.ToString()).Ship.ShipCommand?.ShipCommandEnum == ShipCommandEnum.Exploration)
+                // {
+                //     _logger.LogInformation("Waiting for Exploration to complete.");
+                //     var cooldown = new Cooldown(ship.Symbol, 10 * 60, 10 * 60, DateTime.UtcNow.AddSeconds(10 * 60));
+                //     ship = ship with { Cooldown = cooldown };
+                //     shipStatus = shipStatus with { 
+                //         Ship = ship,
+                //         DateTimeOfLastInstruction = DateTime.UtcNow,
+                //         LastMessage = "Waiting for Exploration"
+                //     };
+                //     shipStatuses[i] = shipStatus;
+                //     continue;
+                // }
 
                 if (ship.ShipCommand is null)
                 {
@@ -114,9 +118,10 @@ public class ShipLoopsService(
                 await Task.Delay(1000);
             }
 
-            //var system = await _systemsService.GetAsync(shipStatuses.First().Ship.Nav.SystemSymbol);
             var systems = await _systemsService.GetAsync();
-            var waypoints = systems.SelectMany(s => s.Waypoints).ToList();
+            var agent = await _agentsService.GetAsync();
+            var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters));
+            var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
             var tradeModels = await _tradesService.BuildTradeModel(waypoints, 400, 400);
             if (tradeModels.Any())
             {

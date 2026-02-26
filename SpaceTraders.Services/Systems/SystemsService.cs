@@ -47,10 +47,10 @@ public class SystemsService(
             {
                 foreach (var connection in jumpGateWaypoint.JumpGate.Connections)
                 {
-                    var connectionSystem = systems.Single(s => s.Symbol == WaypointsService.ExtractSystemFromWaypoint(connection));
-                    var connectionSystemJumpGates = connectionSystem.Waypoints.Where(w => !w.IsUnderConstruction && w.JumpGate is not null).ToList();
+                    var connectionSystem = systems.SingleOrDefault(s => s.Symbol == WaypointsService.ExtractSystemFromWaypoint(connection));
+                    var connectionSystemJumpGates = connectionSystem?.Waypoints.Where(w => !w.IsUnderConstruction && w.JumpGate is not null).ToList() ?? [];
                     
-                    foreach (var connectionSystemWaypoint in connectionSystem.Waypoints.Where(w => !w.IsUnderConstruction && w.JumpGate is not null).ToList())
+                    foreach (var connectionSystemWaypoint in connectionSystem?.Waypoints.Where(w => !w.IsUnderConstruction && w.JumpGate is not null).ToList() ?? [])
                     {
                         if (connectionSystemWaypoint.JumpGate.Connections.Select(c => WaypointsService.ExtractSystemFromWaypoint(c)).Contains(nextSystem.Symbol)
                             && !traversableSystems.Any(ts => ts.Symbol == connectionSystem.Symbol))
