@@ -54,20 +54,10 @@ public class ShipLoopsService(
                 var ship = shipStatuses[i].Ship;
                 var shipStatus = shipStatuses[i];
                 if (ShipsService.GetShipCooldown(ship) is not null) continue;
-                // if (ship.Registration.Role != ShipRegistrationRolesEnum.COMMAND.ToString()
-                //     && shipStatuses.Single(ss => ss.Ship.Registration.Role == ShipRegistrationRolesEnum.COMMAND.ToString()).Ship.ShipCommand?.ShipCommandEnum == ShipCommandEnum.Exploration)
-                // {
-                //     _logger.LogInformation("Waiting for Exploration to complete.");
-                //     var cooldown = new Cooldown(ship.Symbol, 10 * 60, 10 * 60, DateTime.UtcNow.AddSeconds(10 * 60));
-                //     ship = ship with { Cooldown = cooldown };
-                //     shipStatus = shipStatus with { 
-                //         Ship = ship,
-                //         DateTimeOfLastInstruction = DateTime.UtcNow,
-                //         LastMessage = "Waiting for Exploration"
-                //     };
-                //     shipStatuses[i] = shipStatus;
-                //     continue;
-                // }
+                if (ship.Symbol == "SPATIAL19-D")
+                {
+                    int j = 0;
+                }
 
                 if (ship.ShipCommand is null)
                 {

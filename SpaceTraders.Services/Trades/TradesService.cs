@@ -37,7 +37,7 @@ public class TradesService(
                 foreach (var marketplaceWaypointImport in imports)
                 {
                     var navigationFactor = await GetNavigationFactor(waypoints, marketplaceWaypointExport, marketplaceWaypointImport.Symbol, fuelMax, fuelCurrent);
-                    var marketplaceWaypointImports = marketplaceWaypointImport.Marketplace.TradeGoods.Where(tg => tg.Type == "IMPORT" && tg.Symbol == export.Symbol);
+                    var marketplaceWaypointImports = marketplaceWaypointImport.Marketplace.TradeGoods.Where(tg => tg.Type == "IMPORT" && tg.Symbol == export.Symbol).ToList();
                     foreach (var import in marketplaceWaypointImports)
                     {
                         tradeModels.Add(new TradeModel(

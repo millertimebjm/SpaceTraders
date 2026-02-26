@@ -53,7 +53,8 @@ public class SystemsService(
                     foreach (var connectionSystemWaypoint in connectionSystem?.Waypoints.Where(w => !w.IsUnderConstruction && w.JumpGate is not null).ToList() ?? [])
                     {
                         if (connectionSystemWaypoint.JumpGate.Connections.Select(c => WaypointsService.ExtractSystemFromWaypoint(c)).Contains(nextSystem.Symbol)
-                            && !traversableSystems.Any(ts => ts.Symbol == connectionSystem.Symbol))
+                            && !traversableSystems.Any(ts => ts.Symbol == connectionSystem.Symbol)
+                            && !systemsToTraverse.Any(stt => stt.Symbol == connectionSystem.Symbol))
                         {
                             systemsToTraverse.Enqueue(connectionSystem);
                         }

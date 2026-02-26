@@ -88,7 +88,7 @@ public class PathsService(
     {
         var systems = await _systemsService.GetAsync();
         var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(originWaypoint));
-        var waypoints = systems.SelectMany(s => s.Waypoints).ToList();
+        var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
         var currentWaypoint = waypoints.Single(w => w.Symbol == originWaypoint);
 
         var currentFuel = startingFuel;
@@ -173,7 +173,8 @@ public class PathsService(
         if (systemPath is not null) return systemPath;
 
         var systems = await _systemsService.GetAsync();
-        var waypoints = systems.SelectMany(s => s.Waypoints).ToList();
+        var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(originWaypoint));
+        var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
         var currentWaypoint = waypoints.Single(w => w.Symbol == originWaypoint);
 
         systemPath = await BuildSystemPathWithCost(waypoints, currentWaypoint, fuelMax, startingFuel);

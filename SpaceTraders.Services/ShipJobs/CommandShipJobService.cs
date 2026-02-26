@@ -1,6 +1,7 @@
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
+using SpaceTraders.Services.Systems;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Waypoints;
 using SpaceTraders.Services.Waypoints.Interfaces;
@@ -26,7 +27,8 @@ public class CommandShipJobService(
         Ship ship)
     {
         var systems = await _systemsService.GetAsync();
-        var waypoints = systems.SelectMany(s => s.Waypoints).ToList();
+        var traversableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol);
+        var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
         
         if (IsExplorationAvailableInCurrentSystem(ship.Nav.SystemSymbol, waypoints))
         {

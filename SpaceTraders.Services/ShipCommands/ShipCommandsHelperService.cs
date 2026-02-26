@@ -241,7 +241,8 @@ public class ShipCommandsHelperService(
             // var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
             // var paths = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
             var systems = await _systemsService.GetAsync();
-            var waypoints = systems.SelectMany(s => s.Waypoints).ToList();
+            var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(currentWaypoint.Symbol));
+            var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
             var paths = await _pathsService.BuildSystemPath(currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
 
             // Navigate to any export marketplaces not mapped
@@ -472,7 +473,8 @@ public class ShipCommandsHelperService(
         }
 
         var systems = await _systemsService.GetAsync();
-        var waypoints = systems.SelectMany(s => s.Waypoints).ToList();
+        var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(currentWaypoint.Symbol));
+        var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
         var paths = await _pathsService.BuildSystemPath(currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
         var tradeModels = _tradesService.BuildSellModel(paths.Keys.ToList());
         var inventoryToSell = ship.Cargo.Inventory.OrderByDescending(i => i.Units).ThenBy(i => i.Symbol).First().Symbol;
@@ -563,7 +565,8 @@ public class ShipCommandsHelperService(
         // var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
         // var paths = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
         var systems = await _systemsService.GetAsync();
-        var waypoints = systems.SelectMany(s => s.Waypoints).ToList();
+        var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(currentWaypoint.Symbol));
+        var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
         var paths = await _pathsService.BuildSystemPath(currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
         var sellModels = _tradesService.BuildSellModel(paths.Keys.ToList());
         var inventoryToSell = ship.Cargo.Inventory.OrderByDescending(i => i.Units).ThenBy(i => i.Symbol).First().Symbol;
@@ -770,7 +773,8 @@ public class ShipCommandsHelperService(
         // var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
         // var paths = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
         var systems = await _systemsService.GetAsync();
-        var waypoints = systems.SelectMany(s => s.Waypoints).ToList();
+        var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(currentWaypoint.Symbol));
+        var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
         var paths = await _pathsService.BuildSystemPath(currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
 
         var waypointsWithinRange = paths.Select(p => p.Key).ToList();
