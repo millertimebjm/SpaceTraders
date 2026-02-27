@@ -15,6 +15,7 @@ public class ShipJobsFactory(IServiceProvider _serviceProvider) : IShipJobsFacto
             ShipRegistrationRolesEnum.HAULER => _serviceProvider.GetRequiredService<HaulerShipJobService>(),
             ShipRegistrationRolesEnum.COMMAND => _serviceProvider.GetRequiredService<CommandShipJobService>(),
             ShipRegistrationRolesEnum.SURVEYOR => _serviceProvider.GetRequiredService<SurveyorShipJobService>(),
+            ShipRegistrationRolesEnum.TRANSPORT => _serviceProvider.GetRequiredService<TransportShipJobService>(),
             _ => null
         };
     }

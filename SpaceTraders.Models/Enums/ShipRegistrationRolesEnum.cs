@@ -15,5 +15,5 @@ public enum ShipRegistrationRolesEnum
     PATROL,
     SATELLITE,
     EXPLORER,
-    REFINERY
+    REFINERY,
 }

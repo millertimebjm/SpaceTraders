@@ -8,18 +8,12 @@ using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.ShipJobs.Interfaces;
 
-public class CommandShipJobService(
+public class TransportShipJobService(
     IAgentsService _agentsService,
     ISystemsService _systemsService,
     IWaypointsService _waypointsService
 ) : IShipJobService
 {
-    private const long PURCHASE_SHIP_CREDITS_THRESHOLD = 800_000;
-    private const int MINING_DRONE_MAX_SHIP_COUNT = 9;
-    private const int LIGHT_HAULER_MAX_SHIP_COUNT = 5;
-    private const int SURVEY_MAX_SHIP_COUNT = 1;
-    private const int SHUTTLE_MAX_SHIP_COUNT = 3;
-
     public async Task<ShipCommand?> Get(
         IEnumerable<Ship> ships,
         Ship ship)
@@ -38,40 +32,7 @@ public class CommandShipJobService(
             return new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration);
         }
 
-        if (await IsPurchaseShip(ships))
-        {
-            return new ShipCommand(ship.Symbol, ShipCommandEnum.PurchaseShip);
-        }
-
-        return new ShipCommand(ship.Symbol, ShipCommandEnum.BuyToSell);
-    }
-
-    private async Task<bool> IsPurchaseShip(IEnumerable<Ship> ships)
-    {
-        var agent = await _agentsService.GetAsync();
-        if (agent.Credits > PURCHASE_SHIP_CREDITS_THRESHOLD)
-        {
-            var shipTypesInSystem = ships
-                //.Where(s => s.Nav.SystemSymbol == ship.Nav.SystemSymbol)
-                .GroupBy(s => s.Registration.Role);
-            var miningDrones = shipTypesInSystem.SingleOrDefault(st => st.Key == ShipRegistrationRolesEnum.EXCAVATOR.ToString())?.Count() ?? 0;
-            var lightHaulers = shipTypesInSystem.SingleOrDefault(st => st.Key == ShipRegistrationRolesEnum.HAULER.ToString())?.Count() ?? 0;
-            var surveyShips = shipTypesInSystem.SingleOrDefault(st => st.Key == ShipRegistrationRolesEnum.SURVEYOR.ToString())?.Count() ?? 0;
-            if (miningDrones < MINING_DRONE_MAX_SHIP_COUNT
-                || lightHaulers < LIGHT_HAULER_MAX_SHIP_COUNT
-                || surveyShips < SURVEY_MAX_SHIP_COUNT)
-            {
-                return true;
-            }
-            var shuttles = shipTypesInSystem.SingleOrDefault(st => st.Key == ShipRegistrationRolesEnum.TRANSPORT.ToString())?.Count() ?? 0;
-            var system = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters));
-            var jumpGateWaypoint = system.Waypoints.SingleOrDefault(w => !w.IsUnderConstruction && w.JumpGate is not null);
-            if (shuttles < SHUTTLE_MAX_SHIP_COUNT && jumpGateWaypoint is not null)
-            {
-                return true;
-            }
-        }
-        return false;
+        return null;
     }
 
     private async Task<bool> IsExplorationAvailableOutsideCurrentSystem(string systemSymbol, List<Waypoint> waypoints)

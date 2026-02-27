@@ -79,6 +79,7 @@ public static class DependencyInjectionHelperService
         services.AddSingleton<MiningShipJobService>();
         services.AddSingleton<CommandShipJobService>();
         services.AddSingleton<SurveyorShipJobService>();
+        services.AddSingleton<TransportShipJobService>();
 
         // Cache Services
         services.AddSingleton<IMongoCollectionFactory, MongoCollectionFactory>();

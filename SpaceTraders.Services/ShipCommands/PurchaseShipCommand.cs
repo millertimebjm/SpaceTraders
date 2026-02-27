@@ -20,7 +20,6 @@ public class PurchaseShipCommand(
     {
         var ship = shipStatus.Ship;
         var currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol);
-        //var agent = _agentsService.GetAsync();
 
         while (true)
         {

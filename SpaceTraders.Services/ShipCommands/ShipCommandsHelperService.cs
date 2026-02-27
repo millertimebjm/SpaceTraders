@@ -934,6 +934,11 @@ public class ShipCommandsHelperService(
             return Task.FromResult((ShipTypesEnum?)ShipTypesEnum.SHIP_SURVEYOR);
         }
 
+        if ((shipsInSystem.SingleOrDefault(sin => sin.Key == ShipRegistrationRolesEnum.SURVEYOR.ToString())?.Count() ?? 0) == 0)
+        {
+            return Task.FromResult((ShipTypesEnum?)ShipTypesEnum.SHIP_LIGHT_SHUTTLE);
+        }
+
         return Task.FromResult((ShipTypesEnum?)null);
     }
 

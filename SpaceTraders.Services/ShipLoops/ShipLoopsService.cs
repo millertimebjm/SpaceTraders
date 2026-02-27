@@ -54,7 +54,9 @@ public class ShipLoopsService(
                 var ship = shipStatuses[i].Ship;
                 var shipStatus = shipStatuses[i];
                 if (ShipsService.GetShipCooldown(ship) is not null) continue;
-                if (ship.Symbol == "SPATIAL19-1")
+                if (ship.Symbol == "SPATIAL19-14"
+                    || ship.Symbol == "SPATIAL19-15"
+                    || ship.Symbol == "SPATIAL19-16")
                 {
                     int j = 0;
                 }
