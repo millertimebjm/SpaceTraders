@@ -772,9 +772,13 @@ public class ShipCommandsHelperService(
         return shortestPath.OrderBy(p => p.Value.Item1.Count).FirstOrDefault().Key;
     }
 
-    public async Task<(Nav? nav, Fuel? fuel, Cooldown? cooldown, bool noWork)> NavigateToMarketplaceRandomExport(Ship ship, Waypoint currentWaypoint)
+    public async Task<(Nav? nav, Fuel? fuel, Cooldown? cooldown, bool noWork, string? goal)> NavigateToMarketplaceRandomExport(
+        Ship ship, 
+        Waypoint currentWaypoint,
+        IEnumerable<string> otherShipGoalSymbols)
     {
-        if (ship.Nav.Status == NavStatusEnum.DOCKED.ToString()) return (null, null, null, noWork: false);
+        if (ship.Nav.Status == NavStatusEnum.DOCKED.ToString()) return (null, null, null, noWork: false, goal: null);
+        string? goal = null;
 
         var systems = await _systemsService.GetAsync();
         var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(currentWaypoint.Symbol));
@@ -785,46 +789,54 @@ public class ShipCommandsHelperService(
         var waypointSymbolsWithinRange = waypointsWithinRange.Select(wwr => wwr.Symbol).ToList();
 
         // Navigate to any export marketplaces not mapped
-        var waypointsWithinRangeWithExportsNotMapped = waypointsWithinRange.Where(wwr => wwr.Marketplace is not null && wwr.Marketplace.TradeGoods is null).ToList();
-        var waypointSymbolsWithinRangeWithExportsNotMapped = waypointsWithinRangeWithExportsNotMapped.Select(w => w.Symbol).ToList();
-        if (waypointSymbolsWithinRangeWithExportsNotMapped.Any())
-        {
-            var shortestPathUnmapped = paths
-                .Where(p => waypointSymbolsWithinRangeWithExportsNotMapped.Contains(p.Key))
-                .OrderBy(p => p.Value.Item1.Count())
-                .First();
-            if (WaypointsService.ExtractSystemFromWaypoint(shortestPathUnmapped.Value.Item1[1]) != ship.Nav.SystemSymbol)
-            {
-                var (navJump, cooldown) = await _shipsService.JumpAsync(shortestPathUnmapped.Value.Item1[1], ship.Symbol);
-                return (navJump, ship.Fuel, cooldown, false);
-            }
-            if (shortestPathUnmapped.Value.Item1.Count() == 1)
-            {
-                await _waypointsService.GetAsync(shortestPathUnmapped.Key, refresh: true);
-                return (null, null, null, true);
-            }
-            var (navResponse, fuelResponse) = await _shipsService.NavigateAsync(shortestPathUnmapped.Value.Item1[1], ship);
-            return (navResponse, fuelResponse, ship.Cooldown, false);
-        }
+        // var waypointsWithinRangeWithExportsNotMapped = waypointsWithinRange.Where(wwr => wwr.Marketplace is not null && wwr.Marketplace.TradeGoods is null).ToList();
+        // var waypointSymbolsWithinRangeWithExportsNotMapped = waypointsWithinRangeWithExportsNotMapped.Select(w => w.Symbol).ToList();
+        // if (waypointSymbolsWithinRangeWithExportsNotMapped.Any())
+        // {
+        //     var shortestPathUnmapped = paths
+        //         .Where(p => waypointSymbolsWithinRangeWithExportsNotMapped.Contains(p.Key))
+        //         .OrderBy(p => p.Value.Item1.Count())
+        //         .First();
+        //     goal = shortestPathUnmapped.Key;
+        //     if (WaypointsService.ExtractSystemFromWaypoint(shortestPathUnmapped.Value.Item1[1]) != ship.Nav.SystemSymbol)
+        //     {
+        //         var (navJump, cooldown) = await _shipsService.JumpAsync(shortestPathUnmapped.Value.Item1[1], ship.Symbol);
+        //         return (navJump, ship.Fuel, cooldown, false, goal);
+        //     }
+        //     if (shortestPathUnmapped.Value.Item1.Count() == 1)
+        //     {
+        //         await _waypointsService.GetAsync(shortestPathUnmapped.Key, refresh: true);
+        //         return (null, null, null, true, null);
+        //     }
+        //     var (navResponse, fuelResponse) = await _shipsService.NavigateAsync(shortestPathUnmapped.Value.Item1[1], ship);
+        //     return (navResponse, fuelResponse, ship.Cooldown, false, goal);
+        // }
 
         var reachableWaypoints = waypoints.Where(w => paths.ContainsKey(w.Symbol)).ToList();
         var tradeModels = await _tradesService.BuildTradeModel(reachableWaypoints, ship.Fuel.Capacity, ship.Fuel.Current);
-        var bestTrade = _tradesService.GetBestTrade(tradeModels);
-        if (bestTrade is null) return (null, null, null, true);
-        if (bestTrade.ExportWaypointSymbol == currentWaypoint.Symbol) return (null, null, null, false);
+        var availableTradeModels = tradeModels.Where(tm => !otherShipGoalSymbols.Contains(tm.TradeSymbol)).ToList();
+        if (ship.Goal is not null)
+        {
+            availableTradeModels = tradeModels.Where(tm => tm.TradeSymbol == ship.Goal).ToList();
+        }
+        var bestTrade = _tradesService.GetBestTrade(availableTradeModels);
+        if (bestTrade is null) return (null, null, null, true, null);
+        if (bestTrade.ExportWaypointSymbol == currentWaypoint.Symbol) return (null, null, null, false, null);
+
+        goal = bestTrade.TradeSymbol;
         var shortestPath = paths.Single(p => p.Key == bestTrade.ExportWaypointSymbol);
         if (WaypointsService.ExtractSystemFromWaypoint(shortestPath.Value.Item1[1]) != ship.Nav.SystemSymbol)
         {
             var (navJump, cooldownJump) = await _shipsService.JumpAsync(shortestPath.Value.Item1[1], ship.Symbol);
-            return (navJump, ship.Fuel, cooldownJump, false);
+            return (navJump, ship.Fuel, cooldownJump, false, goal);
         }
         if (shortestPath.Value.Item1.Count() == 1)
         {
             await _waypointsService.GetAsync(shortestPath.Key, refresh: true);
-            return (null, null, null, true);
+            return (null, null, null, true, null);
         }
         var (nav, fuel) = await _shipsService.NavigateAsync(shortestPath.Value.Item1[1], ship);
-        return (nav, fuel, ship.Cooldown, false);
+        return (nav, fuel, ship.Cooldown, false, goal);
     }
 
     public async Task<(Nav?, Fuel?)> NavigateToSurvey(Ship ship, Waypoint currentWaypoint)
@@ -957,7 +969,7 @@ public class ShipCommandsHelperService(
     }
 
 
-    public async Task<(Nav? nav, Fuel? fuel, Cooldown? cooldown, string goal)> NavigateToExplore(
+    public async Task<(Nav? nav, Fuel? fuel, Cooldown? cooldown, string? goal)> NavigateToExplore(
         Ship ship, 
         Waypoint currentWaypoint,
         List<string> otherShipGoals)

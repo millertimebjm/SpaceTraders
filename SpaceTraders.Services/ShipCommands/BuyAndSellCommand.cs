@@ -94,14 +94,18 @@ public class BuyAndSellCommand(
                 return new ShipStatus(ship, $"Navigate To Marketplace Import {ship.Nav.Route.Destination.Symbol}", DateTime.UtcNow);
             }
 
-            (nav, fuel, cooldown, var noWork) = await _shipCommandsHelperService.NavigateToMarketplaceRandomExport(ship, currentWaypoint);
+            var otherShipGoalSymbols = shipsDictionary.Values.Where(s => s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.BuyToSell && s.Goal is not null).Select(s => s.Goal ?? "").ToList();
+            (nav, fuel, cooldown, var noWork, var goal) = await _shipCommandsHelperService.NavigateToMarketplaceRandomExport(
+                ship, 
+                currentWaypoint,
+                otherShipGoalSymbols);
             if (noWork)
             {
                 return new ShipStatus(ship, $"No Valid Exports found", DateTime.UtcNow);
             }
             else if (nav is not null && fuel is not null)
             {
-                ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown};
+                ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown, Goal = goal};
                 return new ShipStatus(ship, $"Navigate To Marketplace Random Export {nav.Route.Destination.Symbol}", DateTime.UtcNow);
             }
 

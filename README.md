@@ -2,6 +2,6 @@
 
 SpaceTraders.io Game REST API
 
-* give jobs/statuses for ships longer lasting data like reservation for the waypoint they are going to chart or the products they intend to trade
-* when looking for work to do, avoid other ships reserved jobs/statuses
+* finish reservation for buy/sell
+* mining ships in each system
 * Add error data to shiplog

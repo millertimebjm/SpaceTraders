@@ -90,10 +90,13 @@ public class BuyAndSellCommandV2(
         if (ship.Cargo.Units == 0)
         {
             nav = await _shipCommandsHelperService.Orbit(ship, currentWaypoint);
-            (nav, fuel, cooldown, var nowork) = await _shipCommandsHelperService.NavigateToMarketplaceRandomExport(ship, currentWaypoint);
+            (nav, fuel, cooldown, var nowork, var goal) = await _shipCommandsHelperService.NavigateToMarketplaceRandomExport(
+                ship, 
+                currentWaypoint,
+                shipsDictionary.Values.Where(s => s.ShipCommand.ShipCommandEnum == ShipCommandEnum.BuyToSell).Select(s => s.Goal));
             if (nav is not null && fuel is not null)
             {
-                ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown };
+                ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown, Goal = goal };
                 return new ShipStatus(ship, $"Navigate To Marketplace Random Export {ship.Nav.Route.Destination.Symbol}", DateTime.UtcNow);
             }
         }
@@ -113,14 +116,17 @@ public class BuyAndSellCommandV2(
         if (destinationWaypoint.Symbol != currentWaypoint.Symbol)
         {
             await _shipCommandsHelperService.Orbit(ship, currentWaypoint);
-            (nav, fuel, cooldown, var noWork) = await _shipCommandsHelperService.NavigateToMarketplaceRandomExport(ship, currentWaypoint);
+            (nav, fuel, cooldown, var noWork, var goal) = await _shipCommandsHelperService.NavigateToMarketplaceRandomExport(
+                ship, 
+                currentWaypoint,
+                shipsDictionary.Values.Where(s => s.ShipCommand.ShipCommandEnum == ShipCommandEnum.BuyToSell).Select(s => s.Goal));
             if (noWork)
             {
                 return new ShipStatus(ship, $"No Valid Exports found", DateTime.UtcNow);
             }
             else if (nav is not null && fuel is not null)
             {
-                ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown};
+                ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown, Goal = goal };
                 return new ShipStatus(ship, $"Navigate To Marketplace Random Export {nav.Route.Destination.Symbol}", DateTime.UtcNow);
             }
         }

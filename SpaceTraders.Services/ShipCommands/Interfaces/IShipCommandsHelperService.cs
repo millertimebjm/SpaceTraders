@@ -23,7 +23,10 @@ public interface IShipCommandsHelperService
     Task<Waypoint?> GetClosestSellingWaypoint(Ship ship, Waypoint currentWaypoint);
     Task<(Nav?, Fuel?)> NavigateToMarketplaceExport(Ship ship, Waypoint currentWaypoint, Waypoint constructionWaypoint);
     Task<PurchaseCargoResult?> BuyForConstruction(Ship ship, Waypoint currentWaypoint, Waypoint constructionWaypoint);
-    Task<(Nav? nav, Fuel? fuel, Cooldown? cooldown, bool noWork)> NavigateToMarketplaceRandomExport(Ship ship, Waypoint currentWaypoint);
+    Task<(Nav? nav, Fuel? fuel, Cooldown? cooldown, bool noWork, string? goal)> NavigateToMarketplaceRandomExport(
+        Ship ship, 
+        Waypoint currentWaypoint,
+        IEnumerable<string> otherShipGoalSymbols);
     Task<(Nav?, Fuel?)> NavigateToSurvey(Ship ship, Waypoint currentWaypoint);
     Task<(Nav?, Fuel?)> NavigateToMiningWaypoint(Ship ship, Waypoint currentWaypoint);
 
