@@ -65,10 +65,12 @@ public class ViewHelperService
         }
         if (t.TotalHours <= 1)
         {
+            if (t.TotalMinutes < 2) return "1 minute";
             return $@"{t:%m} minutes";
         }
         if (t.TotalDays <= 1)
         {
+            if (t.TotalHours < 2) return "1 hour";
             return $@"{t:%h} hours";
         }
 

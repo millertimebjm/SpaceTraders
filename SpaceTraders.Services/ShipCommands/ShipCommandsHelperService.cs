@@ -964,7 +964,8 @@ public class ShipCommandsHelperService(
             var paths = await _pathsService.BuildSystemPathWithCost(waypoints, currentWaypoint, 10000, 10000);
             var reachableWaypoints = waypoints.Where(w => paths.ContainsKey(w.Symbol)).ToList();
             var fuelPaths = reachableWaypoints
-                .Where(p => p.Marketplace?.TradeGoods?.Any(tg => tg.Symbol == InventoryEnum.FUEL.ToString()) == true)
+                .Where(p => ship.Nav.SystemSymbol == WaypointsService.ExtractSystemFromWaypoint(p.Symbol) && 
+                    p.Marketplace?.TradeGoods?.Any(tg => tg.Symbol == InventoryEnum.FUEL.ToString()) == true)
                 .ToList();
             var shortestFuelPath = fuelPaths
                 .OrderBy(p => WaypointsService.CalculateDistance(currentWaypoint.X, currentWaypoint.X, p.Y, p.Y))

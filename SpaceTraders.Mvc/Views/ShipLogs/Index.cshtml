@@ -40,8 +40,8 @@
             <tr>
                 <td><a href="/shiplogs/?shipsymbol=@shipLog.ShipSymbol">@shipLog.ShipSymbol</a></td>
                 <td>@shipLog.ShipLogEnum</td>
-                <td>@shipLog.StartedDateTimeUtc</td>
-                <td>@shipLog.CompletedDateTimeUtc</td>
+                <td>@shipLog.StartedDateTimeUtc.ToLocalTime()<br/>@ViewHelperService.HumanReadableTimeSpan(DateTime.UtcNow - shipLog.StartedDateTimeUtc)</td>
+                <td>@shipLog.CompletedDateTimeUtc.ToLocalTime()<br/>@ViewHelperService.HumanReadableTimeSpan(DateTime.UtcNow - shipLog.StartedDateTimeUtc)</td>
                 <td>
                     @{
                         var data = JsonSerializer.Deserialize<ExpandoObject>(shipLog.JsonData);
