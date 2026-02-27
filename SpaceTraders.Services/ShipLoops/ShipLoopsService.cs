@@ -144,7 +144,7 @@ public class ShipLoopsService(
         var agent = await _agentsService.GetAsync();
         var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters));
         var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
-        var tradeModels = await _tradesService.BuildTradeModel(waypoints, 600, 600);
+        var tradeModels = await _tradesService.BuildTradeModel(waypoints, 600, 600, refresh: true);
         if (tradeModels.Any())
         {
             await _tradesCacheService.SaveTradeModelsAsync(tradeModels, 600, 600);

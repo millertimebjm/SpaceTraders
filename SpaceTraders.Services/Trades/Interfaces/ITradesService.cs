@@ -7,7 +7,8 @@ public interface ITradesService
     Task<IReadOnlyList<TradeModel>> BuildTradeModel(
         IReadOnlyList<Waypoint> marketplaceWaypoints,
         int fuelMax,
-        int fuelCurrent);
+        int fuelCurrent,
+        bool refresh = false);
     TradeModel? GetBestTrade(IReadOnlyList<TradeModel> trades);
     TradeModel? GetAnyBestTrade(IReadOnlyList<TradeModel> trades);
     SellModel? GetBestSellModel(IReadOnlyList<SellModel> sellModels);

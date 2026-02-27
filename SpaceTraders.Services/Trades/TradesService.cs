@@ -4,24 +4,35 @@ using MongoDB.Driver;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Paths.Interfaces;
+using SpaceTraders.Services.Trades.Interfaces;
 
 namespace SpaceTraders.Services.Trades;
 
 public class TradesService(
     ILogger<TradesService> _logger,
     IPathsService _pathsService,
-    IPathsCacheService _pathsCacheService
+    IPathsCacheService _pathsCacheService,
+    ITradesCacheService _tradesCacheService
 ) : ITradesService
 {
     public async Task<IReadOnlyList<TradeModel>> BuildTradeModel(
         IReadOnlyList<Waypoint> waypoints,
         int fuelMax,
-        int fuelCurrent)
+        int fuelCurrent,
+        bool refresh = false)
     {
+        if (!refresh)
+        {
+            var tradeModelsCache = await _tradesCacheService.GetTradeModelsAsync(600, 600);
+            if (tradeModelsCache is not null)
+            {
+                return [.. tradeModelsCache];
+            }
+        }
+
         var marketplaceWaypoints = waypoints.Where(w => w.Marketplace is not null && w.Marketplace.TradeGoods is not null).ToList();
         ConcurrentBag<TradeModel> tradeModels = new();
         var marketplaceWaypointExports = marketplaceWaypoints.Where(w => w.Marketplace.Exports.Any()).ToList();
-        //foreach (var marketplaceWaypointExport in marketplaceWaypointExports)
         await Parallel.ForEachAsync(marketplaceWaypointExports, async (marketplaceWaypointExport, CancellationToken) =>
         //foreach (var marketplaceWaypointExport in marketplaceWaypointExports)
         {

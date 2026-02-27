@@ -2,14 +2,13 @@
 @using SpaceTraders.Mvc.Services
 @using SpaceTraders.Services.Marketplaces
 @using SpaceTraders.Services.Trades
-@model (string, IReadOnlyList<TradeModel>)
+@model IReadOnlyList<TradeModel>
 @{
     ViewData["Title"] = "Trade Models";
-    var systemSymbol = Model.Item1;
-    IReadOnlyList<TradeModel> tradeModels = Model.Item2;
+    IReadOnlyList<TradeModel> tradeModels = Model;
 }
 
-<h3>@systemSymbol</h3>
+<h3>Trade Models</h3>
 <table class="table">
     <thead>
         <tr>
