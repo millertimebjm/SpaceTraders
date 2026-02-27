@@ -27,6 +27,11 @@
                         <span data-toggle="tooltip" data-placement="top" title="@(string.Join(" ", shipStatus.Ship.Cargo.Inventory.Select(i => $"{i.Symbol} ({i.Units})")))">Cargo: @shipStatus.Ship.Cargo.Units</span>
                     }
                     
+                    @if (shipStatus.Ship.Goal is not null)
+                    {
+                        <span>Goal: @shipStatus.Ship.Goal</span>
+                    }
+
                     <span>@shipStatus.LastMessage</span>
                     <span>@ViewHelperService.HumanReadableTimeSpan(DateTime.UtcNow - shipStatus.DateTimeOfLastInstruction) ago</span>
                     @{
