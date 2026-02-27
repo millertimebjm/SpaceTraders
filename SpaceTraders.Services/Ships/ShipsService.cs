@@ -153,7 +153,8 @@ public class ShipsService : IShipsService
             _httpClient,
             content,
             _logger);
-        if (data is null) throw new HttpRequestException("Nav error");
+        if (data is null) 
+            throw new HttpRequestException("Nav error");
         await AddNavigateLog(ship, data.Datum.Nav, data.Datum.Fuel);
         return (data.Datum.Nav, data.Datum.Fuel);
     }

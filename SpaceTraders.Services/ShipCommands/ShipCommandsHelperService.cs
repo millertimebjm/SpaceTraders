@@ -482,14 +482,15 @@ public class ShipCommandsHelperService(
         var tradeModels = _tradesService.BuildSellModel(reachableWaypoints);
         var inventoryToSell = ship.Cargo.Inventory.OrderByDescending(i => i.Units).ThenBy(i => i.Symbol).First().Symbol;
         tradeModels = tradeModels.Where(tm => tm.TradeSymbol == inventoryToSell).ToList();
-        var bestTrade = _tradesService.GetBestSellModel(tradeModels);
-        if (bestTrade is null) return null;
-        if (currentWaypoint.Symbol != bestTrade.WaypointSymbol) return null;
+        // var bestTrade = _tradesService.GetBestSellModel(tradeModels);
+        // if (bestTrade is null && !tradeModels.Any(tm => tm.WaypointSymbol == ship.Nav.WaypointSymbol)) return null;
+        var currentTrade = tradeModels.SingleOrDefault(tm => tm.WaypointSymbol == ship.Nav.WaypointSymbol);
+        if (currentTrade is null) return null;
         SellCargoResponse? sellCargoResponse = null;
         while (ship.Cargo.Inventory.SingleOrDefault(i => i.Symbol == inventoryToSell)?.Units > 0)
         {
-            var units = Math.Min(bestTrade.TradeVolume, ship.Cargo.Inventory.Single(i => i.Symbol == inventoryToSell).Units);
-            sellCargoResponse = await _marketplacesService.SellAsync(ship.Symbol, bestTrade.TradeSymbol, units);
+            var units = Math.Min(currentTrade.TradeVolume, ship.Cargo.Inventory.Single(i => i.Symbol == inventoryToSell).Units);
+            sellCargoResponse = await _marketplacesService.SellAsync(ship.Symbol, currentTrade.TradeSymbol, units);
             ship = ship with { Cargo = sellCargoResponse.Cargo };
             await _transactionsService.SetAsync(sellCargoResponse.Transaction);
         }
