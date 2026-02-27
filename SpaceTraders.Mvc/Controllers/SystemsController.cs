@@ -92,7 +92,7 @@ public class SystemsController(
         await Response.Body.FlushAsync();
 
         var system = await _systemsApiService.GetAsync(systemSymbol);
-        var message = $"{DateTime.Now} - System has been retrieved.\n";
+        var message = $"{DateTime.Now} - {systemSymbol} - System has been retrieved.\n";
         var buffer = Encoding.UTF8.GetBytes(message);
         await Response.Body.WriteAsync(buffer, 0, buffer.Length);
         await Response.Body.FlushAsync();
@@ -110,7 +110,7 @@ public class SystemsController(
                     var waypointHydrated = await _waypointsApiService.GetAsync(waypointSkeleton.Symbol);
                     waypointsHydrated.Add(waypointHydrated);
                     completed = true;
-                    message = $"{DateTime.Now} - Waypoint retrieved ({index}/{systemWaypointsCount}).\n";
+                    message = $"{DateTime.Now} - {waypointSkeleton.Symbol} - Waypoint retrieved ({index}/{systemWaypointsCount}).\n";
                     buffer = Encoding.UTF8.GetBytes(message);
                     await Response.Body.WriteAsync(buffer, 0, buffer.Length);
                     await Response.Body.FlushAsync();
