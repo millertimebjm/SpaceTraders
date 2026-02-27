@@ -84,9 +84,9 @@ public class PathsServicesTests
         var systemPath = await pathsService.BuildSystemPath(
             firstWaypointSymbol,
             ship.Fuel.Capacity, ship.Fuel.Current);
-        Assert.Equal(2, systemPath.Single(p => p.Key.Symbol == secondWaypointSymbol).Value.Item1.Count());
-        Assert.Equal(firstWaypointSymbol, systemPath.Single(p => p.Key.Symbol == secondWaypointSymbol).Value.Item1[0].Symbol);
-        Assert.Equal(secondWaypointSymbol, systemPath.Single(p => p.Key.Symbol == secondWaypointSymbol).Value.Item1[1].Symbol);
+        Assert.Equal(2, systemPath.Single(p => p.Key == secondWaypointSymbol).Value.Item1.Count());
+        Assert.Equal(firstWaypointSymbol, systemPath.Single(p => p.Key == secondWaypointSymbol).Value.Item1[0]);
+        Assert.Equal(secondWaypointSymbol, systemPath.Single(p => p.Key == secondWaypointSymbol).Value.Item1[1]);
     }
 
     [Fact]
@@ -115,8 +115,8 @@ public class PathsServicesTests
         var systemPath = await pathsService.BuildSystemPath(
             firstWaypointSymbol,
             ship.Fuel.Capacity, ship.Fuel.Current);
-        Assert.Single(systemPath.Single(p => p.Key.Symbol == firstWaypointSymbol).Value.Item1);
-        Assert.Equal(firstWaypointSymbol, systemPath.Single(p => p.Key.Symbol == firstWaypointSymbol).Value.Item1[0].Symbol);
+        Assert.Single(systemPath.Single(p => p.Key == firstWaypointSymbol).Value.Item1);
+        Assert.Equal(firstWaypointSymbol, systemPath.Single(p => p.Key == firstWaypointSymbol).Value.Item1[0]);
     }
 
     [Fact]
@@ -140,10 +140,10 @@ public class PathsServicesTests
         var systemPath = await pathsService.BuildSystemPathWithCost(
             firstWaypointSymbol,
             ship.Fuel.Capacity, ship.Fuel.Current);
-        Assert.Equal(2, systemPath.Single(p => p.Key.Symbol == secondWaypointSymbol).Value.Item1.Count());
-        Assert.Equal(firstWaypointSymbol, systemPath.Single(p => p.Key.Symbol == secondWaypointSymbol).Value.Item1[0].Symbol);
-        Assert.Equal(secondWaypointSymbol, systemPath.Single(p => p.Key.Symbol == secondWaypointSymbol).Value.Item1[1].Symbol);
-        Assert.Equal(2, systemPath.Single(p => p.Key.Symbol == secondWaypointSymbol).Value.Item2);
+        Assert.Equal(2, systemPath.Single(p => p.Key == secondWaypointSymbol).Value.Item1.Count());
+        Assert.Equal(firstWaypointSymbol, systemPath.Single(p => p.Key == secondWaypointSymbol).Value.Item1[0]);
+        Assert.Equal(secondWaypointSymbol, systemPath.Single(p => p.Key == secondWaypointSymbol).Value.Item1[1]);
+        Assert.Equal(2, systemPath.Single(p => p.Key == secondWaypointSymbol).Value.Item2);
     }
 
     [Fact]
@@ -167,10 +167,10 @@ public class PathsServicesTests
         var systemPath = await pathsService.BuildSystemPathWithCost(
             firstWaypointSymbol,
             ship.Fuel.Capacity, ship.Fuel.Current);
-        Assert.Equal(2, systemPath.Single(p => p.Key.Symbol == secondWaypointSymbol).Value.Item1.Count());
-        Assert.Equal(firstWaypointSymbol, systemPath.Single(p => p.Key.Symbol == secondWaypointSymbol).Value.Item1[0].Symbol);
-        Assert.Equal(secondWaypointSymbol, systemPath.Single(p => p.Key.Symbol == secondWaypointSymbol).Value.Item1[1].Symbol);
-        Assert.Equal(20_164, systemPath.Single(p => p.Key.Symbol == secondWaypointSymbol).Value.Item2);
+        Assert.Equal(2, systemPath.Single(p => p.Key == secondWaypointSymbol).Value.Item1.Count());
+        Assert.Equal(firstWaypointSymbol, systemPath.Single(p => p.Key == secondWaypointSymbol).Value.Item1[0]);
+        Assert.Equal(secondWaypointSymbol, systemPath.Single(p => p.Key == secondWaypointSymbol).Value.Item1[1]);
+        Assert.Equal(20_164, systemPath.Single(p => p.Key == secondWaypointSymbol).Value.Item2);
     }
 
     [Fact]
@@ -196,11 +196,11 @@ public class PathsServicesTests
         var systemPath = await pathsService.BuildSystemPathWithCost(
             firstWaypointSymbol,
             ship.Fuel.Capacity, ship.Fuel.Current);
-        Assert.Equal(3, systemPath.Single(p => p.Key.Symbol == thirdWaypointSymbol).Value.Item1.Count());
-        Assert.Equal(firstWaypointSymbol, systemPath.Single(p => p.Key.Symbol == thirdWaypointSymbol).Value.Item1[0].Symbol);
-        Assert.Equal(secondWaypointSymbol, systemPath.Single(p => p.Key.Symbol == thirdWaypointSymbol).Value.Item1[1].Symbol);
-        Assert.Equal(thirdWaypointSymbol, systemPath.Single(p => p.Key.Symbol == thirdWaypointSymbol).Value.Item1[2].Symbol);
-        Assert.Equal(20_169, systemPath.Single(p => p.Key.Symbol == thirdWaypointSymbol).Value.Item2);
+        Assert.Equal(3, systemPath.Single(p => p.Key == thirdWaypointSymbol).Value.Item1.Count());
+        Assert.Equal(firstWaypointSymbol, systemPath.Single(p => p.Key == thirdWaypointSymbol).Value.Item1[0]);
+        Assert.Equal(secondWaypointSymbol, systemPath.Single(p => p.Key == thirdWaypointSymbol).Value.Item1[1]);
+        Assert.Equal(thirdWaypointSymbol, systemPath.Single(p => p.Key == thirdWaypointSymbol).Value.Item1[2]);
+        Assert.Equal(20_169, systemPath.Single(p => p.Key == thirdWaypointSymbol).Value.Item2);
     }
 
     [Fact]
@@ -230,11 +230,11 @@ public class PathsServicesTests
         var systemPath = await pathsService.BuildSystemPathWithCost(
             firstWaypointSymbol,
             ship.Fuel.Capacity, ship.Fuel.Current);
-        Assert.Equal(3, systemPath.Single(p => p.Key.Symbol == thirdWaypointSymbol).Value.Item1.Count());
-        Assert.Equal(firstWaypointSymbol, systemPath.Single(p => p.Key.Symbol == thirdWaypointSymbol).Value.Item1[0].Symbol);
-        Assert.Equal(secondWaypointSymbol, systemPath.Single(p => p.Key.Symbol == thirdWaypointSymbol).Value.Item1[1].Symbol);
-        Assert.Equal(thirdWaypointSymbol, systemPath.Single(p => p.Key.Symbol == thirdWaypointSymbol).Value.Item1[2].Symbol);
-        Assert.Equal(20_164 + PathsService.JUMP_COST, systemPath.Single(p => p.Key.Symbol == thirdWaypointSymbol).Value.Item2);
+        Assert.Equal(3, systemPath.Single(p => p.Key == thirdWaypointSymbol).Value.Item1.Count());
+        Assert.Equal(firstWaypointSymbol, systemPath.Single(p => p.Key == thirdWaypointSymbol).Value.Item1[0]);
+        Assert.Equal(secondWaypointSymbol, systemPath.Single(p => p.Key == thirdWaypointSymbol).Value.Item1[1]);
+        Assert.Equal(thirdWaypointSymbol, systemPath.Single(p => p.Key == thirdWaypointSymbol).Value.Item1[2]);
+        Assert.Equal(20_164 + PathsService.JUMP_COST, systemPath.Single(p => p.Key == thirdWaypointSymbol).Value.Item2);
     }
 }
 #pragma warning restore CS8625 // Cannot convert null literal to non-nullable reference type.

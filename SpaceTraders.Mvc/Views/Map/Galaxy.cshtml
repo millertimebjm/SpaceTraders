@@ -75,8 +75,8 @@
                             system.X + xOffset, 
                             system.Y + yOffset, 
                             system.Symbol, 
-                            system.Symbol == headquartersSystemSymbol ? "#ff0077" : color),
-                            true);
+                            system.Symbol == headquartersSystemSymbol ? "#ff0077" : color,
+                            true));
                 }
             }
             const staticObjects = @(Html.Raw(JsonSerializer.Serialize(staticObjects, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping })))

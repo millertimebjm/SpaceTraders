@@ -10,5 +10,5 @@ public record MapStaticObjectsViewModel(
     int Y,
     string Label,
     string Color,
-    string Fill
+    bool Fill
 );

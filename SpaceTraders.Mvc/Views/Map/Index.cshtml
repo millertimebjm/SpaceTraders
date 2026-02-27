@@ -68,11 +68,12 @@
                             waypoint.X + (GRID_SIZE / 2), 
                             waypoint.Y + (GRID_SIZE / 2), 
                             waypoint.Symbol.Substring(waypoint.Symbol.LastIndexOf("-") + 1, waypoint.Symbol.Length - (waypoint.Symbol.LastIndexOf("-")+1)), 
-                            color));
+                            color,
+                            true));
                 }
                 var distinctStaticObjects = staticObjects
                     .GroupBy(so => (so.X, so.Y))
-                    .Select(so => new MapStaticObjectsViewModel(so.Key.X, so.Key.Y, string.Join(",", so.Select(item => item.Label)), so.First().Color));
+                    .Select(so => new MapStaticObjectsViewModel(so.Key.X, so.Key.Y, string.Join(",", so.Select(item => item.Label)), so.First().Color, true));
             }
             const staticObjects = @(Html.Raw(JsonSerializer.Serialize(distinctStaticObjects, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping })))
 
