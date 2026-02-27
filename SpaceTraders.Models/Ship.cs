@@ -75,7 +75,8 @@ namespace SpaceTraders.Models;
  Fuel Fuel,
  Cooldown Cooldown,
  ShipCommand? ShipCommand,
- string? Error
+ string? Error,
+ string? Goal = null
     );
 
     public record Route(

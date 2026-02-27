@@ -31,6 +31,7 @@ public class ExplorationCommand(
                     var chartWaypointResult = await _shipsService.ChartAsync(ship.Symbol);
                     currentWaypoint = chartWaypointResult.Waypoint;
                     await _waypointsCacheService.SetAsync(currentWaypoint);
+                    ship = ship with { Goal = null };
                 }
                 catch (Exception ex)
                 {
@@ -72,11 +73,19 @@ public class ExplorationCommand(
                 continue;
             }
 
-            (nav, var fuel, var cooldown) = await _shipCommandsHelperService.NavigateToExplore(ship, currentWaypoint);
+            List<string> explorerShipGoals = 
+                shipsDictionary
+                .Values
+                .Where(s => 
+                    s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.Exploration 
+                    && s.Goal is not null)
+                .Select(s => s.Goal ?? "")
+                .ToList();
+            (nav, var fuel, var cooldown) = await _shipCommandsHelperService.NavigateToExplore(ship, currentWaypoint, explorerShipGoals);
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown };
-                return new ShipStatus(ship, $"NavigateToExplore {ship.Nav.WaypointSymbol}", DateTime.UtcNow);
+                return new ShipStatus(ship, $"Navigate To Explore {ship.Nav.WaypointSymbol}", DateTime.UtcNow);
             }
 
             ship = ship with { ShipCommand = null };

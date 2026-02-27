@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Filters;
-using SpaceTraders.Mvc;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.ShipStatuses.Interfaces;
 using SpaceTraders.Services.Systems.Interfaces;

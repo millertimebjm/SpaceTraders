@@ -957,9 +957,11 @@ public class ShipCommandsHelperService(
     }
 
 
-    public async Task<(Nav? nav, Fuel? fuel, Cooldown? cooldown)> NavigateToExplore(Ship ship, Waypoint currentWaypoint)
+    public async Task<(Nav? nav, Fuel? fuel, Cooldown? cooldown)> NavigateToExplore(
+        Ship ship, 
+        Waypoint currentWaypoint,
+        List<string> otherShipGoals)
     {
-        // var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
         var systems = await _systemsService.GetAsync();
 
         if (ship.Fuel.Current < minimumFuel)
@@ -979,9 +981,16 @@ public class ShipCommandsHelperService(
             return (refuelNav, refuelFuel, null);
         }
 
+        if (ship.Goal is not null)
+        {
+            var reachableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol);
+            var waypoints = reachableSystems.SelectMany(s => s.Waypoints).ToList();
+            var paths = await _pathsService.BuildSystemPathWithCost(waypoints, currentWaypoint, 10000, 10000);
+            var path = paths.Single(p => p.Key == ship.Goal);
+            var (refuelNav, refuelFuel) = await _shipsService.NavigateAsync(path.Value.Item1[1], ship);
+        }
+
         var unmappedWaypoints = systems.SelectMany(s => s.Waypoints).Where(w =>
-            // w.Traits is null
-            // || w.Traits.Any(t => t.Symbol == WaypointTraitsEnum.UNCHARTED.ToString()))
             w.Traits is null
             || (w.Marketplace is not null && w.Marketplace.TradeGoods is null)
             || w.Traits.Any(t => t.Symbol == WaypointTraitsEnum.UNCHARTED.ToString()))
@@ -990,23 +999,19 @@ public class ShipCommandsHelperService(
 
         var pathDictionary = await _pathsService.BuildSystemPath(currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
         var unmappedPaths = pathDictionary.Where(p => unmappedWaypoints.Contains(p.Key)).ToList();
-        if (!unmappedPaths.Any())
+        if (unmappedPaths.Count == 0)
         {
             pathDictionary = await _pathsService.BuildSystemPath(currentWaypoint.Symbol, 10000, 10000);
             unmappedPaths = pathDictionary.Where(p => unmappedWaypoints.Contains(p.Key)).ToList();
-            if (unmappedPaths.Any())
-            {
-                await _shipsService.SwitchShipFlightMode(ship, NavFlightModeEnum.DRIFT);
-            }
-            else
+            if (unmappedPaths.Count == 0)
             {
                 return (null, null, null);
             }
         }
-        else
-        {
-            await _shipsService.SwitchShipFlightMode(ship, NavFlightModeEnum.CRUISE);
-        }
+        // else
+        // {
+        //     await _shipsService.SwitchShipFlightMode(ship, NavFlightModeEnum.CRUISE);
+        // }
 
         var closestUnmappedPath = unmappedPaths
             .OrderByDescending(p => WaypointsService.ExtractSystemFromWaypoint(p.Key) == ship.Nav.SystemSymbol)
@@ -1015,11 +1020,6 @@ public class ShipCommandsHelperService(
             .ThenBy(p => p.Key)
             .FirstOrDefault();
 
-        if (closestUnmappedPath.Value.Item1.Count() == 1)
-        {
-            await _waypointsService.GetAsync(closestUnmappedPath.Key, refresh: true);
-            return (null, null, null);
-        }
         if (WaypointsService.ExtractSystemFromWaypoint(closestUnmappedPath.Value.Item1[1]) != ship.Nav.SystemSymbol)
         {
             var (navJump, cooldown) = await _shipsService.JumpAsync(closestUnmappedPath.Value.Item1[1], ship.Symbol);
