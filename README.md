@@ -2,6 +2,6 @@
 
 SpaceTraders.io Game REST API
 
-* finish reservation for buy/sell
+* move all non-ship-api properties to shipstatus
 * mining ships in each system
 * Add error data to shiplog
