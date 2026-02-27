@@ -81,10 +81,10 @@ public class ExplorationCommand(
                     && s.Goal is not null)
                 .Select(s => s.Goal ?? "")
                 .ToList();
-            (nav, var fuel, var cooldown) = await _shipCommandsHelperService.NavigateToExplore(ship, currentWaypoint, explorerShipGoals);
+            (nav, var fuel, var cooldown, var goal) = await _shipCommandsHelperService.NavigateToExplore(ship, currentWaypoint, explorerShipGoals);
             if (nav is not null && fuel is not null)
             {
-                ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown };
+                ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown, Goal = goal };
                 return new ShipStatus(ship, $"Navigate To Explore {ship.Nav.WaypointSymbol}", DateTime.UtcNow);
             }
 

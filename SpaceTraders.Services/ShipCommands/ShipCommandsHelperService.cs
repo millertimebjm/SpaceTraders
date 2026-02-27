@@ -957,7 +957,7 @@ public class ShipCommandsHelperService(
     }
 
 
-    public async Task<(Nav? nav, Fuel? fuel, Cooldown? cooldown)> NavigateToExplore(
+    public async Task<(Nav? nav, Fuel? fuel, Cooldown? cooldown, string goal)> NavigateToExplore(
         Ship ship, 
         Waypoint currentWaypoint,
         List<string> otherShipGoals)
@@ -978,7 +978,7 @@ public class ShipCommandsHelperService(
                 .OrderBy(p => WaypointsService.CalculateDistance(currentWaypoint.X, currentWaypoint.X, p.Y, p.Y))
                 .First();
             var (refuelNav, refuelFuel) = await _shipsService.NavigateAsync(shortestFuelPath.Symbol, ship);
-            return (refuelNav, refuelFuel, null);
+            return (refuelNav, refuelFuel, null, ship.Goal);
         }
 
         if (ship.Goal is not null)
@@ -991,9 +991,10 @@ public class ShipCommandsHelperService(
         }
 
         var unmappedWaypoints = systems.SelectMany(s => s.Waypoints).Where(w =>
-            w.Traits is null
+            (w.Traits is null
             || (w.Marketplace is not null && w.Marketplace.TradeGoods is null)
-            || w.Traits.Any(t => t.Symbol == WaypointTraitsEnum.UNCHARTED.ToString()))
+            || w.Traits.Any(t => t.Symbol == WaypointTraitsEnum.UNCHARTED.ToString())
+            ) && !otherShipGoals.Contains(w.Symbol))
             .Select(w => w.Symbol)
             .ToList();
 
@@ -1005,7 +1006,7 @@ public class ShipCommandsHelperService(
             unmappedPaths = pathDictionary.Where(p => unmappedWaypoints.Contains(p.Key)).ToList();
             if (unmappedPaths.Count == 0)
             {
-                return (null, null, null);
+                return (null, null, null, null);
             }
         }
         // else
@@ -1020,13 +1021,15 @@ public class ShipCommandsHelperService(
             .ThenBy(p => p.Key)
             .FirstOrDefault();
 
+        var goal = closestUnmappedPath.Key;
+
         if (WaypointsService.ExtractSystemFromWaypoint(closestUnmappedPath.Value.Item1[1]) != ship.Nav.SystemSymbol)
         {
             var (navJump, cooldown) = await _shipsService.JumpAsync(closestUnmappedPath.Value.Item1[1], ship.Symbol);
-            return (navJump, ship.Fuel, cooldown);
+            return (navJump, ship.Fuel, cooldown, goal);
         }
         var (nav, fuel) = await _shipsService.NavigateAsync(closestUnmappedPath.Value.Item1[1], ship);
-        return (nav, fuel, ship.Cooldown);
+        return (nav, fuel, ship.Cooldown, goal);
     }
 
     public async Task<(Nav? nav, Fuel? fuel)> NavigateToShipToRescue(Ship ship, Waypoint currentWaypoint, Waypoint rescueShipWaypoint)

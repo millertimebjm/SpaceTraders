@@ -59,7 +59,7 @@
 
         <script>
             @{
-                const int GRID_SIZE = 2000;
+                const int GRID_SIZE = 4000;
                 var headquartersSystemSymbol = WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters);
                 var headquartersSystem = systems.Single(s => s.Symbol == headquartersSystemSymbol);
                 var xOffset = (GRID_SIZE/2) - headquartersSystem.X;
@@ -72,8 +72,8 @@
                     
                     staticObjects.Add(
                         new MapStaticObjectsViewModel(
-                            system.X + xOffset, 
-                            system.Y + yOffset, 
+                            (system.X + xOffset), 
+                            (system.Y + yOffset), 
                             system.Symbol, 
                             system.Symbol == headquartersSystemSymbol ? "#ff0077" : color,
                             true));
@@ -139,7 +139,7 @@
             let width, height;
 
             // Camera / View State
-            let zoom = 0.4;
+            let zoom = 0.2;
             let cameraX = 0; // Relative to grid center
             let cameraY = 0;
             
