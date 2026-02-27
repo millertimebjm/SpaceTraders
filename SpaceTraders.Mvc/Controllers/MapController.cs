@@ -19,4 +19,13 @@ public class MapController(
         );
         return View(model);
     }
+
+    public async Task<IActionResult> Galaxy()
+    {
+        var model = new GalaxyViewModel(
+            _systemsService.GetAsync(),
+            _shipStatusesCacheService.GetAsync()
+        );
+        return View(model);
+    }
 }

@@ -1,0 +1,534 @@
+@using System.Text.Json
+@using System.Text.Encodings.Web
+@using SpaceTraders.Models
+@using SpaceTraders.Services.Systems
+@using SpaceTraders.Services.Waypoints
+@model GalaxyViewModel;
+
+@{
+    Layout = null;
+    var systems = await Model.SystemsTask;
+    Agent agent = (Agent)ViewBag.Agent;
+}
+<html>
+    <head>
+        <title>Map - Galaxy</title>
+        <style>
+            body {
+                margin: 0;
+                padding: 0;
+                overflow: hidden;
+                background-color: #0b0e14;
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            }
+
+            #ui-layer {
+                position: absolute;
+                top: 20px;
+                left: 20px;
+                color: #00ffcc;
+                background: rgba(0, 0, 0, 0.7);
+                padding: 15px;
+                border-radius: 8px;
+                border: 1px solid #00ffcc;
+                pointer-events: none;
+                text-shadow: 0 0 5px #00ffcc;
+            }
+
+            canvas {
+                display: block;
+                cursor: grab;
+            }
+
+            canvas:active {
+                cursor: grabbing;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="ui-layer">
+            <strong>Grid Navigator</strong><br>
+            • Scroll to Zoom<br>
+            • Click & Drag to Pan<br>
+            <span id="stats">Zoom: 1.00x</span><br/>
+            <span id="coords">0, 0</span><br/>
+            <button>reset</button>
+        </div>
+
+        <canvas id="gridCanvas" style="position: relative; z-index: 10;"></canvas>
+
+        <script>
+            @{
+                const int GRID_SIZE = 2000;
+                var headquartersSystemSymbol = WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters);
+                var headquartersSystem = systems.Single(s => s.Symbol == headquartersSystemSymbol);
+                var xOffset = (GRID_SIZE/2) - headquartersSystem.X;
+                var yOffset = (GRID_SIZE/2) - headquartersSystem.Y;
+                
+                List<MapStaticObjectsViewModel> staticObjects = new ();
+                foreach (var system in systems)
+                {
+                    var color = "#ffffff";
+                    
+                    staticObjects.Add(
+                        new MapStaticObjectsViewModel(
+                            system.X + xOffset, 
+                            system.Y + yOffset, 
+                            system.Symbol, 
+                            system.Symbol == headquartersSystemSymbol ? "#ff0077" : color),
+                            true);
+                }
+            }
+            const staticObjects = @(Html.Raw(JsonSerializer.Serialize(staticObjects, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping })))
+
+            @{
+                var galaxyLineViewModels = new List<GalaxyLineViewModel>();
+                var links = SystemsService.TraverseLinks(systems, headquartersSystemSymbol);
+                foreach (var link in links)
+                {
+                    galaxyLineViewModels.Add(new (link.Item1.X + xOffset, link.Item1.Y + yOffset, link.Item2.X + xOffset, link.Item2.Y + yOffset, "#ffffff", 1, link.Item3 ? [] : [5,5]));
+                }
+            }
+            const systemLines = @(Html.Raw(JsonSerializer.Serialize(galaxyLineViewModels, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping })))
+
+
+@* const lineModel = [
+    { startX: 50,  startY: 50,  endX: 300, endY: 50,  color: 'white', width: 1, dash: [] },      // Solid
+    { startX: 50,  startY: 80,  endX: 300, endY: 80,  color: 'white', width: 1, dash: [2, 2] },  // Dotted
+    { startX: 50,  startY: 110, endX: 300, endY: 110, color: 'white', width: 2, dash: [10, 5] }  // Dashed
+]; *@
+
+
+
+            @* @{
+                var shipStatuses = await Model.ShipStatusesTask;
+                var shipStatusesInSystem = shipStatuses.Where(ss => ss.Ship.Nav.SystemSymbol == system.Symbol);
+                var drones = new List<MapDronesViewModel>();
+                foreach (var shipStatus in shipStatusesInSystem)
+                {
+                    var fromX = shipStatus.Ship.Nav.Route.Origin.X;
+                    var fromY = shipStatus.Ship.Nav.Route.Origin.Y;
+                    var toX = shipStatus.Ship.Nav.Route.Destination.X;
+                    var toY = shipStatus.Ship.Nav.Route.Destination.Y;
+                    var startDateTime = shipStatus.Ship.Nav.Route.DepartureTime;
+                    var endDateTime = shipStatus.Ship.Nav.Route.Arrival;
+                    DateTime now = DateTime.UtcNow;
+                    double totalDurationTicks = (endDateTime - startDateTime).Ticks;
+                    double elapsedTicks = (now - startDateTime).Ticks;
+
+                    // 2. Calculate progress (clamped between 0 and 1)
+                    double progress = elapsedTicks / totalDurationTicks;
+                    progress = Math.Max(0, Math.Min(1, progress)); 
+
+                    // 3. Interpolate X and Y coordinates
+                    double currentX = fromX + (toX - fromX) * progress;
+                    double currentY = fromY + (toY - fromY) * progress;
+                    
+                    drones.Add(new MapDronesViewModel((int)currentX + (GRID_SIZE / 2), (int)currentY + (GRID_SIZE / 2), shipStatus.Ship.Symbol.Substring(shipStatus.Ship.Symbol.LastIndexOf("-")+1, shipStatus.Ship.Symbol.Length - (shipStatus.Ship.Symbol.LastIndexOf("-")+1)), 4));
+                }
+            } *@
+            @* var drones = @(Html.Raw(JsonSerializer.Serialize(drones, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping }))); *@
+
+            const canvas = document.getElementById('gridCanvas');
+            const ctx = canvas.getContext('2d');
+            const statsEl = document.getElementById('stats');
+            const coordsEl = document.getElementById('coords');
+
+            // Configuration
+            const GRID_SIZE = @GRID_SIZE;
+            let width, height;
+
+            // Camera / View State
+            let zoom = 0.4;
+            let cameraX = 0; // Relative to grid center
+            let cameraY = 0;
+            
+            // Interaction State
+            let isDragging = false;
+            let lastMouseX = 0;
+            let lastMouseY = 0;
+
+            // Data Objects
+            @* const staticObjects = [
+                { x: 400, y: 400, label: "(3, W, F, J)", color: "#00d4ff" },
+                { x: 1600, y: 400, label: "(12, X, R, P)", color: "#ff0077" },
+                { x: 1000, y: 1600, label: "(7, G, M, S)", color: "#ccff00" },
+                { x: 1000, y: 1000, label: "CENTRAL HUB", color: "#ffffff" }
+            ]; *@
+            
+            @* const drones = [
+                { x: 400, y: 400, targetIdx: 1, speed: 3, size: 12 },
+                { x: 1000, y: 1000, targetIdx: 2, speed: 1.5, size: 8 }
+            ]; *@
+
+            function init() {
+                window.addEventListener('resize', resize);
+                window.addEventListener('wheel', handleWheel, { passive: false });
+                window.addEventListener('mousedown', handleMouseDown);
+                window.addEventListener('mousemove', handleMouseMove);
+                window.addEventListener('mouseup', () => isDragging = false);
+                
+                resize();
+                animate();
+            }
+
+            function resize() {
+                width = canvas.width = window.innerWidth;
+                height = canvas.height = window.innerHeight;
+            }
+
+            // --- Interaction Logic ---
+
+            function handleWheel(e) {
+                e.preventDefault();
+
+                const zoomSpeed = 0.001;
+                const delta = -e.deltaY * zoomSpeed;
+                const oldZoom = zoom;
+                const newZoom = Math.min(Math.max(0.05, zoom + delta), 4);
+
+                // 1. Get mouse position relative to the canvas
+                const rect = canvas.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+
+                // 2. Calculate where the mouse is in "World Space" before the zoom
+                // We reverse the translation and scaling used in draw()
+                const worldX = (mouseX - width / 2) / oldZoom - cameraX;
+                const worldY = (mouseY - height / 2) / oldZoom - cameraY;
+
+                // 3. Apply the new zoom
+                zoom = newZoom;
+
+                // 4. Adjust camera so the same world point is under the mouse at the new zoom
+                cameraX = (mouseX - width / 2) / zoom - worldX;
+                cameraY = (mouseY - height / 2) / zoom - worldY;
+
+                statsEl.innerText = `Zoom: ${zoom.toFixed(2)}x`;
+                coordsEl.innerText = `(${Math.round(cameraX)}, ${Math.round(cameraY)})`;
+            }
+
+            function handleMouseDown(e) {
+                isDragging = true;
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+            }
+
+            function handleMouseMove(e) {
+                if (!isDragging) return;
+                
+                // Adjust camera based on mouse movement and current zoom
+                const dx = e.clientX - lastMouseX;
+                const dy = e.clientY - lastMouseY;
+                
+                cameraX += dx / zoom;
+                cameraY += dy / zoom;
+                
+                lastMouseX = e.clientX;
+                lastMouseY = e.clientY;
+
+                coordsEl.innerText = `(${Math.round(cameraX)}, ${Math.round(cameraY)})`;
+            }
+
+            // --- Update & Draw ---
+
+            function update() {
+                @* drones.forEach(drone => {
+                    const target = staticObjects[drone.targetIdx];
+                    const dx = target.x - drone.x;
+                    const dy = target.y - drone.y;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (distance > drone.speed) {
+                        drone.x += (dx / distance) * drone.speed;
+                        drone.y += (dy / distance) * drone.speed;
+                    } else {
+                        // Pick a new random target from the static list
+                        drone.targetIdx = Math.floor(Math.random() * staticObjects.length);
+                    }
+                }); *@
+            }
+
+            function draw() {
+                ctx.clearRect(0, 0, width, height);
+
+                ctx.save();
+                
+                // 1. Move origin to screen center
+                ctx.translate(width / 2, height / 2);
+                // 2. Apply Zoom
+                ctx.scale(zoom, zoom);
+                // 3. Apply Camera Panning and Center the 2000-unit grid
+                ctx.translate(cameraX - GRID_SIZE/2, cameraY - GRID_SIZE/2);
+
+                // Draw Background Grid Lines
+                ctx.beginPath();
+                ctx.strokeStyle = "rgba(0, 255, 204, 0.05)";
+                for (let i = 0; i <= GRID_SIZE; i += 100) {
+                    ctx.moveTo(i, 0); ctx.lineTo(i, GRID_SIZE);
+                    ctx.moveTo(0, i); ctx.lineTo(GRID_SIZE, i);
+                }
+                ctx.stroke();
+
+                // Draw Grid Border
+                ctx.strokeStyle = "#00ffcc";
+                ctx.lineWidth = 2;
+                ctx.strokeRect(0, 0, GRID_SIZE, GRID_SIZE);
+
+                // Draw lines
+                systemLines.forEach(line => {
+                    ctx.beginPath();
+                    
+                    // 1. Apply Styles
+                    ctx.strokeStyle = line.color;
+                    ctx.lineWidth = line.width;
+                    
+                    // 2. Set the Dash Pattern
+                    // If line.dash is undefined or null, default to solid []
+                    ctx.setLineDash(line.dotted); 
+
+                    // 3. Define and Draw
+                    ctx.moveTo(line.startX + 0.5, line.startY + 0.5);
+                    ctx.lineTo(line.endX + 0.5, line.endY + 0.5);
+                    ctx.stroke();
+                });
+
+                // Draw Static Objects
+                staticObjects.forEach(obj => {
+                    // Outer Glow
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = obj.color;
+                    ctx.fillStyle = obj.color;
+                    
+                    ctx.beginPath();
+                    ctx.arc(obj.x, obj.y, 20, 0, Math.PI * 2);
+                    if (obj.fill) {
+                        // Render as a solid filled circle
+                        ctx.fillStyle = obj.color;
+                        ctx.fill();
+                    } else {
+                        // Render as a hollow circle
+                        ctx.strokeStyle = obj.color;
+                        ctx.lineWidth = 5; 
+                        ctx.stroke();
+                    }
+                    
+                    // Text Label
+                    ctx.shadowBlur = 0;
+                    ctx.fillStyle = "#ffffff";
+                    ctx.font = "bold 24px monospace";
+                    ctx.textAlign = "center";
+                    ctx.fillText(obj.label, obj.x, obj.y - 40);
+                });
+
+                // Draw Moving Drones
+                @* ctx.fillStyle = "#ffaa00";
+                drones.forEach(drone => {
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = "#ffaa00";
+                    ctx.fillRect(drone.x - drone.size/2, drone.y - drone.size/2, drone.size, drone.size);
+
+                    // Text Label
+                    ctx.shadowBlur = 0;
+                    ctx.fillStyle = "#ffaa00";
+                    ctx.font = "bold 4px monospace";
+                    ctx.textAlign = "center";
+                    ctx.fillText(drone.label, drone.x, drone.y - 5);
+                }); *@
+
+                ctx.restore();
+            }
+
+            function animate() {
+                update();
+                draw();
+                requestAnimationFrame(animate);
+            }
+
+            init();
+        </script>
+    </body>
+</html>
+@* <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>2000-Unit Grid Canvas</title>
+    
+</head>
+<body>
+
+    <div id="ui-layer">
+        <strong>Grid Navigator</strong><br>
+        • Scroll to Zoom<br>
+        • Click & Drag to Pan<br>
+        <span id="stats">Zoom: 1.00x</span>
+    </div>
+
+    <canvas id="gridCanvas"></canvas>
+
+    <script>
+        const canvas = document.getElementById('gridCanvas');
+        const ctx = canvas.getContext('2d');
+        const statsEl = document.getElementById('stats');
+
+        // Configuration
+        const GRID_SIZE = 2000;
+        let width, height;
+
+        // Camera / View State
+        let zoom = 0.6;
+        let cameraX = 0; // Relative to grid center
+        let cameraY = 0;
+        
+        // Interaction State
+        let isDragging = false;
+        let lastMouseX = 0;
+        let lastMouseY = 0;
+
+        // Data Objects
+        const staticObjects = [
+            { x: 400, y: 400, label: "(3, W, F, J)", color: "#00d4ff" },
+            { x: 1600, y: 400, label: "(12, X, R, P)", color: "#ff0077" },
+            { x: 1000, y: 1600, label: "(7, G, M, S)", color: "#ccff00" },
+            { x: 1000, y: 1000, label: "CENTRAL HUB", color: "#ffffff" }
+        ];
+
+        const drones = [
+            { x: 400, y: 400, targetIdx: 1, speed: 3, size: 12 },
+            { x: 1000, y: 1000, targetIdx: 2, speed: 1.5, size: 8 }
+        ];
+
+        function init() {
+            window.addEventListener('resize', resize);
+            window.addEventListener('wheel', handleWheel, { passive: false });
+            window.addEventListener('mousedown', handleMouseDown);
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', () => isDragging = false);
+            
+            resize();
+            animate();
+        }
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        // --- Interaction Logic ---
+
+        function handleWheel(e) {
+            e.preventDefault();
+            const zoomSpeed = 0.001;
+            const delta = -e.deltaY * zoomSpeed;
+            const newZoom = Math.min(Math.max(0.05, zoom + delta), 4);
+            zoom = newZoom;
+            statsEl.innerText = `Zoom: ${zoom.toFixed(2)}x`;
+        }
+
+        function handleMouseDown(e) {
+            isDragging = true;
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+        }
+
+        function handleMouseMove(e) {
+            if (!isDragging) return;
+            
+            // Adjust camera based on mouse movement and current zoom
+            const dx = e.clientX - lastMouseX;
+            const dy = e.clientY - lastMouseY;
+            
+            cameraX += dx / zoom;
+            cameraY += dy / zoom;
+            
+            lastMouseX = e.clientX;
+            lastMouseY = e.clientY;
+        }
+
+        // --- Update & Draw ---
+
+        function update() {
+            drones.forEach(drone => {
+                const target = staticObjects[drone.targetIdx];
+                const dx = target.x - drone.x;
+                const dy = target.y - drone.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance > drone.speed) {
+                    drone.x += (dx / distance) * drone.speed;
+                    drone.y += (dy / distance) * drone.speed;
+                } else {
+                    // Pick a new random target from the static list
+                    drone.targetIdx = Math.floor(Math.random() * staticObjects.length);
+                }
+            });
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, width, height);
+
+            ctx.save();
+            
+            // 1. Move origin to screen center
+            ctx.translate(width / 2, height / 2);
+            // 2. Apply Zoom
+            ctx.scale(zoom, zoom);
+            // 3. Apply Camera Panning and Center the 2000-unit grid
+            ctx.translate(cameraX - GRID_SIZE/2, cameraY - GRID_SIZE/2);
+
+            // Draw Background Grid Lines
+            ctx.beginPath();
+            ctx.strokeStyle = "rgba(0, 255, 204, 0.05)";
+            for (let i = 0; i <= GRID_SIZE; i += 100) {
+                ctx.moveTo(i, 0); ctx.lineTo(i, GRID_SIZE);
+                ctx.moveTo(0, i); ctx.lineTo(GRID_SIZE, i);
+            }
+            ctx.stroke();
+
+            // Draw Grid Border
+            ctx.strokeStyle = "#00ffcc";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(0, 0, GRID_SIZE, GRID_SIZE);
+
+            // Draw Static Objects
+            staticObjects.forEach(obj => {
+                // Outer Glow
+                ctx.shadowBlur = 15;
+                ctx.shadowColor = obj.color;
+                ctx.fillStyle = obj.color;
+                
+                ctx.beginPath();
+                ctx.arc(obj.x, obj.y, 20, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Text Label
+                ctx.shadowBlur = 0;
+                ctx.fillStyle = "#ffffff";
+                ctx.font = "bold 24px monospace";
+                ctx.textAlign = "center";
+                ctx.fillText(obj.label, obj.x, obj.y - 35);
+            });
+
+            // Draw Moving Drones
+            ctx.fillStyle = "#ffaa00";
+            drones.forEach(drone => {
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = "#ffaa00";
+                ctx.fillRect(drone.x - drone.size/2, drone.y - drone.size/2, drone.size, drone.size);
+            });
+
+            ctx.restore();
+        }
+
+        function animate() {
+            update();
+            draw();
+            requestAnimationFrame(animate);
+        }
+
+        init();
+    </script>
+</body>
+</html> *@

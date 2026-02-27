@@ -64,4 +64,57 @@ public class SystemsService(
         }
         return traversableSystems;
     }
+
+    public static List<(STSystem, STSystem, bool)> TraverseLinks(IEnumerable<STSystem> systems, string startingSystemString)
+    {
+        var traversableSystems = new List<STSystem>();
+        // from system, to system, reachable
+        var systemLinks = new List<(STSystem, STSystem, bool)>();
+        var startingSystem = systems.Single(s => s.Symbol == startingSystemString);
+        var systemsToTraverse = new Queue<STSystem>();
+        systemsToTraverse.Enqueue(startingSystem);
+        
+        while (systemsToTraverse.Count != 0)
+        {
+            var nextSystem = systemsToTraverse.Dequeue();
+            traversableSystems.Add(nextSystem);
+            
+            var jumpGateWaypoints = nextSystem.Waypoints.Where(w => !w.IsUnderConstruction && w.JumpGate is not null);
+            foreach (var jumpGateWaypoint in jumpGateWaypoints)
+            {
+                foreach (var connection in jumpGateWaypoint.JumpGate.Connections)
+                {
+                    var connectionSystem = systems.SingleOrDefault(s => s.Symbol == WaypointsService.ExtractSystemFromWaypoint(connection));
+                    var connectionSystemJumpGates = connectionSystem?.Waypoints.Where(w => !w.IsUnderConstruction && w.JumpGate is not null).ToList() ?? [];
+                    
+                    foreach (var connectionSystemWaypoint in connectionSystem?.Waypoints.Where(w => !w.IsUnderConstruction && w.JumpGate is not null).ToList() ?? [])
+                    {
+                        if (connectionSystemWaypoint.JumpGate.Connections.Select(c => WaypointsService.ExtractSystemFromWaypoint(c)).Contains(nextSystem.Symbol)
+                            && !traversableSystems.Any(ts => ts.Symbol == connectionSystem.Symbol)
+                            && !systemsToTraverse.Any(stt => stt.Symbol == connectionSystem.Symbol))
+                        {
+                            systemsToTraverse.Enqueue(connectionSystem);
+                            systemLinks.Add((nextSystem, connectionSystem, true));
+                        }
+                    }
+                }
+            }
+        }
+
+        var jumpGateWaypointsUnreachable = systems.SelectMany(s => s.Waypoints).Where(w => w.IsUnderConstruction && w.JumpGate is not null);;
+        foreach (var jumpGateWaypoint in jumpGateWaypointsUnreachable)
+        {
+            foreach (var connection in jumpGateWaypoint.JumpGate.Connections)
+            {
+                var connectionSystem = systems.SingleOrDefault(s => s.Symbol == WaypointsService.ExtractSystemFromWaypoint(connection));
+                var currentSystem = systems.Single(s => s.Symbol == WaypointsService.ExtractSystemFromWaypoint(jumpGateWaypoint.Symbol));
+                if (connectionSystem is not null && !systemLinks.Any(sl => sl.Item2.Symbol == currentSystem.Symbol && sl.Item1.Symbol == connectionSystem.Symbol))
+                {
+                    systemLinks.Add((currentSystem, connectionSystem, false));
+                }
+            }
+        }
+
+        return systemLinks;
+    }
 }

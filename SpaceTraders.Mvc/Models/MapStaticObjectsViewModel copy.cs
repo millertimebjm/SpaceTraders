@@ -9,5 +9,6 @@ public record MapStaticObjectsViewModel(
     int X,
     int Y,
     string Label,
-    string Color
+    string Color,
+    string Fill
 );

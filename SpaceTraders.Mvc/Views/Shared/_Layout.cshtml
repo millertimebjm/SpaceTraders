@@ -1,10 +1,11 @@
 ﻿@using SpaceTraders.Models
 @using SpaceTraders.Services.Systems
+@using SpaceTraders.Services.Waypoints
 @{
-    var agent = (Agent)ViewBag.AgentTask;
+    var agent = (Agent)ViewBag.Agent;
     var shipStatuses = (IEnumerable<ShipStatus>)ViewBag.ShipStatuses;
     var systems = (IReadOnlyList<STSystem>)ViewBag.Systems;
-    var reachableSystems = SystemsService.Traverse(systems, agent.Headquarters);
+    var reachableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters));
     Dictionary<string, string> systemStrings = new ();
     foreach (var system in systems.OrderByDescending(s => shipStatuses.Count(ss => ss.Ship.Nav.SystemSymbol == s.Symbol)))
     {
