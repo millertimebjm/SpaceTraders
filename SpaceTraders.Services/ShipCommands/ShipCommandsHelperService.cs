@@ -60,7 +60,8 @@ public class ShipCommandsHelperService(
 
         var reachableWaypoints = waypoints.Where(w => paths.Keys.Contains(w.Symbol)).ToList();
         var tradeModels = await _tradesService.BuildTradeModel(reachableWaypoints, ship.Fuel.Capacity, ship.Fuel.Current);
-        var bestTrade = _tradesService.GetBestTrade(tradeModels);
+        var goalTradeModels = tradeModels.Where(tm => tm.TradeSymbol == ship.Goal).ToList();
+        var bestTrade = _tradesService.GetBestTrade(goalTradeModels);
         if (bestTrade is null || bestTrade.ExportWaypointSymbol != currentWaypoint.Symbol) return null;
         var inventoryToBuy = currentWaypoint.Marketplace.TradeGoods.Single(tg => tg.Symbol == bestTrade.TradeSymbol);
 
@@ -246,23 +247,20 @@ public class ShipCommandsHelperService(
             var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
             var paths = await _pathsService.BuildSystemPath(currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
 
-            // Navigate to any export marketplaces not mapped
-            var waypointsWithinRange = waypoints.Where(w => paths.Keys.Contains(w.Symbol)).ToList();;
-            var waypointsWithinRangeWithExportsNotMapped = waypointsWithinRange.Where(wwr => wwr.Marketplace is not null && wwr.Marketplace.TradeGoods is null);
-            var waypointSymbolsWithinRangeWithExportsNotMapped = waypointsWithinRangeWithExportsNotMapped.Select(w => w.Symbol);
-            if (!waypointSymbolsWithinRangeWithExportsNotMapped.Any())
+            var reachableWaypoints = waypoints.Where(w => paths.Keys.Contains(w.Symbol)).ToList();
+            var tradeModels = await _tradesService.BuildTradeModel(reachableWaypoints, ship.Fuel.Capacity, ship.Fuel.Current);
+            if (ship.Cargo.Units > 0)
             {
-                var reachableWaypoints = waypoints.Where(w => paths.Keys.Contains(w.Symbol)).ToList();
-                var tradeModels = await _tradesService.BuildTradeModel(reachableWaypoints, ship.Fuel.Capacity, ship.Fuel.Current);
-                if (ship.Cargo.Units > 0)
-                {
-                    tradeModels = tradeModels.Where(tm => tm.TradeSymbol == ship.Cargo.Inventory.OrderByDescending(i => i.Symbol).First().Symbol).ToList();
-                }
-                var bestTrade = _tradesService.GetBestTrade(tradeModels);
-                if (bestTrade is null) return null;
-                if (ship.Cargo.Units > 0 && bestTrade.ImportWaypointSymbol == currentWaypoint.Symbol) shouldDock = true;
-                if (ship.Cargo.Units == 0 && bestTrade.ExportWaypointSymbol == currentWaypoint.Symbol) shouldDock = true;
+                tradeModels = tradeModels.Where(tm => tm.TradeSymbol == ship.Cargo.Inventory.OrderByDescending(i => i.Symbol).First().Symbol).ToList();
             }
+            else
+            {
+                tradeModels = tradeModels.Where(tm => tm.TradeSymbol == ship.Goal).ToList();
+            }
+            var bestTrade = _tradesService.GetBestTrade(tradeModels);
+            if (bestTrade is null) return null;
+            if (ship.Cargo.Units > 0 && bestTrade.ImportWaypointSymbol == currentWaypoint.Symbol) shouldDock = true;
+            if (ship.Cargo.Units == 0 && bestTrade.ExportWaypointSymbol == currentWaypoint.Symbol) shouldDock = true;
         }
 
         if (!shouldDock)
@@ -821,9 +819,9 @@ public class ShipCommandsHelperService(
         }
         var bestTrade = _tradesService.GetBestTrade(availableTradeModels);
         if (bestTrade is null) return (null, null, null, true, null);
-        if (bestTrade.ExportWaypointSymbol == currentWaypoint.Symbol) return (null, null, null, false, null);
-
         goal = bestTrade.TradeSymbol;
+        if (bestTrade.ExportWaypointSymbol == currentWaypoint.Symbol) return (null, null, null, false, goal);
+
         var shortestPath = paths.Single(p => p.Key == bestTrade.ExportWaypointSymbol);
         if (WaypointsService.ExtractSystemFromWaypoint(shortestPath.Value.Item1[1]) != ship.Nav.SystemSymbol)
         {
@@ -991,6 +989,11 @@ public class ShipCommandsHelperService(
                 .First();
             var (refuelNav, refuelFuel) = await _shipsService.NavigateAsync(shortestFuelPath.Symbol, ship);
             return (refuelNav, refuelFuel, null, ship.Goal);
+        }
+
+        if (ship.Nav.WaypointSymbol == ship.Goal)
+        {
+            ship = ship with { Goal = null };
         }
 
         if (ship.Goal is not null)
