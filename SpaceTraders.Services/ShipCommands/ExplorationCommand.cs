@@ -31,7 +31,6 @@ public class ExplorationCommand(
                     var chartWaypointResult = await _shipsService.ChartAsync(ship.Symbol);
                     currentWaypoint = chartWaypointResult.Waypoint;
                     await _waypointsCacheService.SetAsync(currentWaypoint);
-                    ship = ship with { Goal = null };
                 }
                 catch (Exception ex)
                 {
@@ -47,6 +46,11 @@ public class ExplorationCommand(
         if (ShipsService.GetShipCooldown(ship) is not null) return shipStatus;
         await Task.Delay(500);
         currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol, refresh: true);
+        // Exploration goal can be for marketplace or uncharted
+        if (ship.Goal == ship.Nav.WaypointSymbol)
+        {
+            ship = ship with { Goal = null };
+        }
 
         while (true)
         {
