@@ -54,9 +54,8 @@ public class ShipLoopsService(
                 var ship = shipStatuses[i].Ship;
                 var shipStatus = shipStatuses[i];
                 if (ShipsService.GetShipCooldown(ship) is not null) continue;
-                if (ship.Symbol == "SPATIAL19-14"
-                    || ship.Symbol == "SPATIAL19-15"
-                    || ship.Symbol == "SPATIAL19-16")
+                if (ship.Symbol == "SPATIAL19-E"
+                || ship.Symbol == "SPATIAL19-10")
                 {
                     int j = 0;
                 }
@@ -110,7 +109,7 @@ public class ShipLoopsService(
                 await Task.Delay(1000);
             }
 
-            await UpdateTradeModelCache();
+            //await UpdateTradeModelCache();
             await SleepUntilNextShipReady(shipStatuses);
         }
     }
@@ -135,19 +134,6 @@ public class ShipLoopsService(
         {
             _logger.LogInformation("Sleeping for {duration}", Math.Round(shortestCooldown.Value.TotalMinutes, 2));
             await Task.Delay(shortestCooldown.Value);
-        }
-    }
-
-    private async Task UpdateTradeModelCache()
-    {
-        var systems = await _systemsService.GetAsync();
-        var agent = await _agentsService.GetAsync();
-        var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters));
-        var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
-        var tradeModels = await _tradesService.BuildTradeModel(waypoints, 600, 600, refresh: true);
-        if (tradeModels.Any())
-        {
-            await _tradesCacheService.SaveTradeModelsAsync(tradeModels, 600, 600);
         }
     }
 

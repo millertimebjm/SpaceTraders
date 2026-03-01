@@ -7,7 +7,6 @@ using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.HttpHelpers;
 using SpaceTraders.Services.Marketplaces.Interfaces;
-using SpaceTraders.Services.Paths.Interfaces;
 using SpaceTraders.Services.ShipLogs.Interfaces;
 using SpaceTraders.Services.Waypoints;
 

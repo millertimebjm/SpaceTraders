@@ -4,11 +4,6 @@ namespace SpaceTraders.Services.Trades;
 
 public interface ITradesService
 {
-    Task<IReadOnlyList<TradeModel>> BuildTradeModel(
-        IReadOnlyList<Waypoint> marketplaceWaypoints,
-        int fuelMax,
-        int fuelCurrent,
-        bool refresh = false);
     TradeModel? GetBestTrade(IReadOnlyList<TradeModel> trades);
     TradeModel? GetAnyBestTrade(IReadOnlyList<TradeModel> trades);
     SellModel? GetBestSellModel(IReadOnlyList<SellModel> sellModels);
@@ -19,4 +14,6 @@ public interface ITradesService
     IReadOnlyList<TradeModel> GetBestOrderedTrades(IReadOnlyList<TradeModel> trades);
     IReadOnlyList<TradeModel> GetBestOrderedTradesWithTravelCost(
         IReadOnlyList<TradeModel> trades);
+    Task<IReadOnlyList<TradeModel>> GetTradeModelsAsync();
+    Task BuildTradeModel();
 }

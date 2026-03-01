@@ -3,8 +3,12 @@ using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
+using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Paths.Interfaces;
+using SpaceTraders.Services.Systems;
+using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Trades.Interfaces;
+using SpaceTraders.Services.Waypoints;
 
 namespace SpaceTraders.Services.Trades;
 
@@ -12,24 +16,42 @@ public class TradesService(
     ILogger<TradesService> _logger,
     IPathsService _pathsService,
     IPathsCacheService _pathsCacheService,
-    ITradesCacheService _tradesCacheService
+    ITradesCacheService _tradesCacheService,
+    ISystemsService _systemsService,
+    IAgentsService _agentsService
 ) : ITradesService
 {
-    public async Task<IReadOnlyList<TradeModel>> BuildTradeModel(
+    public async Task UpdateTradeModelAsync(string waypointSymbol, IReadOnlyList<TradeGood> tradeGoods)
+    {
+        var hasTradeGoods = await _tradesCacheService.AnyTradeModelAsync(waypointSymbol);
+        if (hasTradeGoods)
+        {
+            await _tradesCacheService.UpdateTradeModelAsync(waypointSymbol, tradeGoods);
+            return;
+        }
+        await BuildTradeModel();
+    }
+
+    public async Task<IReadOnlyList<TradeModel>> GetTradeModelsAsync()
+    {
+        return await _tradesCacheService.GetTradeModelsAsync();
+    }
+
+    public async Task BuildTradeModel()
+    {
+        var agent = await _agentsService.GetAsync();
+        var systems = await _systemsService.GetAsync();
+        var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters));
+        var waypoints = traversableSystems.SelectMany(ts => ts.Waypoints).ToList();
+        var newTradeModels = await BuildTradeModel(waypoints, 600, 600);
+        await _tradesCacheService.SaveTradeModelsAsync(newTradeModels);
+    }
+
+    private async Task<IReadOnlyList<TradeModel>> BuildTradeModel(
         IReadOnlyList<Waypoint> waypoints,
         int fuelMax,
-        int fuelCurrent,
-        bool refresh = false)
+        int fuelCurrent)
     {
-        if (!refresh)
-        {
-            var tradeModelsCache = await _tradesCacheService.GetTradeModelsAsync(600, 600);
-            if (tradeModelsCache is not null)
-            {
-                return [.. tradeModelsCache];
-            }
-        }
-
         var marketplaceWaypoints = waypoints.Where(w => w.Marketplace is not null && w.Marketplace.TradeGoods is not null).ToList();
         ConcurrentBag<TradeModel> tradeModels = new();
         var marketplaceWaypointExports = marketplaceWaypoints.Where(w => w.Marketplace.Exports.Any()).ToList();
@@ -131,6 +153,8 @@ public class TradesService(
 
                 return score * SupplyFactor(t.ExportSupplyEnum, t.ImportSupplyEnum);
             })
+            .ThenBy(t => t.ExportWaypointSymbol)
+            .ThenBy(t => t.ImportWaypointSymbol)
             .ToList();
         return orderedTrades;
     }

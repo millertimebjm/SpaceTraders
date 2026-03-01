@@ -1,4 +1,5 @@
 using MongoDB.Driver;
+using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.MongoCache.Interfaces;
 using SpaceTraders.Services.Trades.Interfaces;
 
@@ -24,29 +25,54 @@ public class TradesCacheMongoService(IMongoCollectionFactory _collectionFactory)
         await collection.InsertManyAsync(tradeModels, new InsertManyOptions(), CancellationToken.None);
     }
 
-    public async Task<IEnumerable<TradeModel>?> GetTradeModelsAsync(int fuelMax, int fuelCurrent)
-    {
-        string key = $"{fuelMax}-{fuelCurrent}";
-        var collection = _collectionFactory.GetCollection<TradeCacheModel>();
-        var projection = Builders<TradeCacheModel>.Projection.Exclude("_id");
-
-        var filter = Builders<TradeCacheModel>.Filter.Eq(tcm => tcm.Key, key);
-
-        var tradeCacheModel = await collection
-            .Find(filter)
-            .Project<TradeCacheModel>(projection)
-            .SingleOrDefaultAsync();
-        return tradeCacheModel?.TradeModels;
-    }
-
     public async Task SaveTradeModelsAsync(IEnumerable<TradeModel> tradeModels, int fuelMax, int fuelCurrent)
     {
-        string key = $"{fuelMax}-{fuelCurrent}";
-        var collection = _collectionFactory.GetCollection<TradeCacheModel>();
-        var filter = Builders<TradeCacheModel>.Filter.Eq(tcm => tcm.Key, key);
+        var collection = _collectionFactory.GetCollection<TradeModel>();
 
-        await collection.DeleteOneAsync(filter, CancellationToken.None);
-        await collection.InsertOneAsync(new TradeCacheModel(key, tradeModels), new InsertOneOptions(), CancellationToken.None);
+        await collection.DeleteManyAsync(Builders<TradeModel>.Filter.Empty,CancellationToken.None);
+        await collection.InsertManyAsync(tradeModels, new InsertManyOptions(), CancellationToken.None);
+    }
+
+    public async Task<bool> AnyTradeModelAsync(string waypointSymbol)
+    {
+        var collection = _collectionFactory.GetCollection<TradeModel>();
+        var anyFilter = Builders<TradeModel>.Filter.Or(
+            Builders<TradeModel>.Filter.Eq(tm => tm.ExportWaypointSymbol, waypointSymbol),
+            Builders<TradeModel>.Filter.Eq(tm => tm.ImportWaypointSymbol, waypointSymbol)
+        );
+        var findResult = await collection.FindAsync(anyFilter);
+        return await findResult.AnyAsync();
+    }
+
+    public async Task UpdateTradeModelAsync(string waypointSymbol, IReadOnlyList<TradeGood> tradeGoods)
+    {
+        var collection = _collectionFactory.GetCollection<TradeModel>();
+
+        var exports = tradeGoods.Where(tg => tg.Type == "EXPORT").ToList();
+        foreach (var tradeGood in exports)
+        {
+            var filter = Builders<TradeModel>.Filter.Eq(tm => tm.ExportWaypointSymbol, waypointSymbol)
+                & Builders<TradeModel>.Filter.Eq(tm => tm.TradeSymbol, tradeGood.Symbol);
+
+            var update = Builders<TradeModel>.Update
+                .Set(tm => tm.ExportBuyPrice, tradeGood.PurchasePrice)
+                .Set(tm => tm.ExportSupplyEnum, Enum.Parse<SupplyEnum>(tradeGood.Supply));
+
+            await collection.UpdateManyAsync(filter, update);
+        }
+
+        var importsExchanges = tradeGoods.Where(tg => tg.Type == "IMPORT" || tg.Type == "EXCHANGE");
+        foreach (var tradeGood in importsExchanges)
+        {
+            var filter = Builders<TradeModel>.Filter.Eq(tm => tm.ImportWaypointSymbol, waypointSymbol)
+                & Builders<TradeModel>.Filter.Eq(tm => tm.TradeSymbol, tradeGood.Symbol);
+
+            var update = Builders<TradeModel>.Update
+                .Set(tm => tm.ImportSellPrice, tradeGood.SellPrice)
+                .Set(tm => tm.ImportSupplyEnum, Enum.Parse<SupplyEnum>(tradeGood.Supply));
+
+            await collection.UpdateManyAsync(filter, update);
+        }
     }
 }
 

@@ -39,9 +39,19 @@ public class MarketplacesController(
     [Route("/marketplaces/trademodels")]
     public async Task<IActionResult> TradeModels()
     {
-        var modelTrades = await _tradesCacheService.GetTradeModelsAsync(600, 600);
-        await _tradesCacheService.SaveTradeModelsAsync(modelTrades, 600, 600);
+        var modelTrades = await _tradesCacheService.GetTradeModelsAsync();
         var orderedModelTrades = _tradesService.GetBestOrderedTrades(modelTrades.ToList());
         return View(orderedModelTrades);
+    }
+
+    [Route("/marketplaces/trademodels/reset")]
+    public async Task<IActionResult> ResetTradeModels()
+    {
+        await _tradesService.BuildTradeModel();
+        return RedirectToRoute(new
+        {
+            controller = "Marketplaces",
+            action = "TradeModels"
+        });
     }
 }
