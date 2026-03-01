@@ -14,47 +14,48 @@ using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.Shipyards;
 
-public class ShipsService : IShipsService
+public class ShipsService(
+    HttpClient _httpClient,
+    IConfiguration _configuration,
+    ILogger<ShipsService> _logger,
+    IWaypointsService _waypointsService,
+    IShipStatusesCacheService _shipStatusesCacheService,
+    IShipLogsService _shipLogsService
+) : IShipsService
 {
     private const string DIRECTORY_PATH = "/v2/my/ships";
-    private readonly string _apiUrl;
-    private readonly HttpClient _httpClient;
-    private readonly string _token;
-    private readonly ILogger<ShipsService> _logger;
-    private readonly IWaypointsService _waypointsService;
-    private readonly IShipStatusesCacheService _shipStatusesCacheService;
-    private readonly IShipLogsService _shipLogsService;
-
-    public ShipsService(
-        HttpClient httpClient,
-        IConfiguration configuration,
-        ILogger<ShipsService> logger,
-        IWaypointsService waypointsService,
-        IShipStatusesCacheService shipStatusesCacheService,
-        IShipLogsService shipLogsService)
+ 
+    private string ApiUrl
     {
-        _logger = logger;
-        _httpClient = httpClient;
-        _apiUrl = configuration[$"SpaceTrader:" + ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
-        ArgumentException.ThrowIfNullOrWhiteSpace(_apiUrl);
-        _token = configuration[$"SpaceTrader:" + ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
-        ArgumentException.ThrowIfNullOrWhiteSpace(_token);
-        _waypointsService = waypointsService;
-        _shipStatusesCacheService = shipStatusesCacheService;
-        _shipLogsService = shipLogsService;
+        get
+        {
+            var apiUrl = _configuration[$"SpaceTrader:" + ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
+            ArgumentException.ThrowIfNullOrWhiteSpace(apiUrl);
+            return apiUrl;
+        }
+    }
+
+    private string BearerToken
+    {
+        get
+        {
+            var token = _configuration[$"SpaceTrader:" + ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
+            ArgumentException.ThrowIfNullOrWhiteSpace(token);
+            return token;
+        }
     }
 
     public async Task<IEnumerable<Ship>> GetAsync()
     {
         var page = 0;
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
+            new AuthenticationHeaderValue("Bearer", BearerToken);
         var ships = new List<Ship>();
         Data<Ship> dataShip;
         do
         {
             page++;
-            var url = new UriBuilder(_apiUrl)
+            var url = new UriBuilder(ApiUrl)
             {
                 Path = DIRECTORY_PATH,
                 Query = $"limit=20&page={page}", // limit=20
@@ -73,12 +74,12 @@ public class ShipsService : IShipsService
 
     public async Task<Ship> GetAsync(string shipSymbol)
     {
-        var url = new UriBuilder(_apiUrl)
+        var url = new UriBuilder(ApiUrl)
         {
             Path = DIRECTORY_PATH + $"/{shipSymbol}"
         };
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
+            new AuthenticationHeaderValue("Bearer", BearerToken);
         var data = await HttpHelperService.HttpGetHelper<DataSingle<Ship>>(
             url.ToString(),
             _httpClient,
@@ -89,12 +90,12 @@ public class ShipsService : IShipsService
 
     public async Task<Nav> OrbitAsync(string shipSymbol)
     {
-        var url = new UriBuilder(_apiUrl)
+        var url = new UriBuilder(ApiUrl)
         {
             Path = $"/v2/my/ships/{shipSymbol}/orbit"
         };
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
+            new AuthenticationHeaderValue("Bearer", BearerToken);
         var data = await HttpHelperService.HttpPostHelper<DataSingle<Ship>>(
             url.ToString(),
             _httpClient,
@@ -106,12 +107,12 @@ public class ShipsService : IShipsService
 
     public async Task<Nav> DockAsync(string shipSymbol)
     {
-        var url = new UriBuilder(_apiUrl)
+        var url = new UriBuilder(ApiUrl)
         {
             Path = $"/v2/my/ships/{shipSymbol}/dock"
         };
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
+            new AuthenticationHeaderValue("Bearer", BearerToken);
         var data = await HttpHelperService.HttpPostHelper<DataSingle<Ship>>(
             url.ToString(),
             _httpClient,
@@ -141,12 +142,12 @@ public class ShipsService : IShipsService
             var flightMode = NavFlightModeEnum.CRUISE;
             await this.SwitchShipFlightMode(ship, flightMode);
         }
-        var url = new UriBuilder(_apiUrl)
+        var url = new UriBuilder(ApiUrl)
         {
             Path = $"/v2/my/ships/{ship.Symbol}/navigate"
         };
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
+            new AuthenticationHeaderValue("Bearer", BearerToken);
         var content = JsonContent.Create(new { waypointSymbol = waypoint.Symbol });
         var data = await HttpHelperService.HttpPostHelper<DataSingle<Ship>>(
             url.ToString(),
@@ -195,12 +196,12 @@ public class ShipsService : IShipsService
 
     public async Task<(Nav, Cooldown)> JumpAsync(string waypointSymbol, string shipSymbol)
     {
-        var url = new UriBuilder(_apiUrl)
+        var url = new UriBuilder(ApiUrl)
         {
             Path = $"/v2/my/ships/{shipSymbol}/jump"
         };
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
+            new AuthenticationHeaderValue("Bearer", BearerToken);
         var content = JsonContent.Create(new { waypointSymbol });
         var data = await HttpHelperService.HttpPostHelper<DataSingle<Ship>>(
             url.ToString(),
@@ -230,12 +231,12 @@ public class ShipsService : IShipsService
 
     public async Task<ExtractionResult> ExtractAsync(string shipSymbol)
     {
-        var url = new UriBuilder(_apiUrl)
+        var url = new UriBuilder(ApiUrl)
         {
             Path = $"/v2/my/ships/{shipSymbol}/extract"
         };
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
+            new AuthenticationHeaderValue("Bearer", BearerToken);
         var data = await HttpHelperService.HttpPostHelper<DataSingle<ExtractionResult>>(
             url.ToString(),
             _httpClient,
@@ -272,12 +273,12 @@ public class ShipsService : IShipsService
 
     public async Task<ExtractionResult> ExtractAsync(string shipSymbol, Survey survey)
     {
-        var url = new UriBuilder(_apiUrl)
+        var url = new UriBuilder(ApiUrl)
         {
             Path = $"/v2/my/ships/{shipSymbol}/extract/survey"
         };
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
+            new AuthenticationHeaderValue("Bearer", BearerToken);
         var content = JsonContent.Create(survey);
         var data = await HttpHelperService.HttpPostHelper<DataSingle<ExtractionResult>>(
             url.ToString(),
@@ -291,12 +292,12 @@ public class ShipsService : IShipsService
 
     public async Task JettisonAsync(string shipSymbol, string inventorySymbol, int units)
     {
-        var url = new UriBuilder(_apiUrl)
+        var url = new UriBuilder(ApiUrl)
         {
             Path = $"/v2/my/ships/{shipSymbol}/jettison"
         };
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
+            new AuthenticationHeaderValue("Bearer", BearerToken);
         var content = JsonContent.Create(new { symbol = inventorySymbol, units });
         var response = await HttpHelperService.HttpPostHelper(
             url.ToString(),
@@ -339,12 +340,12 @@ public class ShipsService : IShipsService
 
     public async Task<SurveyResult> SurveyAsync(string shipSymbol)
     {
-        var url = new UriBuilder(_apiUrl)
+        var url = new UriBuilder(ApiUrl)
         {
             Path = $"/v2/my/ships/{shipSymbol}/survey"
         };
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
+            new AuthenticationHeaderValue("Bearer", BearerToken);
         var data = await HttpHelperService.HttpPostHelper<DataSingle<SurveyResult>>(
             url.ToString(),
             _httpClient,
@@ -373,12 +374,12 @@ public class ShipsService : IShipsService
 
     public async Task<ScanWaypointsResult> ScanWaypointsAsync(string shipSymbol)
     {
-        var url = new UriBuilder(_apiUrl)
+        var url = new UriBuilder(ApiUrl)
         {
             Path = $"/my/ships/{shipSymbol}/scan/waypoints"
         };
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
+            new AuthenticationHeaderValue("Bearer", BearerToken);
         var data = await HttpHelperService.HttpPostHelper<DataSingle<ScanWaypointsResult>>(
             url.ToString(),
             _httpClient,
@@ -386,52 +387,6 @@ public class ShipsService : IShipsService
             _logger);
         if (data.Datum is null) throw new HttpRequestException("Scan not retrieved");
         return data.Datum;
-
-
-        // var url = new UriBuilder(_apiUrl);
-        // url.Path = $"v2/systems/{WaypointsService.ExtractSystemFromWaypoint(waypointSymbol)}/waypoints/{waypointSymbol}";
-        // _httpClient.DefaultRequestHeaders.Authorization =
-        //     new AuthenticationHeaderValue("Bearer", _token);
-        // //HttpHelperService.HttpPostHelper();
-        // var waypointsDataString = await _httpClient.GetAsync(url.ToString());
-        // waypointsDataString.EnsureSuccessStatusCode();
-        // var waypointsData = await waypointsDataString.Content.ReadFromJsonAsync<DataSingle<Waypoint>>();
-        // if (waypointsData is null) throw new HttpRequestException("System Data not retrieved.");
-        // if (waypointsData.Datum is null) throw new HttpRequestException("System not retrieved");
-        // var waypoint = waypointsData.Datum;
-
-        // Task<Marketplace?> marketplaceTask = Task.FromResult<Marketplace?>(null);
-        // if (waypoint.Traits.Select(t => t.Symbol).Contains(WaypointTypesEnum.MARKETPLACE.ToString()))
-        // {
-        //     marketplaceTask = _marketplacesService.GetAsync(waypointSymbol);
-        // }
-
-        // Task<Shipyard?> shipyardTask = Task.FromResult<Shipyard?>(null);
-        // if (waypoint.Traits.Select(t => t.Symbol).Contains(WaypointTypesEnum.SHIPYARD.ToString()))
-        // {
-        //     shipyardTask = _shipyardsService.GetAsync(waypointSymbol);
-        // }
-
-        // Task<JumpGate?> jumpGateTask = Task.FromResult<JumpGate?>(null);
-        // if (waypoint.Type == WaypointTypesEnum.JUMP_GATE.ToString())
-        // {
-        //     jumpGateTask = _jumpGatesService.GetAsync(waypointSymbol);
-        // }
-
-        // Task<Construction?> constructionTask = Task.FromResult<Construction?>(null);
-        // if (waypoint.IsUnderConstruction)
-        // {
-        //     constructionTask = _constructionsService.GetAsync(waypointSymbol);
-        // }
-
-        // waypoint = waypoint with
-        // {
-        //     Marketplace = await marketplaceTask,
-        //     Shipyard = await shipyardTask,
-        //     JumpGate = await jumpGateTask,
-        //     Construction = await constructionTask
-        // };
-        // return waypoint;
     }
 
     public async Task<Nav> NavToggleAsync(string shipSymbol, NavFlightModeEnum flightMode)
@@ -447,12 +402,12 @@ public class ShipsService : IShipsService
     private async Task<Nav> NavToggleAsync(Ship ship, NavFlightModeEnum flightMode)
     {
         var flightModeString = flightMode.ToString();
-        var url = new UriBuilder(_apiUrl)
+        var url = new UriBuilder(ApiUrl)
         {
             Path = $"/my/ships/{ship.Symbol}/nav"
         };
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
+            new AuthenticationHeaderValue("Bearer", BearerToken);
         var content = JsonContent.Create(new { flightMode = flightModeString });
         var data = await HttpHelperService.HttpPatchHelper<DataSingle<NavToggleResult>>(
             url.ToString(),
@@ -466,12 +421,12 @@ public class ShipsService : IShipsService
 
     public async Task<ChartWaypointResult> ChartAsync(string shipSymbol)
     {
-        var url = new UriBuilder(_apiUrl)
+        var url = new UriBuilder(ApiUrl)
         {
             Path = $"/my/ships/{shipSymbol}/chart"
         };
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
+            new AuthenticationHeaderValue("Bearer", BearerToken);
         var data = await HttpHelperService.HttpPostHelper<DataSingle<ChartWaypointResult>>(
             url.ToString(),
             _httpClient,
@@ -500,12 +455,12 @@ public class ShipsService : IShipsService
 
     public async Task<ScanSystemsResult> ScanSystemsAsync(string shipSymbol)
     {
-        var url = new UriBuilder(_apiUrl)
+        var url = new UriBuilder(ApiUrl)
         {
             Path = $"/my/ships/{shipSymbol}/scan/systems"
         };
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
+            new AuthenticationHeaderValue("Bearer", BearerToken);
         var data = await HttpHelperService.HttpPostHelper<DataSingle<ScanSystemsResult>>(
             url.ToString(),
             _httpClient,

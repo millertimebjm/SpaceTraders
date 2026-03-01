@@ -34,7 +34,13 @@ public class TradesService(
 
     public async Task<IReadOnlyList<TradeModel>> GetTradeModelsAsync()
     {
-        return await _tradesCacheService.GetTradeModelsAsync();
+        var tradeModels = await _tradesCacheService.GetTradeModelsAsync();
+        if (tradeModels.Count == 0)
+        {
+            await BuildTradeModel();
+        }
+        tradeModels = await _tradesCacheService.GetTradeModelsAsync();
+        return tradeModels;
     }
 
     public async Task BuildTradeModel()
@@ -44,6 +50,7 @@ public class TradesService(
         var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters));
         var waypoints = traversableSystems.SelectMany(ts => ts.Waypoints).ToList();
         var newTradeModels = await BuildTradeModel(waypoints, 600, 600);
+        if (newTradeModels.Count == 0) return;
         await _tradesCacheService.SaveTradeModelsAsync(newTradeModels);
     }
 

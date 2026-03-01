@@ -10,10 +10,10 @@ namespace SpaceTraders.Services.ShipJobs.Interfaces;
 
 public class CommandShipJobService(
     IAgentsService _agentsService,
-    ISystemsService _systemsService,
-    IWaypointsService _waypointsService
+    ISystemsService _systemsService
 ) : IShipJobService
 {
+    private const long INITIAL_SURVEYOR_SHIP_CREDITS_THRESHOLD = 50_000;
     private const long PURCHASE_SHIP_CREDITS_THRESHOLD = 800_000;
     private const int MINING_DRONE_MAX_SHIP_COUNT = 9;
     private const int LIGHT_HAULER_MAX_SHIP_COUNT = 5;
@@ -28,19 +28,37 @@ public class CommandShipJobService(
         var traversableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol);
         var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
         
-        if (IsExplorationAvailableInCurrentSystem(ship.Nav.SystemSymbol, waypoints))
-        {
-            return new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration);
-        }
+        // if (waypoints.Any(w => w.JumpGate is not null && w.IsUnderConstruction))
+        // {
+        //     if (waypoints.Any(w => WaypointsService.IsMarketplaceVisited(w)))
+        //     {
+        //         return new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration);
+        //     }
+        // }
+        // else
+        // {
+        //     if (IsExplorationAvailableInCurrentSystem(ship.Nav.SystemSymbol, waypoints))
+        //     {
+        //         return new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration);
+        //     }
 
-        if (await IsExplorationAvailableOutsideCurrentSystem(ship.Nav.SystemSymbol, waypoints))
-        {
-            return new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration);
-        }
+        //     if (await IsExplorationAvailableOutsideCurrentSystem(ship.Nav.SystemSymbol, waypoints))
+        //     {
+        //         return new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration);
+        //     }
+        // }       
 
         if (await IsPurchaseShip(ships))
         {
             return new ShipCommand(ship.Symbol, ShipCommandEnum.PurchaseShip);
+        }
+
+        if (waypoints.Any(w => w.JumpGate is not null && w.IsUnderConstruction))
+        {
+            if (waypoints.Any(w => WaypointsService.IsMarketplaceVisited(w)))
+            {
+                return new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration);
+            }
         }
 
         return new ShipCommand(ship.Symbol, ShipCommandEnum.BuyToSell);
@@ -49,6 +67,14 @@ public class CommandShipJobService(
     private async Task<bool> IsPurchaseShip(IEnumerable<Ship> ships)
     {
         var agent = await _agentsService.GetAsync();
+        if (agent.Credits > INITIAL_SURVEYOR_SHIP_CREDITS_THRESHOLD)
+        {
+            var shipTypes = ships
+                .GroupBy(s => s.Registration.Role);
+            var surveyShips = shipTypes.SingleOrDefault(st => st.Key == ShipRegistrationRolesEnum.SURVEYOR.ToString())?.Count() ?? 0;
+            if (surveyShips < SURVEY_MAX_SHIP_COUNT) return true;
+        }
+
         if (agent.Credits > PURCHASE_SHIP_CREDITS_THRESHOLD)
         {
             var shipTypesInSystem = ships
@@ -56,10 +82,9 @@ public class CommandShipJobService(
                 .GroupBy(s => s.Registration.Role);
             var miningDrones = shipTypesInSystem.SingleOrDefault(st => st.Key == ShipRegistrationRolesEnum.EXCAVATOR.ToString())?.Count() ?? 0;
             var lightHaulers = shipTypesInSystem.SingleOrDefault(st => st.Key == ShipRegistrationRolesEnum.HAULER.ToString())?.Count() ?? 0;
-            var surveyShips = shipTypesInSystem.SingleOrDefault(st => st.Key == ShipRegistrationRolesEnum.SURVEYOR.ToString())?.Count() ?? 0;
+            
             if (miningDrones < MINING_DRONE_MAX_SHIP_COUNT
-                || lightHaulers < LIGHT_HAULER_MAX_SHIP_COUNT
-                || surveyShips < SURVEY_MAX_SHIP_COUNT)
+                || lightHaulers < LIGHT_HAULER_MAX_SHIP_COUNT)
             {
                 return true;
             }

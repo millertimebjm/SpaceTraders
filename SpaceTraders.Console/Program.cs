@@ -39,8 +39,6 @@ public class Program
             const string _appConfigSectionName = "SpaceTrader";
             var accountToken = configuration[$"{_appConfigSectionName}:{ConfigurationEnums.AccountToken.ToString()}"];
             ArgumentException.ThrowIfNullOrWhiteSpace(accountToken);
-            var agentToken = configuration[$"{_appConfigSectionName}:{ConfigurationEnums.AgentToken.ToString()}"];
-            ArgumentException.ThrowIfNullOrWhiteSpace(agentToken);
 
             config
                 .AddJsonFile("local.settings.json", optional: true, reloadOnChange: true)

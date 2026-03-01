@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 using SpaceTraders.Models.Enums;
+using SpaceTraders.Services.Accounts;
+using SpaceTraders.Services.Accounts.Interfaces;
 using SpaceTraders.Services.Agents;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Constructions;
@@ -16,6 +18,8 @@ using SpaceTraders.Services.MongoCache;
 using SpaceTraders.Services.MongoCache.Interfaces;
 using SpaceTraders.Services.Paths;
 using SpaceTraders.Services.Paths.Interfaces;
+using SpaceTraders.Services.ServerStatusServices;
+using SpaceTraders.Services.ServerStatusServices.Interfaces;
 using SpaceTraders.Services.ShipLogs;
 using SpaceTraders.Services.ShipLogs.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
@@ -62,7 +66,9 @@ builder.Services.AddScoped<IConstructionsService, ConstructionsService>();
 builder.Services.AddScoped<ITradesService, TradesService>();
 builder.Services.AddScoped<IPathsService, PathsService>();
 builder.Services.AddSingleton<IShipLogsService, ShipLogsChannelService>();
-builder.Services.AddSingleton<IShipLogsStorageService, ShipLogsStorageMongoService>();
+builder.Services.AddScoped<IServerStatusApiService, ServerStatusApiService>();
+builder.Services.AddScoped<IAccountService, AccountService>();
+builder.Services.AddScoped<IAccountApiService, AccountApiService>();
 
 // Cache Services
 builder.Services.AddSingleton<IMongoCollectionFactory, MongoCollectionFactory>();
@@ -74,6 +80,10 @@ builder.Services.AddScoped<IAgentsCacheService, AgentsCacheMongoService>();
 builder.Services.AddScoped<ITransactionsCacheService, TransactionsCacheMongoService>();
 builder.Services.AddScoped<ITradesCacheService, TradesCacheMongoService>();
 builder.Services.AddScoped<IPathsCacheService, PathsCacheMongoService>();
+builder.Services.AddSingleton<IShipLogsStorageService, ShipLogsStorageMongoService>();
+builder.Services.AddScoped<IServerStatusService, ServerStatusService>();
+builder.Services.AddScoped<IAccountCacheService, AccountCacheMongoService>();
+builder.Services.AddScoped<IServerStatusCacheService, ServerStatusCacheMongoService>();
 
 builder.Services.AddLogging();
 Log.Logger = new LoggerConfiguration()
@@ -122,8 +132,6 @@ builder.Services.AddOptions<IConfiguration>()
 // builder.Configuration.AddJsonFile("local.settings.json", optional: true, reloadOnChange: true);
 var accountToken = builder.Configuration[$"{_appConfigSectionName}:{ConfigurationEnums.AccountToken.ToString()}"];
 ArgumentException.ThrowIfNullOrWhiteSpace(accountToken);
-var agentToken = builder.Configuration[$"{_appConfigSectionName}:{ConfigurationEnums.AgentToken.ToString()}"];
-ArgumentException.ThrowIfNullOrWhiteSpace(agentToken);
 
 // var sqlServerConnectionString = builder.Configuration[$"{_appConfigSectionName}:SqlServerConnectionString"];
 // ArgumentNullException.ThrowIfNullOrWhiteSpace(sqlServerConnectionString);
@@ -138,6 +146,15 @@ ArgumentException.ThrowIfNullOrWhiteSpace(agentToken);
 // builder.Services.AddScoped<ITradesCacheService, TradesCacheEfService>();
 
 var app = builder.Build();
+
+using (var scope = app.Services.CreateScope())
+{
+    var accountService = scope.ServiceProvider.GetRequiredService<IAccountService>();
+    var account = await accountService.GetAsync();
+    var agentToken = account.Token;
+    var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+    configuration[$"{_appConfigSectionName}:{ConfigurationEnums.AgentToken}"] = agentToken;
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

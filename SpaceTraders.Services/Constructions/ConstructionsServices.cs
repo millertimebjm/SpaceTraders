@@ -12,34 +12,39 @@ using SpaceTraders.Services.Waypoints;
 
 namespace SpaceTraders.Services.Constructions;
 
-public class ConstructionsService : IConstructionsService
+public class ConstructionsService(
+    HttpClient _httpClient,
+    IConfiguration _configuration,
+    ILogger<IConstructionsService> _logger,
+    IShipLogsService _shipLogsService
+) : IConstructionsService
 {
-    private readonly string _apiUrl;
-    private readonly string _token;
-    private readonly HttpClient _httpClient;
-    private readonly ILogger<IConstructionsService> _logger;
-    private readonly IShipLogsService _shipLogsService;
-    public ConstructionsService(
-        HttpClient httpClient,
-        IConfiguration configuration,
-        ILogger<IConstructionsService> logger,
-        IShipLogsService shipLogsService)
+    private string ApiUrl
     {
-        _httpClient = httpClient;
-        _apiUrl = configuration[$"SpaceTrader:"+ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
-        ArgumentException.ThrowIfNullOrWhiteSpace(_apiUrl);
-        _token = configuration[$"SpaceTrader:"+ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
-        ArgumentException.ThrowIfNullOrWhiteSpace(_token);
-        _logger = logger;
-        _shipLogsService = shipLogsService;
+        get
+        {
+            var apiUrl = _configuration[$"SpaceTrader:"+ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
+            ArgumentException.ThrowIfNullOrWhiteSpace(apiUrl);
+            return apiUrl;
+        }
+    }
+
+    private string BearerToken
+    {
+        get
+        {
+            var token = _configuration[$"SpaceTrader:"+ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
+            ArgumentException.ThrowIfNullOrWhiteSpace(token);
+            return token;
+        }
     }
 
     public async Task<Construction> GetAsync(string waypointSymbol)
     {
-        var url = new UriBuilder(_apiUrl);
+        var url = new UriBuilder(ApiUrl);
         url.Path = $"v2/systems/{WaypointsService.ExtractSystemFromWaypoint(waypointSymbol)}/waypoints/{waypointSymbol}/construction";
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
+            new AuthenticationHeaderValue("Bearer", BearerToken);
         var data = await HttpHelperService.HttpGetHelper<DataSingle<Construction>>(
             url.ToString(),
             _httpClient,
@@ -54,12 +59,12 @@ public class ConstructionsService : IConstructionsService
         string inventory,
         int units)
     {
-        var url = new UriBuilder(_apiUrl)
+        var url = new UriBuilder(ApiUrl)
         {
             Path = $"/v2/systems/{WaypointsService.ExtractSystemFromWaypoint(waypointSymbol)}/waypoints/{waypointSymbol}/construction/supply"
         };
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
+            new AuthenticationHeaderValue("Bearer", BearerToken);
         var content = JsonContent.Create(new { shipSymbol, tradeSymbol = inventory, units });
         var data = await HttpHelperService.HttpPostHelper<DataSingle<SupplyResult>>(
             url.ToString(),

@@ -12,38 +12,43 @@ using SpaceTraders.Services.Waypoints;
 
 namespace SpaceTraders.Services.Marketplaces;
 
-public class MarketplacesService : IMarketplacesService
+public class MarketplacesService(
+    HttpClient _httpClient,
+    IConfiguration _configuration,
+    ILogger<MarketplacesService> _logger,
+    IShipLogsService _shipLogsService
+) : IMarketplacesService
 {
-    private readonly string _apiUrl;
-    private readonly HttpClient _httpClient;
-    private readonly string _token;
-    private readonly ILogger<MarketplacesService> _logger;
     public const string SPACETRADER_PREFIX = "SpaceTrader:";
-    public readonly IShipLogsService _shipLogsService;
 
-    public MarketplacesService(
-        HttpClient httpClient,
-        IConfiguration configuration,
-        ILogger<MarketplacesService> logger,
-        IShipLogsService shipLogsService)
+    private string AgentToken
     {
-        _logger = logger;
-        _httpClient = httpClient;
-        _apiUrl = configuration[SPACETRADER_PREFIX + ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
-        ArgumentException.ThrowIfNullOrWhiteSpace(_apiUrl);
-        _token = configuration[SPACETRADER_PREFIX + ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
-        ArgumentException.ThrowIfNullOrWhiteSpace(_token);
-        _shipLogsService = shipLogsService;
+        get
+        {
+            var token = _configuration[SPACETRADER_PREFIX + ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
+            ArgumentException.ThrowIfNullOrWhiteSpace(token);
+            return token;
+        }
+    }
+
+    private string ApiUrl
+    {
+        get
+        {
+            var apiUrl = _configuration[SPACETRADER_PREFIX + ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
+            ArgumentException.ThrowIfNullOrWhiteSpace(apiUrl);
+            return apiUrl;
+        }
     }
 
     public async Task<Marketplace> GetAsync(string marketplaceWaypointSymbol)
     {
-        var url = new UriBuilder(_apiUrl)
+        var url = new UriBuilder(ApiUrl)
         {
             Path = $"/systems/{WaypointsService.ExtractSystemFromWaypoint(marketplaceWaypointSymbol)}/waypoints/{marketplaceWaypointSymbol}/market"
         };
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
+            new AuthenticationHeaderValue("Bearer", AgentToken);
         var data = await HttpHelperService.HttpGetHelper<DataSingle<Marketplace>>(
             url.ToString(),
             _httpClient,
@@ -55,12 +60,12 @@ public class MarketplacesService : IMarketplacesService
     public async Task<RefuelResponse> RefuelAsync(
         string shipSymbol)
     {
-        var url = new UriBuilder(_apiUrl)
+        var url = new UriBuilder(ApiUrl)
         {
             Path = $"/v2/my/ships/{shipSymbol}/refuel"
         };
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
+            new AuthenticationHeaderValue("Bearer", AgentToken);
         var content = JsonContent.Create(new { symbol = InventoryEnum.FUEL.ToString() });
         var data = await HttpHelperService.HttpPostHelper<DataSingle<RefuelResponse>>(
             url.ToString(),
@@ -94,12 +99,12 @@ public class MarketplacesService : IMarketplacesService
         string inventory,
         int units)
     {
-        var url = new UriBuilder(_apiUrl)
+        var url = new UriBuilder(ApiUrl)
         {
             Path = $"/v2/my/ships/{shipSymbol}/sell"
         };
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
+            new AuthenticationHeaderValue("Bearer", AgentToken);
         var content = JsonContent.Create(new { symbol = inventory, units });
         var data = await HttpHelperService.HttpPostHelper<DataSingle<SellCargoResponse>>(
             url.ToString(),
@@ -134,12 +139,12 @@ public class MarketplacesService : IMarketplacesService
         string inventory,
         int units)
     {
-        var url = new UriBuilder(_apiUrl)
+        var url = new UriBuilder(ApiUrl)
         {
             Path = $"/v2/my/ships/{shipSymbol}/purchase"
         };
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
+            new AuthenticationHeaderValue("Bearer", AgentToken);
         var content = JsonContent.Create(new { symbol = inventory, units });
         var data = await HttpHelperService.HttpPostHelper<DataSingle<PurchaseCargoResult>>(
             url.ToString(),

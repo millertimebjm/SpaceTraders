@@ -9,34 +9,40 @@ using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.Systems;
 
-public class SystemsApiService : ISystemsApiService
+public class SystemsApiService(
+    HttpClient _httpClient,
+    IConfiguration _configuration,
+    ILogger<SystemsService> _logger
+) : ISystemsApiService
 {
-    //private const string DIRECTORY_PATH = "/v2/systems/";
     private const string DIRECTORY_PATH = "/v2/systems/";
-    private readonly string _apiUrl;
-    private readonly HttpClient _httpClient;
-    private readonly string _token;
-    private readonly ILogger<SystemsService> _logger;
 
-    public SystemsApiService(
-        HttpClient httpClient,
-        IConfiguration configuration,
-        ILogger<SystemsService> logger)
+    private string ApiUrl
     {
-        _logger = logger;
-        _httpClient = httpClient;
-        _apiUrl = configuration[$"SpaceTrader:"+ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
-        ArgumentException.ThrowIfNullOrWhiteSpace(_apiUrl);
-        _token = configuration[$"SpaceTrader:"+ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
-        ArgumentException.ThrowIfNullOrWhiteSpace(_token);
+        get
+        {
+            var apiUrl = _configuration[$"SpaceTrader:"+ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
+            ArgumentException.ThrowIfNullOrWhiteSpace(apiUrl);
+            return apiUrl;
+        }
+    }
+
+    private string BearerToken
+    {
+        get
+        {
+            var token = _configuration[$"SpaceTrader:"+ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
+            ArgumentException.ThrowIfNullOrWhiteSpace(token);
+            return token;
+        }
     }
 
     public async Task<STSystem> GetAsync(string systemSymbol)
     {
-        var url = new UriBuilder(_apiUrl);
+        var url = new UriBuilder(ApiUrl);
         url.Path = DIRECTORY_PATH + systemSymbol;
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
+            new AuthenticationHeaderValue("Bearer", BearerToken);
         var data = await HttpHelperService.HttpGetHelper<DataSingle<STSystem>>(
             url.ToString(),
             _httpClient,

@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SpaceTraders.Services.Accounts;
+using SpaceTraders.Services.Accounts.Interfaces;
 using SpaceTraders.Services.Agents;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Constructions;
@@ -17,6 +19,8 @@ using SpaceTraders.Services.MongoCache;
 using SpaceTraders.Services.MongoCache.Interfaces;
 using SpaceTraders.Services.Paths;
 using SpaceTraders.Services.Paths.Interfaces;
+using SpaceTraders.Services.ServerStatusServices;
+using SpaceTraders.Services.ServerStatusServices.Interfaces;
 using SpaceTraders.Services.ShipCommands;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.ShipJobs;
@@ -65,6 +69,10 @@ public static class DependencyInjectionHelperService
         services.AddSingleton<IPathsService, PathsService>();
         services.AddSingleton<ITradesService, TradesService>();
         services.AddSingleton<IShipLogsService, ShipLogsChannelService>();
+        services.AddSingleton<IServerStatusService, ServerStatusService>();
+        services.AddSingleton<IServerStatusApiService, ServerStatusApiService>();
+        services.AddSingleton<IAccountService, AccountService>();
+        services.AddSingleton<IAccountApiService, AccountApiService>();
 
         // Ship Commands
         services.AddSingleton<MiningToSellAnywhereCommand>();
@@ -92,6 +100,8 @@ public static class DependencyInjectionHelperService
         services.AddSingleton<ITradesCacheService, TradesCacheMongoService>();
         services.AddSingleton<IPathsCacheService, PathsCacheMongoService>();
         services.AddSingleton<IShipLogsStorageService, ShipLogsStorageMongoService>();
+        services.AddSingleton<IAccountCacheService, AccountCacheMongoService>();
+        services.AddSingleton<IServerStatusCacheService, ServerStatusCacheMongoService>();
 
         // services.AddSingleton<IAgentsCacheService, AgentsCacheEfService>();
         // services.AddSingleton<IShipStatusesCacheService, ShipStatusesCacheEfService>();

@@ -8,28 +8,37 @@ using SpaceTraders.Services.Waypoints;
 
 namespace SpaceTraders.Services.JumpGates;
 
-public class JumpGatesServices : IJumpGatesServices
+public class JumpGatesServices(
+    HttpClient _httpClient,
+    IConfiguration _configuration
+) : IJumpGatesServices
 {
-    private readonly string _apiUrl;
-    private readonly string _token;
-    private readonly HttpClient _httpClient;
-    public JumpGatesServices(
-        HttpClient httpClient,
-        IConfiguration configuration)
+    private string ApiUrl
     {
-        _httpClient = httpClient;
-        _apiUrl = configuration[$"SpaceTrader:"+ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
-        ArgumentException.ThrowIfNullOrWhiteSpace(_apiUrl);
-        _token = configuration[$"SpaceTrader:"+ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
-        ArgumentException.ThrowIfNullOrWhiteSpace(_token);
+        get
+        {
+            var apiUrl = _configuration[$"SpaceTrader:"+ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
+            ArgumentException.ThrowIfNullOrWhiteSpace(apiUrl);
+            return apiUrl;
+        }
+    }
+
+    private string BearerToken
+    {
+        get
+        {
+            var token = _configuration[$"SpaceTrader:"+ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
+            ArgumentException.ThrowIfNullOrWhiteSpace(token);
+            return token;
+        }
     }
 
     public async Task<JumpGate> GetAsync(string waypointSymbol)
     {
-        var url = new UriBuilder(_apiUrl);
+        var url = new UriBuilder(ApiUrl);
         url.Path = $"v2/systems/{WaypointsService.ExtractSystemFromWaypoint(waypointSymbol)}/waypoints/{waypointSymbol}/jump-gate";
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
+            new AuthenticationHeaderValue("Bearer", BearerToken);
         var waypointsDataString = await _httpClient.GetAsync(url.ToString());
         waypointsDataString.EnsureSuccessStatusCode();
         var waypointsData = await waypointsDataString.Content.ReadFromJsonAsync<DataSingle<JumpGate>>();

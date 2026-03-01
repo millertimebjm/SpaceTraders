@@ -13,45 +13,42 @@ using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.Waypoints;
 
-public class WaypointsApiService : IWaypointsApiService
+public class WaypointsApiService(
+    HttpClient _httpClient,
+    IConfiguration _configuration,
+    ILogger<WaypointsApiService> _logger,
+    IShipyardsService _shipyardsService,
+    IMarketplacesService _marketplacesService,
+    IJumpGatesServices _jumpGatesService,
+    IConstructionsService _constructionsService
+) : IWaypointsApiService
 {
-    private readonly string _apiUrl;
-    private readonly HttpClient _httpClient;
-    private readonly string _token;
-    private readonly ILogger<WaypointsApiService> _logger;
-    private readonly IShipyardsService _shipyardsService;
-    private readonly IMarketplacesService _marketplacesService;
-    private readonly IJumpGatesServices _jumpGatesService;
-    private readonly IConstructionsService _constructionsService;
-
-    public WaypointsApiService(
-        HttpClient httpClient,
-        IConfiguration configuration,
-        ILogger<WaypointsApiService> logger,
-        IShipyardsService shipyardsService,
-        IMarketplacesService marketplacesService,
-        IJumpGatesServices jumpGatesServices,
-        IConstructionsService constructionsService
-    )
+    private string ApiUrl
     {
-        _logger = logger;
-        _httpClient = httpClient;
-        _apiUrl = configuration[$"SpaceTrader:"+ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
-        ArgumentException.ThrowIfNullOrWhiteSpace(_apiUrl);
-        _token = configuration[$"SpaceTrader:"+ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
-        ArgumentException.ThrowIfNullOrWhiteSpace(_token);
-        _shipyardsService = shipyardsService;
-        _marketplacesService = marketplacesService;
-        _jumpGatesService = jumpGatesServices;
-        _constructionsService = constructionsService;
+        get
+        {
+            var apiUrl = _configuration[$"SpaceTrader:"+ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
+            ArgumentException.ThrowIfNullOrWhiteSpace(apiUrl);
+            return apiUrl;
+        }
+    }
+
+    private string BearerToken
+    {
+        get
+        {
+            var token = _configuration[$"SpaceTrader:"+ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
+            ArgumentException.ThrowIfNullOrWhiteSpace(token);
+            return token;
+        }
     }
 
     public async Task<Waypoint> GetAsync(string waypointSymbol)
     {
-        var url = new UriBuilder(_apiUrl);
+        var url = new UriBuilder(ApiUrl);
         url.Path = $"v2/systems/{WaypointsService.ExtractSystemFromWaypoint(waypointSymbol)}/waypoints/{waypointSymbol}";
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
+            new AuthenticationHeaderValue("Bearer", BearerToken);
         var waypointsDataString = await _httpClient.GetAsync(url.ToString());
         waypointsDataString.EnsureSuccessStatusCode();
         var waypointsData = await waypointsDataString.Content.ReadFromJsonAsync<DataSingle<Waypoint>>();
@@ -95,22 +92,22 @@ public class WaypointsApiService : IWaypointsApiService
 
     public async Task<IEnumerable<Waypoint>> GetByTypeAsync(string systemSymbol, string type)
     {
-        var url = new UriBuilder(_apiUrl);
+        var url = new UriBuilder(ApiUrl);
         url.Path = $"/v2/systems/{systemSymbol}/waypoints";
         url.Query = $"type={type}";
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
+            new AuthenticationHeaderValue("Bearer", BearerToken);
         var data = await HttpHelperService.HttpGetHelper<Data<Waypoint>>(url.ToString(), _httpClient, _logger);
         return data.DataList;
     }
 
     public async Task<IEnumerable<Waypoint>> GetByTraitAsync(string systemSymbol, string trait)
     {
-        var url = new UriBuilder(_apiUrl);
+        var url = new UriBuilder(ApiUrl);
         url.Path = $"/v2/systems/{systemSymbol}/waypoints";
         url.Query = $"traits={trait}";
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
+            new AuthenticationHeaderValue("Bearer", BearerToken);
         var data = await HttpHelperService.HttpGetHelper<Data<Waypoint>>(url.ToString(), _httpClient, _logger);
         return data.DataList;
     }

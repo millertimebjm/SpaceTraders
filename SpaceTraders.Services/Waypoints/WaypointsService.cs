@@ -6,27 +6,31 @@ using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.Waypoints;
 
-public class WaypointsService : IWaypointsService
+public class WaypointsService(
+    IConfiguration _configuration,
+    ILogger<WaypointsService> _logger,
+    IWaypointsCacheService _waypointsCacheService,
+    IWaypointsApiService _waypointsApiService
+) : IWaypointsService
 {
-    private readonly string _apiUrl;
-    private readonly string _token;
-    private readonly ILogger<WaypointsService> _logger;
-    private readonly IWaypointsCacheService _waypointsCacheService;
-    private readonly IWaypointsApiService _waypointsApiService;
-
-    public WaypointsService(
-        IConfiguration configuration,
-        ILogger<WaypointsService> logger,
-        IWaypointsCacheService waypointsCacheService,
-        IWaypointsApiService waypointsApiService)
+    private string ApiUrl
     {
-        _logger = logger;
-        _waypointsApiService = waypointsApiService;
-        _waypointsCacheService = waypointsCacheService;
-        _apiUrl = configuration[$"SpaceTrader:" + ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
-        ArgumentException.ThrowIfNullOrWhiteSpace(_apiUrl);
-        _token = configuration[$"SpaceTrader:" + ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
-        ArgumentException.ThrowIfNullOrWhiteSpace(_token);
+        get
+        {
+            var apiUrl = _configuration[$"SpaceTrader:" + ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
+            ArgumentException.ThrowIfNullOrWhiteSpace(apiUrl);
+            return apiUrl;
+        }
+    }
+
+    private string BearerToken
+    {
+        get
+        {
+            var token = _configuration[$"SpaceTrader:" + ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
+            ArgumentException.ThrowIfNullOrWhiteSpace(token);
+            return token;
+        }
     }
 
     public async Task<Waypoint> GetAsync(
@@ -110,10 +114,15 @@ public class WaypointsService : IWaypointsService
 
     public static bool IsVisited(Waypoint waypoint)
     {
-        if (waypoint.Marketplace is not null && waypoint.Marketplace.TradeGoods is null) return false;
         if (waypoint.Shipyard is not null && waypoint.Shipyard.ShipFrames is null) return false;
         if (waypoint.Traits is null) return false;
         if (waypoint.Traits.Any(t => t.Symbol == WaypointTraitsEnum.UNCHARTED.ToString())) return false;
+        return true;
+    }
+
+    public static bool IsMarketplaceVisited(Waypoint waypoint)
+    {
+        if (waypoint.Marketplace is not null && waypoint.Marketplace.TradeGoods is null) return false;
         return true;
     }
 }

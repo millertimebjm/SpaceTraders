@@ -10,34 +10,40 @@ using SpaceTraders.Services.Waypoints;
 
 namespace SpaceTraders.Services.Shipyards;
 
-public class ShipyardsService : IShipyardsService
+public class ShipyardsService(
+    HttpClient _httpClient,
+    IConfiguration _configuration,
+    ILogger<ShipyardsService> _logger
+) : IShipyardsService
 {
-    private readonly string _apiUrl;
-    private readonly HttpClient _httpClient;
-    private readonly string _token;
-    private readonly ILogger<ShipyardsService> _logger;
-
-    public ShipyardsService(
-        HttpClient httpClient,
-        IConfiguration configuration,
-        ILogger<ShipyardsService> logger)
+    private string ApiUrl
     {
-        _logger = logger;
-        _httpClient = httpClient;
-        _apiUrl = configuration[$"SpaceTrader:"+ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
-        ArgumentException.ThrowIfNullOrWhiteSpace(_apiUrl);
-        _token = configuration[$"SpaceTrader:"+ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
-        ArgumentException.ThrowIfNullOrWhiteSpace(_token);
+        get 
+        {
+            var apiUrl = _configuration[$"SpaceTrader:"+ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
+            ArgumentException.ThrowIfNullOrWhiteSpace(apiUrl);
+            return apiUrl;
+        }
+    }
+
+    private string BearerToken
+    {
+        get 
+        {
+            var apiUrl = _configuration[$"SpaceTrader:"+ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
+            ArgumentException.ThrowIfNullOrWhiteSpace(apiUrl);
+            return apiUrl;
+        }
     }
 
     public async Task<Shipyard> GetAsync(string shipyardWaypointSymbol)
     {
-        var url = new UriBuilder(_apiUrl)
+        var url = new UriBuilder(ApiUrl)
         {
             Path = $"/systems/{WaypointsService.ExtractSystemFromWaypoint(shipyardWaypointSymbol)}/waypoints/{shipyardWaypointSymbol}/shipyard"
         };
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
+            new AuthenticationHeaderValue("Bearer", BearerToken);
         var data = await HttpHelperService.HttpGetHelper<DataSingle<Shipyard>>(
             url.ToString(),
             _httpClient,
@@ -48,12 +54,12 @@ public class ShipyardsService : IShipyardsService
 
     public async Task<PurchaseShipResponse> PurchaseShipAsync(string waypointSymbol, string shipType)
     {
-        var url = new UriBuilder(_apiUrl)
+        var url = new UriBuilder(ApiUrl)
         {
             Path = $"/v2/my/ships"
         };
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
+            new AuthenticationHeaderValue("Bearer", BearerToken);
         var content = JsonContent.Create(new { shipType, waypointSymbol });
         var data = await HttpHelperService.HttpPostHelper<DataSingle<PurchaseShipResponse>>(
             url.ToString(),

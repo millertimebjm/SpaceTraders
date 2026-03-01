@@ -152,7 +152,7 @@ public class ShipCommandsHelperService(
         var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
         var shipStatuses = await _shipStatusesCacheService.GetAsync();
         var ships = shipStatuses.Select(ss => ss.Ship);
-        var shipToBuy = await ShipToBuy(ships, system);
+        var shipToBuy = await ShipToBuy(ship.Nav.SystemSymbol, ships, system);
         if (shipToBuy is null) return null;
 
         // Need fuel and fuel is available at this waypoint
@@ -825,7 +825,7 @@ public class ShipCommandsHelperService(
         var ships = shipStatuses.Select(ss => ss.Ship);
         var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
         var paths = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
-        var shipToBuy = await ShipToBuy(ships, system);
+        var shipToBuy = await ShipToBuy(ship.Nav.SystemSymbol, ships, system);
         if (shipToBuy is null) return (null, null);
 
         var shipyards = system.Waypoints.Where(w => w.Shipyard is not null);
@@ -857,7 +857,7 @@ public class ShipCommandsHelperService(
         var shipStatuses = await _shipStatusesCacheService.GetAsync();
         var ships = shipStatuses.Select(ss => ss.Ship);
         var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
-        var shipToBuy = await ShipToBuy(ships, system);
+        var shipToBuy = await ShipToBuy(ship.Nav.SystemSymbol, ships, system);
         if (shipToBuy is null
             || !currentWaypoint.Shipyard.ShipTypes.Select(st => st.Type).Contains(shipToBuy.ToString()))
         {
@@ -867,37 +867,39 @@ public class ShipCommandsHelperService(
         return response;
     }
 
-    public static Task<ShipTypesEnum?> ShipToBuy(IEnumerable<Ship> ships, STSystem system)
+    public async Task<ShipTypesEnum?> ShipToBuy(string currentSystem, IEnumerable<Ship> ships, STSystem system)
     {
-        var shipyards = system
-            .Waypoints
+        var systems = await _systemsService.GetAsync();
+        var reachableSystems = SystemsService.Traverse(systems, currentSystem);
+        var waypoints = reachableSystems.SelectMany(w => w.Waypoints).ToList();
+        var shipyards = 
+            waypoints
             .Where(w => w.Shipyard is not null)
             .ToList();
         var shipsInSystem = ships
-            .Where(s => s.Nav.SystemSymbol == system.Symbol)
             .GroupBy(s => s.Registration.Role);
+
+        if ((shipsInSystem.SingleOrDefault(sin => sin.Key == ShipRegistrationRolesEnum.SURVEYOR.ToString())?.Count() ?? 0) == 0)
+        {
+            return ShipTypesEnum.SHIP_SURVEYOR;
+        }
 
         if ((shipsInSystem.SingleOrDefault(sin => sin.Key == ShipRegistrationRolesEnum.EXCAVATOR.ToString())?.Count() ?? 0) < 9)
         {
-            return Task.FromResult((ShipTypesEnum?)ShipTypesEnum.SHIP_MINING_DRONE);
+            return ShipTypesEnum.SHIP_MINING_DRONE;
         }
 
         if ((shipsInSystem.SingleOrDefault(sin => sin.Key == ShipRegistrationRolesEnum.HAULER.ToString())?.Count() ?? 0) < 5)
         {
-            return Task.FromResult((ShipTypesEnum?)ShipTypesEnum.SHIP_LIGHT_HAULER);
+            return ShipTypesEnum.SHIP_LIGHT_HAULER;
         }
 
         if ((shipsInSystem.SingleOrDefault(sin => sin.Key == ShipRegistrationRolesEnum.SURVEYOR.ToString())?.Count() ?? 0) == 0)
         {
-            return Task.FromResult((ShipTypesEnum?)ShipTypesEnum.SHIP_SURVEYOR);
+            return ShipTypesEnum.SHIP_LIGHT_SHUTTLE;
         }
 
-        if ((shipsInSystem.SingleOrDefault(sin => sin.Key == ShipRegistrationRolesEnum.SURVEYOR.ToString())?.Count() ?? 0) == 0)
-        {
-            return Task.FromResult((ShipTypesEnum?)ShipTypesEnum.SHIP_LIGHT_SHUTTLE);
-        }
-
-        return Task.FromResult((ShipTypesEnum?)null);
+        return (ShipTypesEnum?)null;
     }
 
     public async Task<PurchaseCargoResult?> PurchaseFuelForRescue(Ship ship, Waypoint currentWaypoint, int fuelToBuy)
@@ -921,11 +923,11 @@ public class ShipCommandsHelperService(
         List<string> otherShipGoals)
     {
         var systems = await _systemsService.GetAsync();
+        var reachableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol);
+        var waypoints = reachableSystems.SelectMany(s => s.Waypoints).ToList();
 
         if (ship.Fuel.Current < minimumFuel)
         {
-            var reachableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol);
-            var waypoints = reachableSystems.SelectMany(s => s.Waypoints).ToList();
             var paths = await _pathsService.BuildSystemPathWithCost(waypoints, currentWaypoint, 10000, 10000);
             var reachableWaypoints = waypoints.Where(w => paths.ContainsKey(w.Symbol)).ToList();
             var fuelPaths = reachableWaypoints
@@ -946,20 +948,27 @@ public class ShipCommandsHelperService(
 
         if (ship.Goal is not null)
         {
-            var reachableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol);
-            var waypoints = reachableSystems.SelectMany(s => s.Waypoints).ToList();
             var paths = await _pathsService.BuildSystemPathWithCost(waypoints, currentWaypoint, 10000, 10000);
             var path = paths.Single(p => p.Key == ship.Goal);
             var (refuelNav, refuelFuel) = await _shipsService.NavigateAsync(path.Value.Item1[1], ship);
         }
 
-        var unmappedWaypoints = systems.SelectMany(s => s.Waypoints).Where(w =>
-            (w.Traits is null
-            || (w.Marketplace is not null && w.Marketplace.TradeGoods is null)
-            || w.Traits.Any(t => t.Symbol == WaypointTraitsEnum.UNCHARTED.ToString())
-            ) && !otherShipGoals.Contains(w.Symbol))
+        var unmappedWaypoints = waypoints
+            .Where(w =>
+                !WaypointsService.IsMarketplaceVisited(w)
+                && !otherShipGoals.Contains(w.Symbol))
             .Select(w => w.Symbol)
             .ToList();
+
+        if (unmappedWaypoints.Count == 0 && waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction))
+        {
+            unmappedWaypoints = waypoints
+                .Where(w =>
+                    !WaypointsService.IsVisited(w)
+                    && !otherShipGoals.Contains(w.Symbol))
+                .Select(w => w.Symbol)
+                .ToList();
+        }
 
         var pathDictionary = await _pathsService.BuildSystemPath(currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
         var unmappedPaths = pathDictionary.Where(p => unmappedWaypoints.Contains(p.Key)).ToList();

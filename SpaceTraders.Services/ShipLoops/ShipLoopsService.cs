@@ -1,21 +1,19 @@
-using DnsClient.Internal;
-using Microsoft.EntityFrameworkCore.Update.Internal;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using MongoDB.Driver;
 using SpaceTraders.Model.Exceptions;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
-using SpaceTraders.Services.Agents.Interfaces;
+using SpaceTraders.Services.Accounts.Interfaces;
 using SpaceTraders.Services.Interfaces;
+using SpaceTraders.Services.MongoCache.Interfaces;
+using SpaceTraders.Services.ServerStatusServices.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.ShipJobs.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.ShipStatuses.Interfaces;
 using SpaceTraders.Services.Shipyards;
-using SpaceTraders.Services.Systems;
 using SpaceTraders.Services.Systems.Interfaces;
-using SpaceTraders.Services.Trades;
-using SpaceTraders.Services.Trades.Interfaces;
-using SpaceTraders.Services.Waypoints;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.ShipLoops;
@@ -28,13 +26,30 @@ public class ShipLoopsService(
     IShipCommandsServiceFactory _shipCommandsServiceFactory,
     IWaypointsService _waypointsService,
     ILogger<ShipLoopsService> _logger,
-    ITradesService _tradesService,
-    ITradesCacheService _tradesCacheService,
-    IAgentsService _agentsService
+    IServerStatusService _serverStatusService,
+    IMongoCollectionFactory _collectionFactory,
+    IAccountService _accountService,
+    IConfiguration _configuration
 ) : IShipLoopsService
 {
     public async Task Run()
     {
+        if (!await _collectionFactory.DatabaseExists())
+        {
+            await _accountService.RegisterAsync();
+        }
+        
+        var serverStatus = await _serverStatusService.GetAsync();
+        if (serverStatus.ServerResets.Next.AddHours(-1) < DateTime.UtcNow)
+        {
+            _logger.LogInformation("Waiting for next reset.");
+            await Task.Delay(DateTime.UtcNow - serverStatus.ServerResets.Next);
+            await _collectionFactory.DeleteDatabaseAsync();
+            await _accountService.RegisterAsync();
+        }
+        var account = await _accountService.GetAsync();
+        _configuration[$"SpaceTrader:" + ConfigurationEnums.AgentToken.ToString()] = account.Token;
+        
         var ships = await _shipsService.GetAsync();
         await _shipStatusesCacheService.DeleteAsync();
         foreach (var ship in ships)
@@ -109,8 +124,14 @@ public class ShipLoopsService(
                 await Task.Delay(1000);
             }
 
-            //await UpdateTradeModelCache();
+            _logger.LogInformation("Time until server reset: {hours} Hours", (DateTime.UtcNow - serverStatus.ServerResets.Next).TotalHours);
             await SleepUntilNextShipReady(shipStatuses);
+
+            if (serverStatus.ServerResets.Next.AddHours(-1) < DateTime.UtcNow)
+            {
+                _logger.LogInformation("Waiting for next reset.");
+                await Task.Delay(DateTime.UtcNow - serverStatus.ServerResets.Next);
+            }
         }
     }
 

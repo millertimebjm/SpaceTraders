@@ -45,4 +45,16 @@ public class MongoCollectionFactory : IMongoCollectionFactory
     {
         return MongoDatabase.GetCollection<T>(typeof(T).Name);
     }
+
+    public async Task DeleteDatabaseAsync()
+    {
+        await MongoClient.DropDatabaseAsync(_mongoDatabaseString);
+    }
+
+    public async Task<bool> DatabaseExists()
+    {
+        var databaseNames = await MongoClient.ListDatabaseNamesAsync();
+        var names = await databaseNames.ToListAsync();
+        return names.Contains(_mongoDatabaseString);
+    }
 }
