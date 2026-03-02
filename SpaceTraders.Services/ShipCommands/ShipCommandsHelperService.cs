@@ -61,8 +61,7 @@ public class ShipCommandsHelperService(
         var inventoryToBuy = currentWaypoint.Marketplace.TradeGoods.Single(tg => tg.Symbol == bestTrade.TradeSymbol);
 
         PurchaseCargoResult? purchaseCargoResult = null;
-        while ((int)Enum.Parse<SupplyEnum>(currentWaypoint.Marketplace.TradeGoods.Single(tg => tg.Symbol == ship.Goal).Supply) >= (int)SupplyEnum.MODERATE
-            && ship.Cargo.Capacity - ship.Cargo.Units > 0)
+        do
         {
             var amountToBuy = Math.Min(inventoryToBuy.TradeVolume, ship.Cargo.Capacity - ship.Cargo.Units);
             if (amountToBuy * inventoryToBuy.PurchasePrice > agent.Credits)
@@ -78,7 +77,8 @@ public class ShipCommandsHelperService(
 
             currentWaypoint = await _waypointsService.GetAsync(currentWaypoint.Symbol, refresh: true);
             await Task.Delay(500);
-        }
+        } while ((int)Enum.Parse<SupplyEnum>(currentWaypoint.Marketplace.TradeGoods.Single(tg => tg.Symbol == ship.Goal).Supply) >= (int)SupplyEnum.MODERATE
+            && ship.Cargo.Capacity - ship.Cargo.Units > 0);
 
         return purchaseCargoResult;
     }

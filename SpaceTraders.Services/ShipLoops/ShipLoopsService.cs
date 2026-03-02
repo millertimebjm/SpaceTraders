@@ -113,7 +113,8 @@ public class ShipLoopsService(
                     ship = ship with
                     {
                         Error = ex.Message + " " + ex.InnerException.Message + " " + ex.ResponseBody,
-                        Cooldown = new Cooldown(ship.Symbol, (int)timeSpan.TotalSeconds, (int)timeSpan.TotalSeconds, DateTime.UtcNow.Add(timeSpan))
+                        Cooldown = new Cooldown(ship.Symbol, (int)timeSpan.TotalSeconds, (int)timeSpan.TotalSeconds, DateTime.UtcNow.Add(timeSpan)),
+                        Goal = null,
                     };
                     ship = ship with { ShipCommand = null };
                     shipStatus = shipStatus with { Ship = ship };
