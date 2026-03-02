@@ -318,8 +318,8 @@ public class ShipCommandsHelperService(
             try
             {
                 var largetsInventory = ship.Cargo.Inventory.OrderByDescending(i => i.Units).FirstOrDefault();
-                var survey = surveys.Where(s => s.Value.OrderByDescending(d => d.Count()).FirstOrDefault()?.Key == largetsInventory?.Symbol).FirstOrDefault().Key;
-                if (survey == default) surveys.FirstOrDefault();
+                var survey = surveys.FirstOrDefault(s => s.Value.OrderByDescending(d => d.Count()).FirstOrDefault()?.Key == largetsInventory?.Symbol).Key;
+                if (survey == default) survey = surveys.Keys.FirstOrDefault();
 
                 // var largetsInventory = ship.Cargo.Inventory.OrderByDescending(i => i.Units).FirstOrDefault();
                 // var survey = largetsInventory is not null
