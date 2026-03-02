@@ -9,6 +9,7 @@ public interface IShipLogsStorageService
     Task SetAsync(ShipLog shipLog);
     void Set(ShipLog shipLog);
     Task SetAsync(IEnumerable<ShipLog> shipLogs);
+    Task<IEnumerable<ShipLog>> GetShipLogsForProfitAnalysisAsync();
 }
 
 public record ShipLogsFilterModel(

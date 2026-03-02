@@ -75,8 +75,15 @@
                         <li class="nav-item"></li>
                             <a class="nav-link text-dark" href="/shiplogs">Logs</a>
                         </li>
-                        <li class="nav-item"></li>
-                            <a class="nav-link text-dark" href="/marketplaces/trademodels">Trade Models</a>
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle text-dark" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                Marketplace
+                            </a>
+                            <ul class="dropdown-menu" aria-labelledby="navbarDropdown">
+                                
+                                <li><a class="dropdown-item" href="/marketplaces/trademodels">Trade Models</a></li>
+                                <li><a class="dropdown-item" href="/marketplaces/tradestats">Trade Stats</a></li>
+                            </ul>
                         </li>
                         <li class="nav-item">
                             @if (ViewBag.CurrentShipSymbol is null)

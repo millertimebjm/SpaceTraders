@@ -1,5 +1,6 @@
 using MongoDB.Driver;
 using SpaceTraders.Models;
+using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.MongoCache.Interfaces;
 using SpaceTraders.Services.ShipLogs.Interfaces;
 
@@ -64,5 +65,19 @@ public class ShipLogsStorageMongoService(IMongoCollectionFactory _collectionFact
     {
         var collection = _collectionFactory.GetCollection<ShipLog>();
         await collection.InsertManyAsync(shipLogs);
+    }
+
+    public async Task<IEnumerable<ShipLog>> GetShipLogsForProfitAnalysisAsync()
+    {
+        var projection = Builders<ShipLog>.Projection.Exclude("_id");
+        var filter = Builders<ShipLog>.Filter.And(
+            Builders<ShipLog>.Filter.In(sl => sl.ShipLogEnum, [ShipLogEnum.BuyCommodity, ShipLogEnum.SellCommodity, ShipLogEnum.Refuel, ShipLogEnum.Extract])
+        );
+        var collection = _collectionFactory.GetCollection<ShipLog>();
+        var result = await collection
+            .Find(filter)
+            .Project<ShipLog>(projection)
+            .ToListAsync();
+        return result;
     }
 }

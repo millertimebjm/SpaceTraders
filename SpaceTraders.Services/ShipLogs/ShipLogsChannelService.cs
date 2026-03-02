@@ -34,4 +34,10 @@ public class ShipLogsChannelService(
             await _shipLogsStorageService.SetAsync(shipLog);
         }
     }
+
+    public async Task<IEnumerable<ShipLog>> GetShipLogsForProfitAnalysisAsync()
+    {
+        var shipLogs = await _shipLogsStorageService.GetShipLogsForProfitAnalysisAsync();
+        return shipLogs;
+    }
 }

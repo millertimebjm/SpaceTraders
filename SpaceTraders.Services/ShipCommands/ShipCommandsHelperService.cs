@@ -43,6 +43,7 @@ public class ShipCommandsHelperService(
 ) : IShipCommandsHelperService
 {
     private const int minimumFuel = 5;
+    private const int MAX_SURVEYS = 20;
     public async Task<PurchaseCargoResult?> PurchaseCargo(Ship ship, Waypoint currentWaypoint)
     {
         if (ship.Cargo.Inventory.Count > 0
@@ -309,22 +310,46 @@ public class ShipCommandsHelperService(
         ExtractionResult? extractionResult = null;
         while (extractionResult is null)
         {
-            var surveys = (await _surveysCacheService
-                    .GetAsync(currentWaypoint.Symbol))
-                    .OrderBy(s => s.Expiration)
-                    .ToDictionary(s => s, s => s.Deposits.GroupBy(d => d.Symbol));
+            // var surveys = (await _surveysCacheService
+            //         .GetAsync(currentWaypoint.Symbol))
+            //         .OrderBy(s => s.Expiration)
+            //         .ToDictionary(s => s, s => s.Deposits.GroupBy(d => d.Symbol));
 
-
+            var surveys = await _surveysCacheService.GetAsync(currentWaypoint.Symbol);
+            
             try
             {
-                var largetsInventory = ship.Cargo.Inventory.OrderByDescending(i => i.Units).FirstOrDefault();
-                var survey = surveys.FirstOrDefault(s => s.Value.OrderByDescending(d => d.Count()).FirstOrDefault()?.Key == largetsInventory?.Symbol).Key;
-                if (survey == default) survey = surveys.Keys.FirstOrDefault();
+                var singleResourceSurveys = 
+                    surveys
+                        .Where(s => s.Deposits.Select(d => d.Symbol).Distinct().Count() == 1)
+                        .Select(survey => (survey, survey.Deposits.First().Symbol, survey.Size))
+                        .ToList();
+                var largestInventory = ship.Cargo.Inventory.OrderByDescending(i => i.Units).FirstOrDefault()?.Symbol;
+                Survey? survey = null;
 
-                // var largetsInventory = ship.Cargo.Inventory.OrderByDescending(i => i.Units).FirstOrDefault();
-                // var survey = largetsInventory is not null
-                //     ? surveys.FirstOrDefault(s => s.Deposits.Any(d => d.Symbol == largetsInventory.Symbol))
-                //     : surveys.FirstOrDefault();
+                if (largestInventory is not null 
+                    && singleResourceSurveys is not null
+                    && singleResourceSurveys.Any(srs => srs.Symbol == largestInventory))
+                {
+                    survey = singleResourceSurveys
+                        .Where(srs => largestInventory == srs.Symbol)
+                        .OrderByDescending(srs => Enum.Parse<SurveySizeEnum>(srs.Size))
+                        .First()
+                        .survey;
+                }
+                
+                if (survey is null
+                    && largestInventory is not null)
+                {
+                    survey = surveys
+                        .OrderByDescending(s => s.Deposits.Count(d => d.Symbol == largestInventory))
+                        .ThenByDescending(s => Enum.Parse<SurveySizeEnum>(s.Size))
+                        .FirstOrDefault();
+                }
+                
+                survey ??= surveys
+                        .OrderByDescending(srs => Enum.Parse<SurveySizeEnum>(srs.Size))
+                        .FirstOrDefault();
 
                 if (survey is not null)
                 {
@@ -338,7 +363,7 @@ public class ShipCommandsHelperService(
             {
                 if (surveys.Any())
                 {
-                    await _surveysCacheService.DeleteAsync(surveys.First().Key.Signature);
+                    await _surveysCacheService.DeleteAsync(surveys.First().Signature);
                 }
                 await Task.Delay(1000);
             }
@@ -801,7 +826,7 @@ public class ShipCommandsHelperService(
     public async Task<Cooldown> Survey(Ship ship)
     {
         var surveys = await _surveysCacheService.GetAsync(ship.Nav.WaypointSymbol);
-        if (surveys.Count() >= 5)
+        if (surveys.Count() >= MAX_SURVEYS)
         {
             var timeSpan = TimeSpan.FromMinutes(1);
             return new Cooldown(ship.Symbol, (int)timeSpan.TotalSeconds, (int)timeSpan.TotalSeconds, DateTime.UtcNow.Add(timeSpan));

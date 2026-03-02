@@ -1,0 +1,54 @@
+@using SpaceTraders.Models
+@using SpaceTraders.Mvc.Services
+@model IEnumerable<ShipRevenueEvent>
+@{
+    ViewData["Title"] = "Marketplace";
+    var shipRevenueEventGroups = Model.GroupBy(sre => sre.ShipSymbol);
+    
+}
+
+<table class="table">
+    <thead>
+        <tr><td>ShipSymbol</td><td>Revenue</td><td>DateTime</td><td>Duration</td><td>Rev/Min</td></tr>
+    </thead>
+    <tbody>
+        @foreach(var shipRevenueEventGroup in shipRevenueEventGroups)
+        {
+            <tr>
+                @{
+                    var startDate = shipRevenueEventGroup.Min(sreg => sreg.DateTimeUtc).ToLocalTime();
+                    var endDate = shipRevenueEventGroup.Max(sreg => sreg.DateTimeUtc).ToLocalTime();
+                    var amountSum = shipRevenueEventGroup.Sum(sreg => sreg.Amount);
+                    var totalTimeSpan = new TimeSpan(0,(int)shipRevenueEventGroup.Sum(sreg => sreg.Duration.TotalMinutes),0);
+                }
+                <td>@shipRevenueEventGroup.Key</td>
+                <td>@amountSum</td>
+                
+                <td>@startDate.ToShortDateString() @startDate.ToShortTimeString() - @endDate.ToShortDateString() @endDate.ToShortTimeString()</td>
+                <td>@ViewHelperService.HumanReadableTimeSpan(totalTimeSpan)</td>
+                <td>@(Math.Round(amountSum / totalTimeSpan.TotalMinutes))</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<br/>
+<br/>
+
+<table class="table">
+    <thead>
+        <tr><td>ShipSymbol</td><td>Revenue</td><td>DateTime</td><td>Duration</td><td>Rev/Min</td></tr>
+    </thead>
+    <tbody>
+        @foreach(var shipRevenueEvent in Model)
+        {
+            <tr>
+                <td>@shipRevenueEvent.ShipSymbol</td>
+                <td>@shipRevenueEvent.Amount</td>
+                <td>@shipRevenueEvent.DateTimeUtc.ToLocalTime().ToShortDateString() @shipRevenueEvent.DateTimeUtc.ToLocalTime().ToShortTimeString()</td>
+                <td>@ViewHelperService.HumanReadableTimeSpan(shipRevenueEvent.Duration)</td>
+                <td>@(Math.Round(shipRevenueEvent.Amount / shipRevenueEvent.Duration.TotalMinutes))</td>
+            </tr>
+        }
+    </tbody>
+</table>
