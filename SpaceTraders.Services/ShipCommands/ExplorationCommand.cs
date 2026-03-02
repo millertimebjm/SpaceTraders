@@ -32,7 +32,7 @@ public class ExplorationCommand(
                     currentWaypoint = chartWaypointResult.Waypoint;
                     await _waypointsCacheService.SetAsync(currentWaypoint);
                 }
-                catch (Exception ex)
+                catch
                 {
 
                 }

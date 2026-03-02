@@ -14,7 +14,7 @@ public interface IShipsService
     Task<ExtractionResult> ExtractAsync(string shipSymbol);
     Task<ExtractionResult> ExtractAsync(string shipSymbol, Survey survey);
     Task<(Nav, Cooldown)> JumpAsync(string waypointSymbol, string shipSymbol);
-    Task JettisonAsync(string shipSymbol, string inventorySymbol, int units);
+    Task<Cargo> JettisonAsync(string shipSymbol, string inventorySymbol, int units);
     Task<SurveyResult> SurveyAsync(string shipSymbol);
     Task<ScanWaypointsResult> ScanWaypointsAsync(string shipSymbol);
     Task<Nav> NavToggleAsync(string shipSymbol, NavFlightModeEnum flightMode);

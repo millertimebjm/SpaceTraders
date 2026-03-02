@@ -124,7 +124,7 @@ public class ShipLoopsService(
                 await Task.Delay(1000);
             }
 
-            _logger.LogInformation("Time until server reset: {hours} Hours", (DateTime.UtcNow - serverStatus.ServerResets.Next).TotalHours);
+            _logger.LogInformation("Time until server reset: {hours} Hours", Math.Round((serverStatus.ServerResets.Next - DateTime.UtcNow).TotalHours));
             await SleepUntilNextShipReady(shipStatuses);
 
             if (serverStatus.ServerResets.Next.AddHours(-1) < DateTime.UtcNow)

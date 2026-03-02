@@ -131,7 +131,7 @@ public class ShipsService(
 
     public async Task<(Nav, Fuel)> NavigateAsync(Waypoint waypoint, Waypoint currentWaypoint, Ship ship)
     {
-        var distance = WaypointsService.CalculateDistance(waypoint.X, currentWaypoint.X, waypoint.Y, currentWaypoint.Y);
+        var distance = WaypointsService.CalculateDistance(waypoint.X, waypoint.Y, currentWaypoint.X, currentWaypoint.Y);
         if (distance > ship.Fuel.Current)
         {
             var flightMode = NavFlightModeEnum.DRIFT;
@@ -290,7 +290,7 @@ public class ShipsService(
         return data.Datum;
     }
 
-    public async Task JettisonAsync(string shipSymbol, string inventorySymbol, int units)
+    public async Task<Cargo> JettisonAsync(string shipSymbol, string inventorySymbol, int units)
     {
         var url = new UriBuilder(ApiUrl)
         {
@@ -299,13 +299,14 @@ public class ShipsService(
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", BearerToken);
         var content = JsonContent.Create(new { symbol = inventorySymbol, units });
-        var response = await HttpHelperService.HttpPostHelper(
+        var response = await HttpHelperService.HttpPostHelper<DataSingle<Cargo>>(
             url.ToString(),
             _httpClient,
             content,
             _logger);
         await AddJettisonLog(shipSymbol, inventorySymbol, units);
         _logger.LogInformation("Data returned from Jettison: {response}", response);
+        return response.Datum;
     }
 
     private async Task AddJettisonLog(string shipSymbol, string inventorySymbol, int units)

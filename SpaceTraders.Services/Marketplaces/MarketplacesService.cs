@@ -92,6 +92,7 @@ public class MarketplacesService(
             transaction.Timestamp,
             transaction.Timestamp
         );
+        await _shipLogsService.AddAsync(shipLog);
     }
 
     public async Task<SellCargoResponse> SellAsync(

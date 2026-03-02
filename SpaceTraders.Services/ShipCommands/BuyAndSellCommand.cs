@@ -60,10 +60,10 @@ public class BuyAndSellCommand(
                 continue;
             }
 
-            var nav = await _shipCommandsHelperService.DockForBuyAndSell(ship, currentWaypoint);
+            var (nav, goal) = await _shipCommandsHelperService.DockForBuyAndSell(ship, currentWaypoint);
             if (nav is not null)
             {
-                ship = ship with { Nav = nav };
+                ship = ship with { Nav = nav, Goal = goal };
                 currentWaypoint = await _waypointsService.GetAsync(currentWaypoint.Symbol, refresh: true);
                 continue;
             }
@@ -95,7 +95,7 @@ public class BuyAndSellCommand(
             }
 
             var otherShipGoalSymbols = shipsDictionary.Values.Where(s => s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.BuyToSell && s.Goal is not null).Select(s => s.Goal ?? "").ToList();
-            (nav, fuel, cooldown, var noWork, var goal) = await _shipCommandsHelperService.NavigateToMarketplaceRandomExport(
+            (nav, fuel, cooldown, var noWork, goal) = await _shipCommandsHelperService.NavigateToMarketplaceRandomExport(
                 ship, 
                 currentWaypoint,
                 otherShipGoalSymbols);
@@ -112,7 +112,7 @@ public class BuyAndSellCommand(
             var purchaseCargoResult = await _shipCommandsHelperService.PurchaseCargo(ship, currentWaypoint);
             if (purchaseCargoResult is not null)
             {
-                ship = ship with { Cargo = purchaseCargoResult.Cargo };
+                ship = ship with { Cargo = purchaseCargoResult.Cargo, Goal = null };
                 await _agentsService.SetAsync(purchaseCargoResult.Agent);
             }
 

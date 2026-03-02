@@ -28,8 +28,12 @@ public class MiningToSellAnywhereCommand(
 
             await Task.Delay(1000);
 
-            var executed = await _shipCommandsHelperService.Jettison(ship);
-            if (executed) continue;
+            var cargo = await _shipCommandsHelperService.Jettison(ship);
+            if (cargo is not null) 
+            {
+                ship = ship with { Cargo = cargo };
+                shipStatus = shipStatus with { Ship = ship};
+            }
 
             var refuelResponse = await _shipCommandsHelperService.Refuel(ship, currentWaypoint);
             if (refuelResponse is not null)
@@ -48,25 +52,25 @@ public class MiningToSellAnywhereCommand(
                 continue;
             }
 
-            (nav, var fuel) = await _shipCommandsHelperService.NavigateToMiningWaypoint(ship, currentWaypoint);
+            (nav, var fuel, var cooldown) = await _shipCommandsHelperService.NavigateToMarketplaceImport(ship, currentWaypoint);
+            if (nav is not null && fuel is not null)
+            {
+                ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown };
+                return new ShipStatus(ship, $"Navigate To Marketplace Import {nav.Route.Destination.Symbol}", DateTime.UtcNow);
+            }
+
+            (nav, fuel) = await _shipCommandsHelperService.NavigateToMiningWaypoint(ship, currentWaypoint);
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel, Error = null };
                 return new ShipStatus(ship, $"Navigate To Start Waypoint {nav.WaypointSymbol}", DateTime.UtcNow);
             }
 
-            (var cargo, Cooldown? cooldown) = await _shipCommandsHelperService.Extract(ship, currentWaypoint);
+            (cargo, cooldown) = await _shipCommandsHelperService.Extract(ship, currentWaypoint);
             if (cargo is not null && cooldown is not null)
             {
                 ship = ship with { Cargo = cargo, Cooldown = cooldown, Error = null  };
                 return new ShipStatus(ship, $"Extract {ship.Nav.WaypointSymbol}", DateTime.UtcNow);
-            }
-
-            (nav, fuel, cooldown) = await _shipCommandsHelperService.NavigateToMarketplaceImport(ship, currentWaypoint);
-            if (nav is not null && fuel is not null)
-            {
-                ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown };
-                return new ShipStatus(ship, $"Navigate To Marketplace Import {nav.Route.Destination.Symbol}", DateTime.UtcNow);
             }
 
             var sellCargoResponse = await _shipCommandsHelperService.Sell(ship, currentWaypoint);

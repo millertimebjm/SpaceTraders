@@ -55,7 +55,7 @@ public class CommandShipJobService(
 
         if (waypoints.Any(w => w.JumpGate is not null && w.IsUnderConstruction))
         {
-            if (waypoints.Any(w => WaypointsService.IsMarketplaceVisited(w)))
+            if (waypoints.Any(w => !WaypointsService.IsMarketplaceVisited(w)))
             {
                 return new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration);
             }

@@ -18,19 +18,12 @@ public class SurveyorShipJobService(ISystemsService _systemsService) : IShipJobS
         
         if (waypoints.Any(w => w.JumpGate is not null && w.IsUnderConstruction))
         {
-            if (waypoints.Any(w => WaypointsService.IsMarketplaceVisited(w)))
-            {
-                return new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration);
-            }
-        }
-        else
-        {
-            if (IsExplorationAvailableInCurrentSystem(ship.Nav.SystemSymbol, waypoints))
+            if (waypoints.Any(w => !WaypointsService.IsMarketplaceVisited(w)))
             {
                 return new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration);
             }
 
-            if (await IsExplorationAvailableOutsideCurrentSystem(ship.Nav.SystemSymbol, waypoints))
+            if (IsExplorationAvailableInCurrentSystem(ship.Nav.SystemSymbol, waypoints))
             {
                 return new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration);
             }
