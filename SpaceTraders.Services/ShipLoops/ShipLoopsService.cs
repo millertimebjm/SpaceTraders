@@ -109,14 +109,16 @@ public class ShipLoopsService(
                 }
                 catch (SpaceTraderResultException ex)
                 {
-                    var timeSpan = TimeSpan.FromMinutes(10);
+                    var timeSpan = TimeSpan.FromMinutes(2);
+                    ship = await _shipsService.GetAsync(ship.Symbol);
+                    if (ship.Cooldown is null)
+                    {
+                        ship = ship with { Cooldown = new Cooldown(ship.Symbol, (int)timeSpan.TotalSeconds, (int)timeSpan.TotalSeconds, DateTime.UtcNow.Add(timeSpan)) };
+                    }
                     ship = ship with
                     {
                         Error = ex.Message + " " + ex.InnerException.Message + " " + ex.ResponseBody,
-                        Cooldown = new Cooldown(ship.Symbol, (int)timeSpan.TotalSeconds, (int)timeSpan.TotalSeconds, DateTime.UtcNow.Add(timeSpan)),
-                        Goal = null,
                     };
-                    ship = ship with { ShipCommand = null };
                     shipStatus = shipStatus with { Ship = ship };
                     shipStatuses[i] = shipStatus;
                 }
