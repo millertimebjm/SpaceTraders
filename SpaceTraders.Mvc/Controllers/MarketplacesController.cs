@@ -58,7 +58,7 @@ public class MarketplacesController(
         var shipsTask = _shipsService.GetAsync();
         var shipLogsTask = _shipLogsService.GetShipLogsForProfitAnalysisAsync();
         var shipLogsAccountData = ProcessShipLogsIntoAccountData(await shipsTask, await shipLogsTask);
-        return View(shipLogsAccountData);
+        return View((shipsTask, shipLogsAccountData));
     }
 
     private static IEnumerable<ShipRevenueEvent> ProcessShipLogsIntoAccountData(IEnumerable<Ship> ships, IEnumerable<ShipLog> shipLogs)

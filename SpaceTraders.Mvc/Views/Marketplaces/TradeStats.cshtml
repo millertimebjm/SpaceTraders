@@ -1,10 +1,10 @@
 @using SpaceTraders.Models
 @using SpaceTraders.Mvc.Services
-@model IEnumerable<ShipRevenueEvent>
+@model (Task<IEnumerable<Ship>>, IEnumerable<ShipRevenueEvent>)
 @{
     ViewData["Title"] = "Marketplace";
-    var shipRevenueEventGroups = Model.GroupBy(sre => sre.ShipSymbol);
-    
+    var shipRevenueEventGroups = Model.Item2.GroupBy(sre => sre.ShipSymbol);
+    var ships = await Model.Item1;
 }
 
 <table class="table">
@@ -12,7 +12,10 @@
         <tr><td>ShipSymbol</td><td>Revenue</td><td>DateTime</td><td>Duration</td><td>Rev/Min</td></tr>
     </thead>
     <tbody>
-        @foreach(var shipRevenueEventGroup in shipRevenueEventGroups)
+        @foreach(var shipRevenueEventGroup in shipRevenueEventGroups.OrderBy(s => {
+            var parts = s.Key.Split('-');
+            return Convert.ToInt32(parts[1], 16); // Parse as hex
+        }))
         {
             <tr>
                 @{
@@ -21,9 +24,8 @@
                     var amountSum = shipRevenueEventGroup.Sum(sreg => sreg.Amount);
                     var totalTimeSpan = new TimeSpan(0,(int)shipRevenueEventGroup.Sum(sreg => sreg.Duration.TotalMinutes),0);
                 }
-                <td>@shipRevenueEventGroup.Key</td>
+                <td>@shipRevenueEventGroup.Key (@ships.Single(s => s.Symbol == shipRevenueEventGroup.Key).Registration.Role)</td>
                 <td>@amountSum</td>
-                
                 <td>@startDate.ToShortDateString() @startDate.ToShortTimeString() - @endDate.ToShortDateString() @endDate.ToShortTimeString()</td>
                 <td>@ViewHelperService.HumanReadableTimeSpan(totalTimeSpan)</td>
                 <td>@(Math.Round(amountSum / totalTimeSpan.TotalMinutes))</td>
@@ -40,7 +42,7 @@
         <tr><td>ShipSymbol</td><td>Revenue</td><td>DateTime</td><td>Duration</td><td>Rev/Min</td></tr>
     </thead>
     <tbody>
-        @foreach(var shipRevenueEvent in Model)
+        @foreach(var shipRevenueEvent in Model.Item2)
         {
             <tr>
                 <td>@shipRevenueEvent.ShipSymbol</td>
