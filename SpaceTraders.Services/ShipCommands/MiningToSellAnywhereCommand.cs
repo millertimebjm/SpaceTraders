@@ -24,7 +24,6 @@ public class MiningToSellAnywhereCommand(
         while (true)
         {
             if (ShipsService.GetShipCooldown(ship) is not null) return shipStatus;
-            var sellingWaypoint = await _shipCommandsHelperService.GetClosestSellingWaypoint(ship, currentWaypoint);
 
             await Task.Delay(1000);
 

@@ -148,7 +148,7 @@ public class TradesService(
         const decimal marginWeight = 0.5m;
 
         var orderedTrades = trades
-            .Where(t => t.ImportSellPrice > t.ExportBuyPrice)
+            .Where(t => t.ImportSellPrice > t.ExportBuyPrice && t.ExportSupplyEnum > SupplyEnum.MODERATE)
             .OrderByDescending(t =>
             {
                 var profit = t.ImportSellPrice - t.ExportBuyPrice;
