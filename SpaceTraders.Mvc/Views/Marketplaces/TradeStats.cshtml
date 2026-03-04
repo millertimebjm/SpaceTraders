@@ -45,7 +45,7 @@
         @foreach(var shipRevenueEvent in Model.Item2)
         {
             <tr>
-                <td>@shipRevenueEvent.ShipSymbol</td>
+                <td><a href="/shiplogs/?shipsymbol=@shipRevenueEvent.ShipSymbol">@shipRevenueEvent.ShipSymbol</a></td>
                 <td>@shipRevenueEvent.Amount</td>
                 <td>@shipRevenueEvent.DateTimeUtc.ToLocalTime().ToShortDateString() @shipRevenueEvent.DateTimeUtc.ToLocalTime().ToShortTimeString()</td>
                 <td>@ViewHelperService.HumanReadableTimeSpan(shipRevenueEvent.Duration)</td>

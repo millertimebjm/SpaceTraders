@@ -102,6 +102,7 @@ public class BuyAndSellCommand(
                 otherShipGoalSymbols);
             if (noWork)
             {
+                ship = ship with { Goal = null };
                 return new ShipStatus(ship, $"No Valid Exports found", DateTime.UtcNow);
             }
             else if (nav is not null && fuel is not null)
