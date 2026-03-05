@@ -91,7 +91,8 @@ public class ShipCommandsHelperService(
         if (ship.Cargo.Inventory.Count > 0
             || ship.Nav.Status == NavStatusEnum.IN_ORBIT.ToString()
             || currentWaypoint.Marketplace is null
-            || (!currentWaypoint.Marketplace.Exports.Any()))
+            || (!currentWaypoint.Marketplace.Exports.Any()
+            && currentWaypoint.Marketplace.Exchange.Any()))
         {
             return null;
         }
@@ -103,10 +104,27 @@ public class ShipCommandsHelperService(
             .OrderByDescending(tm => (int)tm.ExportSupplyEnum)
             .OrderBy(tm => tm.ExportWaypointSymbol)
             .FirstOrDefault();
+        var contractTradeModelWaypointSymbol = contractTradeModel?.ExportWaypointSymbol;
+        var contractTradeModelTradeVolume = contractTradeModel?.ExportTradeVolume;
+        if (contractTradeModelWaypointSymbol is null)
+        {
+            var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
+            contractTradeModelWaypointSymbol = system
+                .Waypoints
+                .FirstOrDefault(w => 
+                    w.Marketplace is not null 
+                    && w.Marketplace.Exchange.Any(e => e.Symbol == contractTradeSymbol)
+                )?.Symbol;
+            contractTradeModelTradeVolume = system
+                .Waypoints
+                .FirstOrDefault(w => 
+                    w.Marketplace is not null 
+                    && w.Marketplace.Exchange.Any(e => e.Symbol == contractTradeSymbol)
+                )?.Marketplace?.TradeGoods?.Single(e => e.Symbol == contractTradeSymbol).TradeVolume;
+        }
 
         PurchaseCargoResult? purchaseCargoResult = null;
-        if (contractTradeModel is not null
-            && contractTradeModel.ExportWaypointSymbol == currentWaypoint.Symbol)
+        if (contractTradeModelWaypointSymbol == currentWaypoint.Symbol)
         {
             do
             {
@@ -325,13 +343,23 @@ public class ShipCommandsHelperService(
         else if (ship.Cargo.Units == 0 && ship.Goal is not null)
         {
             var tradeModels = await _tradesService.GetTradeModelsAsync();
-            var contractTradeModel = tradeModels
+            var contractTradeModelWaypointSymbol = tradeModels
                 .Where(tm => tm.TradeSymbol == inventorySymbol)
                 .OrderByDescending(tm => (int)tm.ExportSupplyEnum)
                 .OrderBy(tm => tm.ExportWaypointSymbol)
-                .FirstOrDefault();
-            if (contractTradeModel is not null
-                && contractTradeModel.ExportWaypointSymbol == currentWaypoint.Symbol)
+                .FirstOrDefault()
+                ?.ExportWaypointSymbol;
+            if (contractTradeModelWaypointSymbol is null)
+            {
+                var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
+                contractTradeModelWaypointSymbol = system
+                    .Waypoints
+                    .FirstOrDefault(w => 
+                        w.Marketplace is not null 
+                        && w.Marketplace.Exchange.Any(e => e.Symbol == inventorySymbol)
+                    )?.Symbol;
+            }
+            if (contractTradeModelWaypointSymbol == currentWaypoint.Symbol)
             {
                 shouldDock = true;
             }        
@@ -929,18 +957,29 @@ public class ShipCommandsHelperService(
         if (ship.Nav.Status == NavStatusEnum.DOCKED.ToString()) return (null, null, null, noWork: false, goal: null);
         string? goal = ship.Goal;
 
-        var paths = await _pathsService.BuildSystemPath(currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
         var tradeModels = await _tradesService.GetTradeModelsAsync();
-        var contractTradeModel = tradeModels
+        var contractTradeModelWaypointSymbol = tradeModels
             .Where(tm => tm.TradeSymbol == inventorySymbol)
             .OrderByDescending(tm => (int)tm.ExportSupplyEnum)
             .OrderBy(tm => tm.ExportWaypointSymbol)
-            .FirstOrDefault();
+            .FirstOrDefault()?
+            .ExportWaypointSymbol;
+        if (contractTradeModelWaypointSymbol is null)
+        {
+            var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
+            contractTradeModelWaypointSymbol = system
+                .Waypoints
+                .FirstOrDefault(w => 
+                    w.Marketplace is not null 
+                    && w.Marketplace.Exchange.Any(e => e.Symbol == inventorySymbol)
+                )?.Symbol;
+        }
 
-        if (contractTradeModel is null) return (null, null, null, noWork: true, goal: null);
-        if (contractTradeModel.ExportWaypointSymbol == currentWaypoint.Symbol) return (null, null, null, noWork: false, goal);
+        if (contractTradeModelWaypointSymbol is null) return (null, null, null, noWork: true, goal: null);
+        if (contractTradeModelWaypointSymbol == currentWaypoint.Symbol) return (null, null, null, noWork: false, goal);
 
-        var shortestPath = paths.Single(p => p.Key == contractTradeModel.ExportWaypointSymbol);
+        var paths = await _pathsService.BuildSystemPath(currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
+        var shortestPath = paths.Single(p => p.Key == contractTradeModelWaypointSymbol);
         if (WaypointsService.ExtractSystemFromWaypoint(shortestPath.Value.Item1[1]) != ship.Nav.SystemSymbol)
         {
             var (navJump, cooldownJump) = await _shipsService.JumpAsync(shortestPath.Value.Item1[1], ship.Symbol);

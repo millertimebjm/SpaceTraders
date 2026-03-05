@@ -63,14 +63,20 @@ public class ShipLoopsService(
             await UpdateSystemWaypoints(ships);
 
             var shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
-            shipStatuses = shipStatuses.Where(ss => ss.Ship.Registration.Role != ShipRegistrationRolesEnum.SATELLITE.ToString()).ToList();
+            shipStatuses = shipStatuses
+                .Where(ss => ss.Ship.Registration.Role != ShipRegistrationRolesEnum.SATELLITE.ToString())
+                .OrderBy(s => {
+                    var parts = s.Ship.Symbol.Split('-');
+                    return Convert.ToInt32(parts[1], 16); // Parse as hex
+                })
+                .ToList();
             for (int i = 0; i < shipStatuses.Count(); i++)
             {
                 var ship = shipStatuses[i].Ship;
                 var shipStatus = shipStatuses[i];
                 if (ShipsService.GetShipCooldown(ship) is not null) continue;
                 if (ship.Symbol == "SPATIAL19-E"
-                || ship.Symbol == "SPATIAL19-10")
+                    || ship.Symbol == "SPATIAL19-10")
                 {
                     int j = 0;
                 }
