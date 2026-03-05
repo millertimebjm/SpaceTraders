@@ -8,7 +8,7 @@ public interface IContractsService
     Task<IEnumerable<STContract>> GetAsync();
     Task<STContract?> GetActiveAsync();
     Task<STContract> GetAsync(string contractId);
-    Task<STContract> AcceptAsync(string contractId);
+    Task<ContractAcceptResult> AcceptAsync(string contractId);
     Task<ContractFulfillResult> FulfillAsync(string contractId);
     Task<ContractDeliverResult> DeliverAsync(string contractId,
         string shipSymbol,

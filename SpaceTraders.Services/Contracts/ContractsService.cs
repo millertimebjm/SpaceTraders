@@ -1,6 +1,7 @@
 using System.Diagnostics.Contracts;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SpaceTraders.Models;
@@ -74,7 +75,7 @@ public class ContractsService : IContractsService
         return data.Datum;
     }
 
-    public async Task<STContract> AcceptAsync(string contractId)
+    public async Task<ContractAcceptResult> AcceptAsync(string contractId)
     {
         var url = new UriBuilder(_apiUrl)
         {
@@ -82,7 +83,7 @@ public class ContractsService : IContractsService
         };
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);
-        var data = await HttpHelperService.HttpPostHelper<DataSingle<STContract>>(
+        var data = await HttpHelperService.HttpPostHelper<DataSingle<ContractAcceptResult>>(
             url.ToString(),
             _httpClient,
             null,
@@ -106,6 +107,8 @@ public class ContractsService : IContractsService
             _logger);
         return data.Datum;
     }
+
+    
 
     public async Task<ContractDeliverResult> DeliverAsync(
         string contractId,

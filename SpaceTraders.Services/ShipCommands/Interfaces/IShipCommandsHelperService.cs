@@ -46,7 +46,7 @@ public interface IShipCommandsHelperService
         string contractWaypointSymbol, 
         string inventorySymbol);
     Task<PurchaseCargoResult?> PurchaseCargoForContract(Ship ship, Waypoint currentWaypoint, string contractTradeSymbol, int amountToBuy);
-    Task<(Nav?, Fuel?, Cooldown?)> NavigateToFulfillContract(Ship ship, Waypoint currentWaypoint);
+    Task<(Nav?, Fuel?, Cooldown?)> NavigateToFulfillContract(Ship ship, Waypoint currentWaypoint, string contractDestinationWaypointSymbol);
     Task<(Nav? nav, Fuel? fuel, Cooldown? cooldown, bool noWork, string? goal)> NavigateToMarketplaceExportForContract(
         Ship ship, 
         Waypoint currentWaypoint,

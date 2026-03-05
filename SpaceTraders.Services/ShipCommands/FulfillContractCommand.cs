@@ -1,10 +1,12 @@
 using System.Diagnostics.Contracts;
+using System.Text.Json;
 using SpaceTraders.Model.Exceptions;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Contracts.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
+using SpaceTraders.Services.ShipLogs.Interfaces;
 using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Transactions.Interfaces;
@@ -18,7 +20,8 @@ public class FulfillContractCommand(
     ISystemsService _systemsService,
     IAgentsService _agentsService,
     ITransactionsCacheService _transactionsService,
-    IContractsService _contractsService
+    IContractsService _contractsService,
+    IShipLogsService _shipLogsService
 ) : IShipCommandsService
 {
     private const int COUNT_BEFORE_LOOP = 20;
@@ -89,24 +92,20 @@ public class FulfillContractCommand(
             (STContract? newContract, Cargo? cargo, Agent? agent) = await _shipCommandsHelperService.FulfillContract(ship, contract);
             if (contract is not null && cargo is not null && agent is not null)
             {
-                ship = ship with { Cargo = cargo };
                 await _agentsService.SetAsync(agent);
+                await AddFulfillShipLog(ship.Symbol, contract);
                 contract = newContract;
+                ship = ship with { Cargo = cargo, Goal = contract.Id };
                 continue;
             }
 
-            (nav, var fuel, var cooldown) = await _shipCommandsHelperService.NavigateToFulfillContract(ship, currentWaypoint);
+            (nav, var fuel, var cooldown) = await _shipCommandsHelperService.NavigateToFulfillContract(ship, currentWaypoint, contract.Terms.Deliver[0].DestinationSymbol);
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown };
-                return new ShipStatus(ship, $"Navigate To Marketplace Import {ship.Nav.Route.Destination.Symbol}", DateTime.UtcNow);
+                return new ShipStatus(ship, $"Navigate To FulfillContract {ship.Nav.Route.Destination.Symbol}", DateTime.UtcNow);
             }
 
-            var otherShipGoalSymbols = shipsDictionary
-                .Values
-                .Where(s => s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.BuyToSell && s.Goal is not null)
-                .Select(s => s.Goal ?? "")
-                .ToList();
             (nav, fuel, cooldown, bool noWork, goal) = await _shipCommandsHelperService.NavigateToMarketplaceExportForContract(
                 ship, 
                 currentWaypoint,
@@ -129,7 +128,7 @@ public class FulfillContractCommand(
             var purchaseCargoResult = await _shipCommandsHelperService.PurchaseCargoForContract(ship, currentWaypoint, contract.Terms.Deliver[0].TradeSymbol, contract.Terms.Deliver[0].UnitsRequired);
             if (purchaseCargoResult is not null)
             {
-                ship = ship with { Cargo = purchaseCargoResult.Cargo, Goal = null };
+                ship = ship with { Cargo = purchaseCargoResult.Cargo };
                 await _agentsService.SetAsync(purchaseCargoResult.Agent);
             }
 
@@ -142,5 +141,24 @@ public class FulfillContractCommand(
 
             throw new SpaceTraderResultException("Infinite loop, no work planned.  BuyAndSellCommand", new HttpRequestException("Fake"), $"Infinite loop, no work planned. {ship.Symbol}, {currentWaypoint.Symbol}, {string.Join(":", ship.Cargo.Inventory.Select(i => $"{i.Name}/{i.Units}"))}, {ship.Fuel.Current}/{ship.Fuel.Capacity}");
         }
+    }
+
+    private async Task AddFulfillShipLog(string shipSymbol, STContract contract)
+    {
+        var datetime = DateTime.UtcNow;
+        var shipLog = new ShipLog(
+            shipSymbol,
+            ShipLogEnum.Refuel,
+            JsonSerializer.Serialize(new
+            {
+                ContractId = contract.Id,
+                InventorySymbol = contract.Terms.Deliver[0].TradeSymbol,
+                InventoryUnits = contract.Terms.Deliver[0].UnitsRequired,
+                TotalCredits = contract.Terms.Payment.OnAccepted + contract.Terms.Payment.OnFulfilled,
+            }),
+            datetime,
+            datetime
+        );
+        await _shipLogsService.AddAsync(shipLog);
     }
 }
