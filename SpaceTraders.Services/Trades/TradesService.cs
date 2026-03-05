@@ -312,9 +312,9 @@ public class TradesService(
     public SellModel? GetBestSellModel(IReadOnlyList<SellModel> sellModels)
     {
         var orderedTrades = sellModels
-            .OrderByDescending(m =>
-                m.SellPrice
-            ).ToList();
+            .OrderByDescending(m => m.SellPrice)
+            .ThenBy(m => m.WaypointSymbol) // Tiebreaker
+            .ToList();
         return orderedTrades.FirstOrDefault();
     }
 }

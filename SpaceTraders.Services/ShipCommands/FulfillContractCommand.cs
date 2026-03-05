@@ -148,7 +148,7 @@ public class FulfillContractCommand(
         var datetime = DateTime.UtcNow;
         var shipLog = new ShipLog(
             shipSymbol,
-            ShipLogEnum.Refuel,
+            ShipLogEnum.FulfillContract,
             JsonSerializer.Serialize(new
             {
                 ContractId = contract.Id,

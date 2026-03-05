@@ -14,4 +14,5 @@ public enum ShipLogEnum
     Chart,
     Survey,
     FlightMode,
+    FulfillContract,
 }
