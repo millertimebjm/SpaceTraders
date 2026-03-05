@@ -25,8 +25,8 @@ public class ContractsController(
     [Route("/contracts/accept/{contractId}")]
     public async Task<IActionResult> Accept(string contractId)
     {
-        var contract = await _contractsService.AcceptAsync(contractId);
-        return View("~/Views/Contracts/Index.cshtml", new List<STContract> { contract });
+        var contractAcceptResult = await _contractsService.AcceptAsync(contractId);
+        return View("~/Views/Contracts/Index.cshtml", new List<STContract> { contractAcceptResult.Contract });
     }
 
     [Route("/contracts/{contractId}/deliver")]

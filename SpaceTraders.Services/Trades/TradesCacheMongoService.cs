@@ -48,7 +48,7 @@ public class TradesCacheMongoService(IMongoCollectionFactory _collectionFactory)
     {
         var collection = _collectionFactory.GetCollection<TradeModel>();
 
-        var exports = tradeGoods.Where(tg => tg.Type == "EXPORT").ToList();
+        var exports = tradeGoods.Where(tg => tg.Type == TradeGoodTypeEnum.EXPORT.ToString() || tg.Type == TradeGoodTypeEnum.EXCHANGE.ToString()).ToList();
         foreach (var tradeGood in exports)
         {
             var filter = Builders<TradeModel>.Filter.Eq(tm => tm.ExportWaypointSymbol, waypointSymbol)
@@ -61,7 +61,7 @@ public class TradesCacheMongoService(IMongoCollectionFactory _collectionFactory)
             await collection.UpdateManyAsync(filter, update);
         }
 
-        var importsExchanges = tradeGoods.Where(tg => tg.Type == "IMPORT" || tg.Type == "EXCHANGE");
+        var importsExchanges = tradeGoods.Where(tg => tg.Type == TradeGoodTypeEnum.IMPORT.ToString() || tg.Type == TradeGoodTypeEnum.EXCHANGE.ToString());
         foreach (var tradeGood in importsExchanges)
         {
             var filter = Builders<TradeModel>.Filter.Eq(tm => tm.ImportWaypointSymbol, waypointSymbol)
