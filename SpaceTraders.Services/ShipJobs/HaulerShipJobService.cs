@@ -46,7 +46,10 @@ public class HaulerShipJobService(
         var unfinishedJumpGateWaypoint = system.Waypoints.SingleOrDefault(w => w.JumpGate is not null && w.IsUnderConstruction);
         var firstHauler = ships
             .Where(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString())
-            .OrderBy(s => s.Symbol)
+            .OrderBy(s => {
+                var parts = s.Symbol.Split('-');
+                return Convert.ToInt32(parts[1], 16); // Parse as hex
+            })
             .FirstOrDefault();
         if (unfinishedJumpGateWaypoint is not null
             && unfinishedJumpGateWaypoint.IsUnderConstruction

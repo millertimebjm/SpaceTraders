@@ -110,6 +110,7 @@ public class BuyAndSellCommand(
                 ship = ship with {
                     Goal = null,
                     Cooldown = new Cooldown(ship.Symbol, (int)timeSpan.TotalSeconds, (int)timeSpan.TotalSeconds, DateTime.UtcNow.Add(timeSpan)),
+                    ShipCommand = null,
                 };
                 return new ShipStatus(ship, $"No Valid Exports found", DateTime.UtcNow);
             }

@@ -484,4 +484,12 @@ public class ShipsService(
         await _shipStatusesCacheService.SetAsync(shipStatuses);
         await Task.Delay(500);
     }
+
+    public static async Task<IEnumerable<Ship>> HexadecimalSort(this IEnumerable<Ship> ships)
+    {
+        return ships.OrderBy(s => {
+            var parts = s.Symbol.Split('-');
+            return Convert.ToInt32(parts[1], 16); // Parse as hex
+        });
+    }
 }
