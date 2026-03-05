@@ -16,11 +16,11 @@
             <th>Export WP</th>
             <th>Buy</th>
             <th style="text-align: center;">Supply</th>
-            <th style="text-align: center;">Trade AMT</th>
+            <th style="text-align: center;">Volume</th>
             <th>Import WP</th>
             <th>Sell</th>
             <th style="text-align: center;">Supply</th>
-            <th style="text-align: center;">Trade AMT</th>
+            <th style="text-align: center;">Volume</th>
         </tr>
     </thead>
     <tbody>
@@ -29,13 +29,13 @@
             <tr>
                 <td>@tradeModel.TradeSymbol</td>
                 <td>@tradeModel.ExportWaypointSymbol</td>
-                <td>@tradeModel.ExportBuyPrice</td>
-                <td>@tradeModel.ExportSupplyEnum</td>
-                <td>@tradeModel.ExportTradeVolume</td>
+                <td style="text-align: right;">@tradeModel.ExportBuyPrice</td>
+                <td style="text-align: center;">@tradeModel.ExportSupplyEnum</td>
+                <td style="text-align: right;">@tradeModel.ExportTradeVolume</td>
                 <td>@tradeModel.ImportWaypointSymbol</td>
-                <td>@tradeModel.ImportSellPrice</td>
-                <td>@tradeModel.ImportSupplyEnum</td>
-                <td>@tradeModel.ImportTradeVolume</td>
+                <td style="text-align: right;">@tradeModel.ImportSellPrice</td>
+                <td style="text-align: center;">@tradeModel.ImportSupplyEnum</td>
+                <td style="text-align: right;">@tradeModel.ImportTradeVolume</td>
             </tr>
         }
     </tbody>
