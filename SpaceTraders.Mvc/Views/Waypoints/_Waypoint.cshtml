@@ -28,6 +28,10 @@
     {
         <li><b>Orbits:</b> @waypoint.Orbits</li>
     }
+    @if (waypoint.Faction is not null)
+    {
+        <li><b>Faction:</b> @waypoint.Faction?.Symbol</li>
+    }
     @if (waypoint.Traits?.Any() == true 
         && waypoint.Traits.Select(t => t.Name.ToUpper()).ToList().Contains(WaypointTypesEnum.SHIPYARD.ToString()))
     {

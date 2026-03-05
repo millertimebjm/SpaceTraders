@@ -15,4 +15,5 @@ public enum ShipCommandEnum
     // BuyToStorage,
 
     Exploration,
+    FulfillContract,
 }

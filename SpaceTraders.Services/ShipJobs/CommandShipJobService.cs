@@ -27,27 +27,7 @@ public class CommandShipJobService(
         var systems = await _systemsService.GetAsync();
         var traversableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol);
         var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
-        
-        // if (waypoints.Any(w => w.JumpGate is not null && w.IsUnderConstruction))
-        // {
-        //     if (waypoints.Any(w => WaypointsService.IsMarketplaceVisited(w)))
-        //     {
-        //         return new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration);
-        //     }
-        // }
-        // else
-        // {
-        //     if (IsExplorationAvailableInCurrentSystem(ship.Nav.SystemSymbol, waypoints))
-        //     {
-        //         return new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration);
-        //     }
-
-        //     if (await IsExplorationAvailableOutsideCurrentSystem(ship.Nav.SystemSymbol, waypoints))
-        //     {
-        //         return new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration);
-        //     }
-        // }       
-
+    
         if (await IsPurchaseShip(ships))
         {
             return new ShipCommand(ship.Symbol, ShipCommandEnum.PurchaseShip);

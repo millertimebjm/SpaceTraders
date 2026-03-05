@@ -20,7 +20,7 @@ public class MarketplacesService(
 ) : IMarketplacesService
 {
     public const string SPACETRADER_PREFIX = "SpaceTrader:";
-
+    
     private string AgentToken
     {
         get

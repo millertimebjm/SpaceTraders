@@ -1,9 +1,11 @@
+using System.Diagnostics.Contracts;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
+using SpaceTraders.Models.Results;
 using SpaceTraders.Services.Contracts.Interfaces;
 using SpaceTraders.Services.HttpHelpers;
 
@@ -89,7 +91,7 @@ public class ContractsService : IContractsService
         return data.Datum;
     }
 
-    public async Task FulfillAsync(string contractId)
+    public async Task<ContractFulfillResult> FulfillAsync(string contractId)
     {
         var url = new UriBuilder(_apiUrl)
         {
@@ -97,14 +99,15 @@ public class ContractsService : IContractsService
         };
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);
-        var data = await HttpHelperService.HttpPostHelper(
+        var data = await HttpHelperService.HttpPostHelper<DataSingle<ContractFulfillResult>>(
             url.ToString(),
             _httpClient,
             null,
             _logger);
+        return data.Datum;
     }
 
-    public async Task DeliverAsync(
+    public async Task<ContractDeliverResult> DeliverAsync(
         string contractId,
         string shipSymbol,
         string tradeSymbol,
@@ -117,14 +120,15 @@ public class ContractsService : IContractsService
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);
         var content = JsonContent.Create(new { shipSymbol, tradeSymbol, units });
-        var data = await HttpHelperService.HttpPostHelper(
+        var data = await HttpHelperService.HttpPostHelper<DataSingle<ContractDeliverResult>>(
             url.ToString(),
             _httpClient,
             content,
             _logger);
+        return data.Datum;
     }
 
-    public async Task NegotiateAsync(
+    public async Task<ContractNegotiateResult> NegotiateAsync(
         string shipSymbol)
     {
         var url = new UriBuilder(_apiUrl)
@@ -133,10 +137,11 @@ public class ContractsService : IContractsService
         };
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);
-        var data = await HttpHelperService.HttpPostHelper(
+        var data = await HttpHelperService.HttpPostHelper<DataSingle<ContractNegotiateResult>>(
             url.ToString(),
             _httpClient,
             null,
             _logger);
+        return data.Datum;
     }
 }

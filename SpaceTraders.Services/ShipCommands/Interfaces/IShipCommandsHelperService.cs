@@ -40,4 +40,16 @@ public interface IShipCommandsHelperService
     bool IsWaypointFuelAvailable(Waypoint waypoint);
     Task<Nav?> Dock(Ship ship, Waypoint waypoint);
     bool IsAnyItemToSellAtCurrentWaypoint(Ship ship, Waypoint waypoint);
+    Task<Nav?> DockForBuyOrFulfill(
+        Ship ship, 
+        Waypoint currentWaypoint, 
+        string contractWaypointSymbol, 
+        string inventorySymbol);
+    Task<PurchaseCargoResult?> PurchaseCargoForContract(Ship ship, Waypoint currentWaypoint, string contractTradeSymbol, int amountToBuy);
+    Task<(Nav?, Fuel?, Cooldown?)> NavigateToFulfillContract(Ship ship, Waypoint currentWaypoint);
+    Task<(Nav? nav, Fuel? fuel, Cooldown? cooldown, bool noWork, string? goal)> NavigateToMarketplaceExportForContract(
+        Ship ship, 
+        Waypoint currentWaypoint,
+        string inventorySymbol);
+    Task<(STContract?, Cargo?, Agent?)> FulfillContract(Ship ship, STContract contract);
 }

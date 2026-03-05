@@ -13,5 +13,6 @@ public record Waypoint(
     Marketplace? Marketplace,
     JumpGate? JumpGate,
     bool IsUnderConstruction,
-    Construction? Construction
+    Construction? Construction,
+    Faction? Faction
 );

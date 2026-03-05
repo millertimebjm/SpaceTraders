@@ -81,6 +81,7 @@ public static class DependencyInjectionHelperService
         services.AddSingleton<SurveyCommand>();
         services.AddSingleton<PurchaseShipCommand>();
         services.AddSingleton<ExplorationCommand>();
+        services.AddSingleton<FulfillContractCommand>();
 
         // Ship Jobs
         services.AddSingleton<HaulerShipJobService>();
