@@ -109,7 +109,7 @@ public class BuyAndSellCommand(
                 var timeSpan = TimeSpan.FromMinutes(10);
                 ship = ship with {
                     Goal = null,
-                    Cooldown = new Cooldown(ship.Symbol, (int)timeSpan.TotalSeconds, (int)timeSpan.TotalSeconds, DateTime.UtcNow.Add(timeSpan)),
+                    //Cooldown = new Cooldown(ship.Symbol, (int)timeSpan.TotalSeconds, (int)timeSpan.TotalSeconds, DateTime.UtcNow.Add(timeSpan)),
                     //ShipCommand = null,
                     ShipCommand = new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration)
                 };
