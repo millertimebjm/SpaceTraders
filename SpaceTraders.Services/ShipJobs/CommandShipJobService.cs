@@ -26,15 +26,21 @@ public class CommandShipJobService(
         IEnumerable<Ship> ships,
         Ship ship)
     {
+        var agent = await _agentsService.GetAsync();
         var systems = await _systemsService.GetAsync();
         var traversableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol);
         var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
     
-        var (_, shipType) = await _shipCommandHelperService.ShipToBuy(ships);
-        if (shipType is not null)
+        if ((ships.Count() == 2 && agent.Credits > INITIAL_SURVEYOR_SHIP_CREDITS_THRESHOLD)
+            || (agent.Credits > PURCHASE_SHIP_CREDITS_THRESHOLD))
         {
-            return new ShipCommand(ship.Symbol, ShipCommandEnum.PurchaseShip);
+            var (_, shipType) = await _shipCommandHelperService.ShipToBuy(ships);
+            if (shipType is not null)
+            {
+                return new ShipCommand(ship.Symbol, ShipCommandEnum.PurchaseShip);
+            }
         }
+        
 
         // if (waypoints.Any(w => w.JumpGate is not null && w.IsUnderConstruction))
         // {

@@ -1092,17 +1092,6 @@ public class ShipCommandsHelperService(
         var headquartersSystem = systems.Single(s => s.Symbol == headquartersSystemSymbol);
         var reachableSystems = SystemsService.Traverse(systems, headquartersSystemSymbol);
 
-        foreach (var system in reachableSystems)
-        {
-            var markets = system.Waypoints.Where(w => w.Marketplace is not null).ToList();
-            var probes = ships.Where(s => s.Registration.Role == ShipRegistrationRolesEnum.SATELLITE.ToString() && s.Nav.SystemSymbol == system.Symbol).ToList();
-            if (probes.Count < markets.Count) 
-            {
-                var shipyard = system.Waypoints.OrderBy(w => w.Symbol).First(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_PROBE.ToString()) == true);
-                return (shipyard.Symbol, ShipTypesEnum.SHIP_PROBE);
-            }
-        }
-
         if (headquartersSystem.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction))
         {
             if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.SURVEYOR.ToString()) < 1)
@@ -1116,7 +1105,21 @@ public class ShipCommandsHelperService(
                 var shipyard = headquartersSystem.Waypoints.Single(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_MINING_DRONE.ToString()) == true);
                 return (agent.Headquarters, ShipTypesEnum.SHIP_MINING_DRONE);
             }
+        }
 
+        foreach (var system in reachableSystems)
+        {
+            var markets = system.Waypoints.Where(w => w.Marketplace is not null).ToList();
+            var probes = ships.Where(s => s.Registration.Role == ShipRegistrationRolesEnum.SATELLITE.ToString() && s.Nav.SystemSymbol == system.Symbol).ToList();
+            if (probes.Count < markets.Count) 
+            {
+                var shipyard = system.Waypoints.OrderBy(w => w.Symbol).First(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_PROBE.ToString()) == true);
+                return (shipyard.Symbol, ShipTypesEnum.SHIP_PROBE);
+            }
+        }
+
+        if (headquartersSystem.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction))
+        {
             if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()) < 5)
             {
                 var shipyard = headquartersSystem.Waypoints.Single(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_LIGHT_HAULER.ToString()) == true);
@@ -1132,7 +1135,7 @@ public class ShipCommandsHelperService(
             }
         }
 
-        return ((string?)null, (ShipTypesEnum?)null);
+        return (null, null);
     }
 
     public async Task<PurchaseCargoResult?> PurchaseFuelForRescue(Ship ship, Waypoint currentWaypoint, int fuelToBuy)
