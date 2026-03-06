@@ -33,13 +33,13 @@ public class CommandShipJobService(
             return new ShipCommand(ship.Symbol, ShipCommandEnum.PurchaseShip);
         }
 
-        if (waypoints.Any(w => w.JumpGate is not null && w.IsUnderConstruction))
-        {
-            if (waypoints.Any(w => !WaypointsService.IsMarketplaceVisited(w)))
-            {
-                return new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration);
-            }
-        }
+        // if (waypoints.Any(w => w.JumpGate is not null && w.IsUnderConstruction))
+        // {
+        //     if (waypoints.Any(w => !WaypointsService.IsMarketplaceVisited(w)))
+        //     {
+        //         return new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration);
+        //     }
+        // }
 
         return new ShipCommand(ship.Symbol, ShipCommandEnum.BuyToSell);
     }

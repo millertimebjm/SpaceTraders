@@ -64,7 +64,6 @@ public class ShipLoopsService(
 
             var shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
             shipStatuses = shipStatuses
-                .Where(ss => ss.Ship.Registration.Role != ShipRegistrationRolesEnum.SATELLITE.ToString())
                 .OrderBy(s => {
                     var parts = s.Ship.Symbol.Split('-');
                     return Convert.ToInt32(parts[1], 16); // Parse as hex

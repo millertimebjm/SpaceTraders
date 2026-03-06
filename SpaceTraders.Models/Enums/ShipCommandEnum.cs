@@ -16,4 +16,5 @@ public enum ShipCommandEnum
 
     Exploration,
     FulfillContract,
+    MarketWatch,
 }

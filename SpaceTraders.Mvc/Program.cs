@@ -69,6 +69,7 @@ builder.Services.AddSingleton<IShipLogsService, ShipLogsChannelService>();
 builder.Services.AddScoped<IServerStatusApiService, ServerStatusApiService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IAccountApiService, AccountApiService>();
+builder.Services.AddScoped<>();
 
 // Cache Services
 builder.Services.AddSingleton<IMongoCollectionFactory, MongoCollectionFactory>();

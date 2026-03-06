@@ -82,6 +82,7 @@ public static class DependencyInjectionHelperService
         services.AddSingleton<PurchaseShipCommand>();
         services.AddSingleton<ExplorationCommand>();
         services.AddSingleton<FulfillContractCommand>();
+        services.AddSingleton<MarketWatchCommand>();
 
         // Ship Jobs
         services.AddSingleton<HaulerShipJobService>();
@@ -89,6 +90,7 @@ public static class DependencyInjectionHelperService
         services.AddSingleton<CommandShipJobService>();
         services.AddSingleton<SurveyorShipJobService>();
         services.AddSingleton<TransportShipJobService>();
+        services.AddSingleton<ProbeShipJobService>();
 
         // Cache Services
         services.AddSingleton<IMongoCollectionFactory, MongoCollectionFactory>();

@@ -15,4 +15,7 @@ public record Waypoint(
     bool IsUnderConstruction,
     Construction? Construction,
     Faction? Faction
-);
+)
+{
+    public DateTime? RefreshDateTimeUtc = null;
+}

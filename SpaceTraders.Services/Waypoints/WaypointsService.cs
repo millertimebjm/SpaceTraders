@@ -45,6 +45,7 @@ public class WaypointsService(
             _logger.LogWarning("Cache miss: {waypointName}:{waypointSymbol}", nameof(Waypoint), waypointSymbol);
         }
         waypoint = await _waypointsApiService.GetAsync(waypointSymbol);
+        waypoint.RefreshDateTimeUtc = DateTime.UtcNow;
         await _waypointsCacheService.SetAsync(waypoint);
         return waypoint;
     }
