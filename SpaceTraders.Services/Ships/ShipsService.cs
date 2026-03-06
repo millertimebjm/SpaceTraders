@@ -132,7 +132,7 @@ public class ShipsService(
     public async Task<(Nav, Fuel)> NavigateAsync(Waypoint waypoint, Waypoint currentWaypoint, Ship ship)
     {
         var distance = WaypointsService.CalculateDistance(waypoint.X, waypoint.Y, currentWaypoint.X, currentWaypoint.Y);
-        if (distance > ship.Fuel.Current)
+        if (distance > ship.Fuel.Current || ship.Fuel.Current == 0)
         {
             var flightMode = NavFlightModeEnum.DRIFT;
             await this.SwitchShipFlightMode(ship, flightMode);

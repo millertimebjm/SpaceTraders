@@ -212,7 +212,7 @@ public class ShipCommandsHelperService(
         var shipStatuses = await _shipStatusesCacheService.GetAsync();
         var ships = shipStatuses.Select(ss => ss.Ship);
         var (shipyardWaypointSymbol, shipToBuy) = await ShipToBuy(ships);
-        if (shipToBuy is null) return null;
+        if (shipToBuy is null || shipyardWaypointSymbol != ship.Nav.WaypointSymbol) return null;
 
         // Need fuel and fuel is available at this waypoint
         if ((ship.Fuel.Current < ship.Fuel.Capacity
@@ -1079,6 +1079,7 @@ public class ShipCommandsHelperService(
         {
             return null;
         }
+        
         var response = await _shipyardsService.PurchaseShipAsync(currentWaypoint.Symbol, shipToBuy.Value.ToString());
         return response;
     }
@@ -1097,7 +1098,7 @@ public class ShipCommandsHelperService(
             var probes = ships.Where(s => s.Registration.Role == ShipRegistrationRolesEnum.SATELLITE.ToString() && s.Nav.SystemSymbol == system.Symbol).ToList();
             if (probes.Count < markets.Count) 
             {
-                var shipyard = system.Waypoints.First(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_PROBE.ToString()) == true);
+                var shipyard = system.Waypoints.OrderBy(w => w.Symbol).First(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_PROBE.ToString()) == true);
                 return (shipyard.Symbol, ShipTypesEnum.SHIP_PROBE);
             }
         }
@@ -1125,7 +1126,7 @@ public class ShipCommandsHelperService(
         
         if (headquartersSystem.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction))
         {
-            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.TRANSPORT.ToString()) < 10)
+            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()) < 10)
             {
                 return (agent.Headquarters, ShipTypesEnum.SHIP_LIGHT_HAULER);
             }

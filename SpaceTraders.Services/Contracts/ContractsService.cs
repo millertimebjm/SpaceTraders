@@ -1,152 +1,71 @@
-using System.Collections.Specialized;
-using System.Diagnostics.Contracts;
-using System.Net.Http.Headers;
-using System.Net.Http.Json;
-using System.Text.Json;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
 using SpaceTraders.Models;
-using SpaceTraders.Models.Enums;
 using SpaceTraders.Models.Results;
 using SpaceTraders.Services.Contracts.Interfaces;
-using SpaceTraders.Services.HttpHelpers;
 
 namespace SpaceTraders.Services.Contracts;
 
-public class ContractsService : IContractsService
+public class ContractsService(
+    IContractsApiService _contractsApiService,
+    IContractsCacheService _contractsCacheService
+) : IContractsService
 {
-    private const string DIRECTORY_PATH = "/v2/my/contracts";
-    private readonly ILogger<ContractsService> _logger;
-    private readonly HttpClient _httpClient;
-    private readonly string _apiUrl;
-    private readonly string _token;
-
-    public ContractsService(
-        ILogger<ContractsService> logger,
-        IConfiguration configuration,
-        HttpClient httpClient)
+    public async Task<IEnumerable<STContract>> GetAsync(bool refresh = false)
     {
-        _logger = logger;
-        _httpClient = httpClient;
-        _apiUrl = configuration[$"SpaceTrader:"+ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
-        ArgumentException.ThrowIfNullOrWhiteSpace(_apiUrl);
-        _token = configuration[$"SpaceTrader:"+ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
-        ArgumentException.ThrowIfNullOrWhiteSpace(_token);
-    }
-
-    public async Task<List<STContract>> GetAsync()
-    {
-        var urlBuilder = new UriBuilder(_apiUrl);
-        urlBuilder.Path = DIRECTORY_PATH;
-        _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
-        var allData = new List<STContract>();
-        Data<STContract> latestPull;
-        var page = 1;
-        do
+        if (!refresh)
         {
-            latestPull = await HttpHelperService.HttpGetHelper<Data<STContract>>(
-                urlBuilder.ToString() + $"?page={page}&limit=20",
-                _httpClient,
-                _logger);
-            allData.AddRange(latestPull.DataList);
-            page++;
-        } while (allData.Count < latestPull.Meta.Total);
-        
-        if (allData is null) throw new HttpRequestException("Contracts not retrieved");
-        return allData;
+            var cacheContracts = await _contractsCacheService.GetAsync();
+            if (cacheContracts.Any()) return cacheContracts;
+        }
+
+        var contracts = await _contractsApiService.GetAsync();
+        await _contractsCacheService.SetAsync(contracts);
+        return contracts;
     }
 
     public async Task<STContract?> GetActiveAsync()
     {
-        var dataList = await GetAsync();
-        return dataList.Where(c => c.Accepted && !c.Fulfilled).OrderByDescending(c => c.DeadlineToAccept).FirstOrDefault();
+        var cacheContracts = await _contractsCacheService.GetAsync();
+        var activeCacheContract = cacheContracts.SingleOrDefault(c => c.Accepted && !c.Fulfilled);
+        if (activeCacheContract is not null) return cacheContracts.First(); 
+        
+        var contracts = await _contractsApiService.GetAsync();
+        await _contractsCacheService.SetAsync(contracts);
+        return contracts.SingleOrDefault(c => c.Accepted && !c.Fulfilled);
     }
 
     public async Task<STContract> GetAsync(string contractId)
     {
-        var url = new UriBuilder(_apiUrl);
-        url.Path = DIRECTORY_PATH + $"/{contractId}";
-        _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
-        var data = await HttpHelperService.HttpGetHelper<DataSingle<STContract>>(
-            url.ToString(),
-            _httpClient,
-            _logger);
-        if (data.Datum is null) throw new HttpRequestException("Contract not retrieved.");
-        return data.Datum;
+        return await _contractsCacheService.GetAsync(contractId);
     }
 
     public async Task<ContractAcceptResult> AcceptAsync(string contractId)
     {
-        var url = new UriBuilder(_apiUrl)
-        {
-            Path = DIRECTORY_PATH + $"/{contractId}/" + "accept"
-        };
-        _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
-        var data = await HttpHelperService.HttpPostHelper<DataSingle<ContractAcceptResult>>(
-            url.ToString(),
-            _httpClient,
-            null,
-            _logger);
-        if (data.Datum is null) throw new HttpRequestException("Contract not retrieved");
-        return data.Datum;
+        var result = await _contractsApiService.AcceptAsync(contractId);
+        await _contractsCacheService.SetAsync(result.Contract);
+        return result;
     }
 
     public async Task<ContractFulfillResult> FulfillAsync(string contractId)
     {
-        var url = new UriBuilder(_apiUrl)
-        {
-            Path = DIRECTORY_PATH + $"/{contractId}/" + "fulfill"
-        };
-        _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
-        var data = await HttpHelperService.HttpPostHelper<DataSingle<ContractFulfillResult>>(
-            url.ToString(),
-            _httpClient,
-            null,
-            _logger);
-        return data.Datum;
+        var result = await _contractsApiService.FulfillAsync(contractId);
+        await _contractsCacheService.SetAsync(result.Contract);
+        return result;
     }
 
-    
-
-    public async Task<ContractDeliverResult> DeliverAsync(
-        string contractId,
+    public async Task<ContractDeliverResult> DeliverAsync(string contractId,
         string shipSymbol,
         string tradeSymbol,
         int units)
     {
-        var url = new UriBuilder(_apiUrl)
-        {
-            Path = DIRECTORY_PATH + $"/{contractId}/deliver"
-        };
-        _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
-        var content = JsonContent.Create(new { shipSymbol, tradeSymbol, units });
-        var data = await HttpHelperService.HttpPostHelper<DataSingle<ContractDeliverResult>>(
-            url.ToString(),
-            _httpClient,
-            content,
-            _logger);
-        return data.Datum;
+        var result = await _contractsApiService.DeliverAsync(contractId, shipSymbol, tradeSymbol, units);
+        await _contractsCacheService.SetAsync(result.Contract);
+        return result;
     }
 
-    public async Task<ContractNegotiateResult> NegotiateAsync(
-        string shipSymbol)
+    public async Task<ContractNegotiateResult> NegotiateAsync(string shipSymbol)
     {
-        var url = new UriBuilder(_apiUrl)
-        {
-            Path = $"/my/ships/{shipSymbol}/negotiate/contract"
-        };
-        _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
-        var data = await HttpHelperService.HttpPostHelper<DataSingle<ContractNegotiateResult>>(
-            url.ToString(),
-            _httpClient,
-            null,
-            _logger);
-        return data.Datum;
+        var result = await _contractsApiService.NegotiateAsync(shipSymbol);
+        await _contractsCacheService.SetAsync(result.Contract);
+        return result;
     }
 }

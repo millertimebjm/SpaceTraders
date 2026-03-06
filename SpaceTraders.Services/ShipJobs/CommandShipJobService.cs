@@ -1,6 +1,7 @@
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
+using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.Systems;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Waypoints;
@@ -10,7 +11,8 @@ namespace SpaceTraders.Services.ShipJobs.Interfaces;
 
 public class CommandShipJobService(
     IAgentsService _agentsService,
-    ISystemsService _systemsService
+    ISystemsService _systemsService,
+    IShipCommandsHelperService _shipCommandHelperService
 ) : IShipJobService
 {
     private const long INITIAL_SURVEYOR_SHIP_CREDITS_THRESHOLD = 50_000;
@@ -28,7 +30,8 @@ public class CommandShipJobService(
         var traversableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol);
         var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
     
-        if (await IsPurchaseShip(ships))
+        var (_, shipType) = await _shipCommandHelperService.ShipToBuy(ships);
+        if (shipType is not null)
         {
             return new ShipCommand(ship.Symbol, ShipCommandEnum.PurchaseShip);
         }
@@ -76,11 +79,6 @@ public class CommandShipJobService(
         
         if (headquartersSystem.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction))
         {
-            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.TRANSPORT.ToString()) < 3)
-            {
-                return true;
-            }
-
             if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()) < 10)
             {
                 return true;

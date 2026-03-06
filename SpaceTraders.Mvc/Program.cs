@@ -69,6 +69,7 @@ builder.Services.AddSingleton<IShipLogsService, ShipLogsChannelService>();
 builder.Services.AddScoped<IServerStatusApiService, ServerStatusApiService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IAccountApiService, AccountApiService>();
+builder.Services.AddScoped<IContractsApiService, ContractsApiService>();
 
 // Cache Services
 builder.Services.AddSingleton<IMongoCollectionFactory, MongoCollectionFactory>();
@@ -84,6 +85,7 @@ builder.Services.AddSingleton<IShipLogsStorageService, ShipLogsStorageMongoServi
 builder.Services.AddScoped<IServerStatusService, ServerStatusService>();
 builder.Services.AddScoped<IAccountCacheService, AccountCacheMongoService>();
 builder.Services.AddScoped<IServerStatusCacheService, ServerStatusCacheMongoService>();
+builder.Services.AddScoped<IContractsCacheService, ContractsCacheMongoService>();
 
 builder.Services.AddLogging();
 Log.Logger = new LoggerConfiguration()

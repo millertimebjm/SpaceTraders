@@ -73,6 +73,7 @@ public static class DependencyInjectionHelperService
         services.AddSingleton<IServerStatusApiService, ServerStatusApiService>();
         services.AddSingleton<IAccountService, AccountService>();
         services.AddSingleton<IAccountApiService, AccountApiService>();
+        services.AddSingleton<IContractsApiService, ContractsApiService>();
 
         // Ship Commands
         services.AddSingleton<MiningToSellAnywhereCommand>();
@@ -105,6 +106,7 @@ public static class DependencyInjectionHelperService
         services.AddSingleton<IShipLogsStorageService, ShipLogsStorageMongoService>();
         services.AddSingleton<IAccountCacheService, AccountCacheMongoService>();
         services.AddSingleton<IServerStatusCacheService, ServerStatusCacheMongoService>();
+        services.AddSingleton<IContractsCacheService, ContractsCacheMongoService>();
 
         // services.AddSingleton<IAgentsCacheService, AgentsCacheEfService>();
         // services.AddSingleton<IShipStatusesCacheService, ShipStatusesCacheEfService>();

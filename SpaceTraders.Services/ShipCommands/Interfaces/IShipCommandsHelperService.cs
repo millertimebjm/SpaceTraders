@@ -1,4 +1,5 @@
 using SpaceTraders.Models;
+using SpaceTraders.Models.Enums;
 
 namespace SpaceTraders.Services.ShipCommands.Interfaces;
 
@@ -52,4 +53,5 @@ public interface IShipCommandsHelperService
         Waypoint currentWaypoint,
         string inventorySymbol);
     Task<(STContract?, Cargo?, Agent?)> FulfillContract(Ship ship, STContract contract);
+    Task<(string?, ShipTypesEnum?)> ShipToBuy(IEnumerable<Ship> ships);
 }
