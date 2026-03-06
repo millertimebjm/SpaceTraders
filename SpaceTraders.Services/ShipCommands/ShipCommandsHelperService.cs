@@ -1087,34 +1087,38 @@ public class ShipCommandsHelperService(
 
     public async Task<ShipTypesEnum?> ShipToBuy(string currentSystem, IEnumerable<Ship> ships, STSystem system)
     {
-        var systems = await _systemsService.GetAsync();
-        var reachableSystems = SystemsService.Traverse(systems, currentSystem);
-        var waypoints = reachableSystems.SelectMany(w => w.Waypoints).ToList();
-        var shipyards = 
-            waypoints
-            .Where(w => w.Shipyard is not null)
-            .ToList();
-        var shipsInSystem = ships
-            .GroupBy(s => s.Registration.Role);
+        var agent = await _agentsService.GetAsync();
+        var headquartersSystem = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters));
 
-        if ((shipsInSystem.SingleOrDefault(sin => sin.Key == ShipRegistrationRolesEnum.SURVEYOR.ToString())?.Count() ?? 0) == 0)
+        if (headquartersSystem.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction))
         {
-            return ShipTypesEnum.SHIP_SURVEYOR;
+            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.SURVEYOR.ToString()) < 1)
+            {
+                return ShipTypesEnum.SHIP_SURVEYOR;
+            }
+
+            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.EXCAVATOR.ToString()) < 9)
+            {
+                return ShipTypesEnum.SHIP_MINING_DRONE;
+            }
+
+            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()) < 5)
+            {
+                return ShipTypesEnum.SHIP_LIGHT_HAULER;
+            }
         }
-
-        if ((shipsInSystem.SingleOrDefault(sin => sin.Key == ShipRegistrationRolesEnum.EXCAVATOR.ToString())?.Count() ?? 0) < 9)
+        
+        if (headquartersSystem.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction))
         {
-            return ShipTypesEnum.SHIP_MINING_DRONE;
-        }
+            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.TRANSPORT.ToString()) < 3)
+            {
+                return ShipTypesEnum.SHIP_LIGHT_SHUTTLE;
+            }
 
-        if ((shipsInSystem.SingleOrDefault(sin => sin.Key == ShipRegistrationRolesEnum.HAULER.ToString())?.Count() ?? 0) < 5)
-        {
-            return ShipTypesEnum.SHIP_LIGHT_HAULER;
-        }
-
-        if ((shipsInSystem.SingleOrDefault(sin => sin.Key == ShipRegistrationRolesEnum.SURVEYOR.ToString())?.Count() ?? 0) == 0)
-        {
-            return ShipTypesEnum.SHIP_LIGHT_SHUTTLE;
+            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.TRANSPORT.ToString()) < 10)
+            {
+                return ShipTypesEnum.SHIP_LIGHT_HAULER;
+            }
         }
 
         return (ShipTypesEnum?)null;
@@ -1145,7 +1149,7 @@ public class ShipCommandsHelperService(
 
         if (ship.Fuel.Current < minimumFuel)
         {
-            var paths = await _pathsService.BuildSystemPathWithCost(waypoints, currentWaypoint, 10000, 10000);
+            var paths = await _pathsService.BuildSystemPathWithCost(waypoints, currentWaypoint, 300, 300);
             var reachableWaypoints = waypoints.Where(w => paths.ContainsKey(w.Symbol)).ToList();
             var fuelPaths = reachableWaypoints
                 .Where(p => ship.Nav.SystemSymbol == WaypointsService.ExtractSystemFromWaypoint(p.Symbol) && 
@@ -1165,7 +1169,7 @@ public class ShipCommandsHelperService(
 
         if (ship.Goal is not null)
         {
-            var paths = await _pathsService.BuildSystemPathWithCost(waypoints, currentWaypoint, 10000, 10000);
+            var paths = await _pathsService.BuildSystemPathWithCost(waypoints, currentWaypoint, 300, 300);
             var path = paths.Single(p => p.Key == ship.Goal);
             var (refuelNav, refuelFuel) = await _shipsService.NavigateAsync(path.Value.Item1[1], ship);
         }

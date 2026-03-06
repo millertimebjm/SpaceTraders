@@ -1,3 +1,5 @@
+using DnsClient.Internal;
+using Microsoft.Extensions.Logging;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
@@ -11,7 +13,9 @@ namespace SpaceTraders.Services.ShipJobs.Interfaces;
 public class TransportShipJobService(
     IAgentsService _agentsService,
     ISystemsService _systemsService,
-    IWaypointsService _waypointsService
+    IWaypointsService _waypointsService,
+    ISystemsCacheService _systemsCacheService,
+    ILogger<TransportShipJobService> _logger
 ) : IShipJobService
 {
     public async Task<ShipCommand?> Get(
@@ -27,12 +31,49 @@ public class TransportShipJobService(
             return new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration);
         }
 
+        await LoadMoreSystems();
+
+        systems = await _systemsService.GetAsync();
+        traversableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol);
+        waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
+
         if (await IsExplorationAvailableOutsideCurrentSystem(ship.Nav.SystemSymbol, waypoints))
         {
             return new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration);
         }
 
         return null;
+    }
+
+    private async Task LoadMoreSystems()
+    {
+        var agent = await _agentsService.GetAsync();
+        var homeSystem = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters));
+        var systems = await _systemsService.GetAsync();
+        var traversableSystems = SystemsService.Traverse(systems, homeSystem.Symbol);
+        var traversableWaypoints = traversableSystems.SelectMany(w => w.Waypoints);
+        var completedJumpGates = traversableWaypoints.Where(tw => tw.JumpGate is not null && !tw.IsUnderConstruction);
+        foreach (var completedJumpGate in completedJumpGates)
+        {
+            foreach (var connection in completedJumpGate.JumpGate!.Connections)
+            {
+                var newSystemSymbol = WaypointsService.ExtractSystemFromWaypoint(connection);
+                var newSystem = await _systemsCacheService.GetAsync(newSystemSymbol);
+                if (newSystem is null)
+                {
+                    _logger.LogInformation("Loading system {systemSymbol}.", newSystemSymbol);
+                    newSystem = await _systemsService.GetAsync(newSystemSymbol, true);
+                    foreach (var newWaypoint in newSystem.Waypoints)
+                    {
+                        _logger.LogInformation("Loading waypoint {waypointSymbol}", newWaypoint.Symbol);
+                        await _waypointsService.GetAsync(newWaypoint.Symbol, true);
+                        await Task.Delay(500);
+                    }
+                    _logger.LogInformation("One system refreshed.");
+                    return;
+                }
+            }
+        }
     }
 
     private async Task<bool> IsExplorationAvailableOutsideCurrentSystem(string systemSymbol, List<Waypoint> waypoints)
@@ -55,7 +96,7 @@ public class TransportShipJobService(
                 if (jumpGateConnection is not null)
                 {
                     var cacheSystem = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(jumpSystem));
-                    if (cacheSystem.Waypoints.Any(w => w.Traits is null || !w.Traits.Any()))
+                    if (cacheSystem.Waypoints.Any(w => !WaypointsService.IsVisited(w)))
                     {
                         return true;
                     }

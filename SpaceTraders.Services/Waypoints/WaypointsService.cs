@@ -114,6 +114,7 @@ public class WaypointsService(
 
     public static bool IsVisited(Waypoint waypoint)
     {
+        if (waypoint.Marketplace is not null && waypoint.Marketplace.TradeGoods is null) return false;
         if (waypoint.Shipyard is not null && waypoint.Shipyard.ShipFrames is null) return false;
         if (waypoint.Traits is null) return false;
         if (waypoint.Traits.Any(t => t.Symbol == WaypointTraitsEnum.UNCHARTED.ToString())) return false;

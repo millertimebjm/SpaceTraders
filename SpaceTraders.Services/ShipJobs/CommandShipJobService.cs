@@ -47,35 +47,46 @@ public class CommandShipJobService(
     private async Task<bool> IsPurchaseShip(IEnumerable<Ship> ships)
     {
         var agent = await _agentsService.GetAsync();
+        var headquartersSystem = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters));
+        
         if (agent.Credits > INITIAL_SURVEYOR_SHIP_CREDITS_THRESHOLD)
         {
-            var shipTypes = ships
-                .GroupBy(s => s.Registration.Role);
-            var surveyShips = shipTypes.SingleOrDefault(st => st.Key == ShipRegistrationRolesEnum.SURVEYOR.ToString())?.Count() ?? 0;
-            if (surveyShips < SURVEY_MAX_SHIP_COUNT) return true;
+            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.SURVEYOR.ToString()) < 1) return true;
         }
 
-        if (agent.Credits > PURCHASE_SHIP_CREDITS_THRESHOLD)
+        if (agent.Credits < PURCHASE_SHIP_CREDITS_THRESHOLD) return false;
+
+        if (headquartersSystem.Waypoints.Any(w => w.JumpGate is null && w.IsUnderConstruction))
         {
-            var shipTypesInSystem = ships
-                //.Where(s => s.Nav.SystemSymbol == ship.Nav.SystemSymbol)
-                .GroupBy(s => s.Registration.Role);
-            var miningDrones = shipTypesInSystem.SingleOrDefault(st => st.Key == ShipRegistrationRolesEnum.EXCAVATOR.ToString())?.Count() ?? 0;
-            var lightHaulers = shipTypesInSystem.SingleOrDefault(st => st.Key == ShipRegistrationRolesEnum.HAULER.ToString())?.Count() ?? 0;
-            
-            if (miningDrones < MINING_DRONE_MAX_SHIP_COUNT
-                || lightHaulers < LIGHT_HAULER_MAX_SHIP_COUNT)
+            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.SURVEYOR.ToString()) < 1)
             {
                 return true;
             }
-            var shuttles = shipTypesInSystem.SingleOrDefault(st => st.Key == ShipRegistrationRolesEnum.TRANSPORT.ToString())?.Count() ?? 0;
-            var system = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters));
-            var jumpGateWaypoint = system.Waypoints.SingleOrDefault(w => !w.IsUnderConstruction && w.JumpGate is not null);
-            if (shuttles < SHUTTLE_MAX_SHIP_COUNT && jumpGateWaypoint is not null)
+
+            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.EXCAVATOR.ToString()) < 9)
+            {
+                return true;
+            }
+
+            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()) < 5)
             {
                 return true;
             }
         }
+        
+        if (headquartersSystem.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction))
+        {
+            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.TRANSPORT.ToString()) < 3)
+            {
+                return true;
+            }
+
+            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()) < 10)
+            {
+                return true;
+            }
+        }
+
         return false;
     }
 

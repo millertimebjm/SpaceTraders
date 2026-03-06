@@ -35,7 +35,12 @@ public class FulfillContractCommand(
         STContract? contract = null;
         if (ship.Goal is not null)
         {
-            contract = await _contractsService.GetAsync(ship.Goal);   
+            contract = await _contractsService.GetAsync(ship.Goal);
+            if (contract.Fulfilled)
+            {
+                ship = ship with { Goal = null };
+                contract = null;
+            }
         }
         if (contract is null)
         {

@@ -1,3 +1,4 @@
+using System.Collections.Specialized;
 using System.Diagnostics.Contracts;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
@@ -33,32 +34,33 @@ public class ContractsService : IContractsService
         ArgumentException.ThrowIfNullOrWhiteSpace(_token);
     }
 
-    public async Task<IEnumerable<STContract>> GetAsync()
+    public async Task<List<STContract>> GetAsync()
     {
-        var url = new UriBuilder(_apiUrl);
-        url.Path = DIRECTORY_PATH;
+        var urlBuilder = new UriBuilder(_apiUrl);
+        urlBuilder.Path = DIRECTORY_PATH;
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", _token);
-        var data = await HttpHelperService.HttpGetHelper<Data<STContract>>(
-            url.ToString(),
-            _httpClient,
-            _logger);
-        if (data.DataList is null) throw new HttpRequestException("Contracts not retrieved");
-        return data.DataList;
+        var allData = new List<STContract>();
+        Data<STContract> latestPull;
+        var page = 1;
+        do
+        {
+            latestPull = await HttpHelperService.HttpGetHelper<Data<STContract>>(
+                urlBuilder.ToString() + $"?page={page}&limit=20",
+                _httpClient,
+                _logger);
+            allData.AddRange(latestPull.DataList);
+            page++;
+        } while (allData.Count < latestPull.Meta.Total);
+        
+        if (allData is null) throw new HttpRequestException("Contracts not retrieved");
+        return allData;
     }
 
     public async Task<STContract?> GetActiveAsync()
     {
-        var url = new UriBuilder(_apiUrl);
-        url.Path = DIRECTORY_PATH;
-        _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
-        var data = await HttpHelperService.HttpGetHelper<Data<STContract>>(
-            url.ToString(),
-            _httpClient,
-            _logger);
-        if (data.DataList is null) throw new HttpRequestException("Contracts not retrieved");
-        return data.DataList.OrderByDescending(c => c.Accepted && !c.Fulfilled).FirstOrDefault();
+        var dataList = await GetAsync();
+        return dataList.Where(c => c.Accepted && !c.Fulfilled).OrderByDescending(c => c.DeadlineToAccept).FirstOrDefault();
     }
 
     public async Task<STContract> GetAsync(string contractId)

@@ -21,7 +21,7 @@ public class SystemsCacheEfService(SpaceTraderDbContext _context) : ISystemsCach
         //     .ToListAsync();
     }
 
-    public async Task<STSystem> GetAsync(string systemSymbol, bool refresh = false)
+    public async Task<STSystem?> GetAsync(string systemSymbol, bool refresh = false)
     {
         var systemCacheModels = await _context.STSystems.SingleOrDefaultAsync(s => s.Symbol == systemSymbol);
         if (systemCacheModels == null) return null;

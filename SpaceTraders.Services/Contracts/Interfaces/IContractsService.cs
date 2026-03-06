@@ -5,7 +5,7 @@ namespace SpaceTraders.Services.Contracts.Interfaces;
 
 public interface IContractsService
 {
-    Task<IEnumerable<STContract>> GetAsync();
+    Task<List<STContract>> GetAsync();
     Task<STContract?> GetActiveAsync();
     Task<STContract> GetAsync(string contractId);
     Task<ContractAcceptResult> AcceptAsync(string contractId);

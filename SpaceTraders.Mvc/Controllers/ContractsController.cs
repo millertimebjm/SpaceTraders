@@ -76,5 +76,5 @@ public class ContractsController(
         var agent = await _agentsService.GetAsync();
         SessionHelper.Set(HttpContext, SessionEnum.CurrentCredits, agent.Credits);
         return RedirectToAction("Index");
-    }
+    }   
 }
