@@ -22,11 +22,11 @@ public class ContractsCacheMongoService(
         return contracts;
     }
 
-    public async Task<STContract> GetAsync(string id)
+    public async Task<STContract> GetAsync(string contractId)
     {
         var filter = Builders<STContract>
             .Filter
-            .Eq(w => w.Id, id);
+            .Eq(w => w.ContractId, contractId);
         var collection = _collectionFactory.GetCollection<STContract>();
         var projection = Builders<STContract>.Projection.Exclude("_id");
         var contracts = await collection
@@ -39,7 +39,7 @@ public class ContractsCacheMongoService(
 
     public async Task SetAsync(STContract contract)
     {
-        var filter = Builders<STContract>.Filter.Eq(c => c.Id, contract.Id);
+        var filter = Builders<STContract>.Filter.Eq(c => c.ContractId, contract.ContractId);
         var collection = _collectionFactory.GetCollection<STContract>();
         var projection = Builders<STContract>.Projection.Exclude("_id");
 

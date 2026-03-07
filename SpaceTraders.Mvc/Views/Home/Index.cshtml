@@ -58,7 +58,7 @@
     <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
         @foreach (var shipStatus in Model
             .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.SATELLITE.ToString())
-            .OrderBy(s => s.Ship.ShipCommand?.ShipCommandEnum.ToString()))
+            .OrderBy(s => s.Ship.Nav.WaypointSymbol))
         {
             <div class="shadow-lg p-3 bg-white rounded" style="width: 250px; margin: 10px; position: relative;">
                 <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 150px;">

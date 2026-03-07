@@ -20,7 +20,10 @@ public class MarketWatchCommand(
         Dictionary<string, Ship> shipsDictionary)
     {
         var ship = shipStatus.Ship;
-        var localShips = shipsDictionary.Values.Where(s => s.Nav.WaypointSymbol == ship.Nav.WaypointSymbol).ToList();
+        var localShips = shipsDictionary
+            .Values
+            .Where(s => s.Registration.Role == ShipRegistrationRolesEnum.SATELLITE.ToString() && s.Nav.WaypointSymbol == ship.Nav.WaypointSymbol)
+            .ToList();
         var waypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol);
         if (localShips.Count > 1 || waypoint.Marketplace is null)
         {
@@ -60,7 +63,7 @@ public class MarketWatchCommand(
             .Select(sd => sd.Nav.WaypointSymbol)
             .Distinct()
             .ToList();
-        var emptyMarketplaceWaypoint = marketplaceWaypoints.Except(shipWaypoints).Except([ship.Nav.WaypointSymbol]).OrderBy(w => w).First();
+        var emptyMarketplaceWaypoint = marketplaceWaypoints.Except(shipWaypoints).OrderBy(w => w).First();
         return emptyMarketplaceWaypoint;
     }
 }

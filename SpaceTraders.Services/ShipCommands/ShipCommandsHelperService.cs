@@ -41,7 +41,8 @@ public class ShipCommandsHelperService(
     ITransactionsCacheService _transactionsService,
     IShipStatusesCacheService _shipStatusesCacheService,
     ITradesService _tradesService,
-    IContractsService _contractsService
+    IContractsService _contractsService,
+    IContractsApiService _contractsApiService
 ) : IShipCommandsHelperService
 {
     private const int minimumFuel = 5;
@@ -921,7 +922,7 @@ public class ShipCommandsHelperService(
             || ship.Cargo.Inventory.Count > 0) return (null, null, null, noWork: false, goal: null);
         string? goal = ship.Goal;
 
-        var paths = await _pathsService.BuildSystemPath(currentWaypoint.Symbol, 600, 600);
+        
 
         var tradeModels = await _tradesService.GetTradeModelsAsync();
         var availableTradeModels = tradeModels.Where(tm => !otherShipGoalSymbols.Contains(tm.TradeSymbol)).ToList();
@@ -934,7 +935,15 @@ public class ShipCommandsHelperService(
         goal = bestTrade.TradeSymbol;
         if (bestTrade.ExportWaypointSymbol == currentWaypoint.Symbol) return (null, null, null, noWork: false, goal);
 
+        var paths = await _pathsService.BuildSystemPath(currentWaypoint.Symbol, 600, 600);
         var shortestPath = paths.SingleOrDefault(p => p.Key == bestTrade.ExportWaypointSymbol);
+
+        if (shortestPath.Key is null)
+        {
+            paths = await _pathsService.BuildSystemPath(currentWaypoint.Symbol, 10000, 10000);
+            shortestPath = paths.Single(p => p.Key == bestTrade.ExportWaypointSymbol);
+        }
+
         if (WaypointsService.ExtractSystemFromWaypoint(shortestPath.Value.Item1[1]) != ship.Nav.SystemSymbol)
         {
             var (navJump, cooldownJump) = await _shipsService.JumpAsync(shortestPath.Value.Item1[1], ship.Symbol);
@@ -979,7 +988,13 @@ public class ShipCommandsHelperService(
         if (contractTradeModelWaypointSymbol == currentWaypoint.Symbol) return (null, null, null, noWork: false, goal);
 
         var paths = await _pathsService.BuildSystemPath(currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
-        var shortestPath = paths.Single(p => p.Key == contractTradeModelWaypointSymbol);
+        var shortestPath = paths.SingleOrDefault(p => p.Key == contractTradeModelWaypointSymbol);
+        if (shortestPath.Key is null)
+        {
+            paths = await _pathsService.BuildSystemPath(currentWaypoint.Symbol, 10000, 10000);
+            shortestPath = paths.Single(p => p.Key == contractTradeModelWaypointSymbol);
+        }
+
         if (WaypointsService.ExtractSystemFromWaypoint(shortestPath.Value.Item1[1]) != ship.Nav.SystemSymbol)
         {
             var (navJump, cooldownJump) = await _shipsService.JumpAsync(shortestPath.Value.Item1[1], ship.Symbol);
@@ -1258,6 +1273,7 @@ public class ShipCommandsHelperService(
 
     public async Task<(STContract?, Cargo?, Agent?)> FulfillContract(Ship ship, STContract contract)
     {
+        var contractActive = await _contractsApiService.GetActiveAsync();
         Cargo? cargo = null;
         Agent? agent = await _agentsService.GetAsync();
         if (ship.Cargo.Inventory.Count > 0
@@ -1265,7 +1281,7 @@ public class ShipCommandsHelperService(
             && contract.Terms.Deliver[0].UnitsRequired == ship.Cargo.Inventory[0].Units
             && ship.Nav.WaypointSymbol == contract.Terms.Deliver[0].DestinationSymbol)
         {
-            var contractDeliverResult = await _contractsService.DeliverAsync(contract.Id, ship.Symbol, ship.Cargo.Inventory[0].Symbol, ship.Cargo.Inventory[0].Units);
+            var contractDeliverResult = await _contractsService.DeliverAsync(contractActive.ContractId, ship.Symbol, ship.Cargo.Inventory[0].Symbol, ship.Cargo.Inventory[0].Units);
             contract = contractDeliverResult.Contract;
             cargo = contractDeliverResult.Cargo;
 

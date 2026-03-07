@@ -5,6 +5,11 @@
     ViewData["Title"] = "Contracts";
 }
 
+<span><a href="/contracts/reset">Reset</a></span>
+
+<br/>
+<br/>
+
 @foreach (var contract in Model.OrderByDescending(c => c.DeadlineToAccept))
 {
     <h6>Contract @contract.Id</h6>

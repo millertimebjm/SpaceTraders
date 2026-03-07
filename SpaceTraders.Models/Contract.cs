@@ -1,14 +1,27 @@
 namespace SpaceTraders.Models;
 
 public record STContract(
-    string Id,
     string FactionSymbol,
     string Type,
     Terms Terms,
     bool Accepted,
     bool Fulfilled,
     DateTime DeadlineToAccept
-);
+)
+{
+    public string Id
+    {
+        get
+        {
+            return ContractId;
+        }
+        set
+        {
+            ContractId = value;
+        }
+    }
+    public string ContractId {get; set;} = "";
+}
 
 public record Deliver(
     string TradeSymbol,

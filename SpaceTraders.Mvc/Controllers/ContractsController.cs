@@ -76,5 +76,12 @@ public class ContractsController(
         var agent = await _agentsService.GetAsync();
         SessionHelper.Set(HttpContext, SessionEnum.CurrentCredits, agent.Credits);
         return RedirectToAction("Index");
-    }   
+    }
+
+    [Route("/contracts/reset")]
+    public async Task<IActionResult> Reset()
+    {
+        await _contractsService.GetAsync(refresh: true);
+        return RedirectToAction("Index");
+    }
 }

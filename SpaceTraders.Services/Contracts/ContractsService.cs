@@ -26,7 +26,7 @@ public class ContractsService(
     {
         var cacheContracts = await _contractsCacheService.GetAsync();
         var activeCacheContract = cacheContracts.SingleOrDefault(c => c.Accepted && !c.Fulfilled);
-        if (activeCacheContract is not null) return cacheContracts.First(); 
+        if (activeCacheContract is not null) return activeCacheContract; 
         
         var contracts = await _contractsApiService.GetAsync();
         await _contractsCacheService.SetAsync(contracts);
