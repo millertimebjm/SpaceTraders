@@ -2,8 +2,7 @@
 
 SpaceTraders.io Game REST API
 
-* change trade model refresh to be time based
-* update trade model by individual waypoint market places
+* execute each ship in parallel and use a channel to execute api calls
 * add more testing
 * move all non-ship-api properties to shipstatus
 * mining ships in each system

@@ -1141,8 +1141,8 @@ public class ShipCommandsHelperService(
             var probes = ships.Where(s => s.Registration.Role == ShipRegistrationRolesEnum.SATELLITE.ToString() && s.Nav.SystemSymbol == system.Symbol).ToList();
             if (probes.Count < markets.Count) 
             {
-                var shipyard = system.Waypoints.OrderBy(w => w.Symbol).First(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_PROBE.ToString()) == true);
-                return (shipyard.Symbol, ShipTypesEnum.SHIP_PROBE);
+                var shipyard = system.Waypoints.OrderBy(w => w.Symbol).FirstOrDefault(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_PROBE.ToString()) == true);
+                if (shipyard is not null) return (shipyard.Symbol, ShipTypesEnum.SHIP_PROBE);
             }
         }
 
