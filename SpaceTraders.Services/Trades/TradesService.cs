@@ -212,7 +212,7 @@ public class TradesService(
         return orderedTrades;
     }
 
-    public IReadOnlyList<TradeModel> GetBestOrderedTradesWithTravelCost(
+    public static IReadOnlyList<TradeModel> GetBestOrderedTradesWithTravelCost(
         IReadOnlyList<TradeModel> trades)
     {
         const decimal profitWeight = 0.5m;

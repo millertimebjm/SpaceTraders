@@ -8,7 +8,46 @@
     IReadOnlyList<TradeModel> tradeModels = Model;
 }
 
-<h3>Trade Models <small>(<a href="/marketplaces/trademodels/reset">reset</a>)</small></h3>
+<h3>Best Trade Models <small>(<a href="/marketplaces/trademodels/reset">reset</a>)</small></h3>
+
+@{
+    var tradeModelsOrdered = TradesService.GetBestOrderedTradesWithTravelCost(tradeModels);
+    var tradeModelsGrouped = tradeModelsOrdered.GroupBy(tm => tm.TradeSymbol);
+}
+<table class="table">
+    <thead>
+        <tr>
+            <th>TradeSymbol</th>
+            <th>Export WP</th>
+            <th>Buy</th>
+            <th style="text-align: center;">Supply</th>
+            <th style="text-align: center;">Volume</th>
+            <th>Import WP</th>
+            <th>Sell</th>
+            <th style="text-align: center;">Supply</th>
+            <th style="text-align: center;">Volume</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var tradeModel in tradeModelsGrouped)
+        {
+            <tr>
+                <td>@tradeModel.Key (@tradeModel.Count())</td>
+                <td>@tradeModel.First().ExportWaypointSymbol</td>
+                <td style="text-align: right;">@tradeModel.First().ExportBuyPrice</td>
+                <td style="text-align: center;">@tradeModel.First().ExportSupplyEnum</td>
+                <td style="text-align: right;">@tradeModel.First().ExportTradeVolume</td>
+                <td>@tradeModel.First().ImportWaypointSymbol</td>
+                <td style="text-align: right;">@tradeModel.First().ImportSellPrice</td>
+                <td style="text-align: center;">@tradeModel.First().ImportSupplyEnum</td>
+                <td style="text-align: right;">@tradeModel.First().ImportTradeVolume</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<br/></br>
+<h3>Trade Models</h3>
 <table class="table">
     <thead>
         <tr>

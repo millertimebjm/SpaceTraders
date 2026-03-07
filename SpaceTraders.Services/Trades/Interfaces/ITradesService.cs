@@ -12,8 +12,6 @@ public interface ITradesService
     // Task SaveTradeModelsAsync(IReadOnlyList<Waypoint> waypoints, int fuelMax, int fuelCurrent);
     // Task<IReadOnlyList<TradeModel>> GetTradeModelsAsync();
     IReadOnlyList<TradeModel> GetBestOrderedTrades(IReadOnlyList<TradeModel> trades);
-    IReadOnlyList<TradeModel> GetBestOrderedTradesWithTravelCost(
-        IReadOnlyList<TradeModel> trades);
     Task<IReadOnlyList<TradeModel>> GetTradeModelsAsync();
     Task BuildTradeModel();
 }

@@ -289,21 +289,34 @@ public class ShipCommandsHelperService(
         else
         {
             var tradeModels = await _tradesService.GetTradeModelsAsync();
+            TradeModel? bestTrade = null;
             if (ship.Cargo.Units > 0)
             {
-                tradeModels = tradeModels.Where(tm => tm.TradeSymbol == ship.Cargo.Inventory.OrderByDescending(i => i.Symbol).First().Symbol).ToList();
+                var systems = await _systemsService.GetAsync();
+                var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(currentWaypoint.Symbol));
+                var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
+                var paths = await _pathsService.BuildSystemPath(currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
+                var reachableWaypoints = waypoints.Where(w => paths.Keys.Contains(w.Symbol)).ToList();
+                var sellModels = _tradesService.BuildSellModel(reachableWaypoints);
+                var inventoryToSell = ship.Cargo.Inventory.OrderByDescending(i => i.Units).ThenBy(i => i.Symbol).First().Symbol;
+                sellModels = sellModels.Where(tm => tm.TradeSymbol == inventoryToSell).ToList();
+                var bestSellModel = _tradesService.GetBestSellModel(sellModels);
+                if (bestSellModel.WaypointSymbol == currentWaypoint.Symbol) shouldDock = true;
             }
-            else if (ship.Goal is not null)
+            else
             {
-                tradeModels = tradeModels.Where(tm => tm.TradeSymbol == ship.Goal).ToList();
-            }
-            var bestTrade = _tradesService.GetBestTrade(tradeModels);
-            if (bestTrade is null) return (null, goal);
-            if (ship.Cargo.Units > 0 && bestTrade.ImportWaypointSymbol == currentWaypoint.Symbol) shouldDock = true;
-            if (ship.Cargo.Units == 0 && bestTrade.ExportWaypointSymbol == currentWaypoint.Symbol) 
-            {
-                goal = bestTrade.TradeSymbol;
-                shouldDock = true;
+                if (ship.Goal is not null)
+                {
+                    tradeModels = tradeModels.Where(tm => tm.TradeSymbol == ship.Goal).ToList();
+                }
+
+                bestTrade = _tradesService.GetBestTrade(tradeModels);
+                if (bestTrade is null) return (null, goal);
+                if (bestTrade.ExportWaypointSymbol == currentWaypoint.Symbol) 
+                {
+                    goal = bestTrade.TradeSymbol;
+                    shouldDock = true;
+                }
             }
         }
 

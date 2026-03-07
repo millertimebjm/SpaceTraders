@@ -43,11 +43,6 @@ public class ContractsCacheMongoService(
         var collection = _collectionFactory.GetCollection<STContract>();
         var projection = Builders<STContract>.Projection.Exclude("_id");
 
-        var contracts = await collection
-            .Find(filter)
-            .Project<STContract>(projection)
-            .SingleAsync();
-
         await collection.DeleteOneAsync(filter, CancellationToken.None);
         await collection.InsertOneAsync(contract, options: null, CancellationToken.None);
     }
