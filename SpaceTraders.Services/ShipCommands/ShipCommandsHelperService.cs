@@ -129,7 +129,7 @@ public class ShipCommandsHelperService(
         {
             do
             {
-                var amountToBuy = Math.Min(inventoryAmount - ship.Cargo.Units, contractTradeModel.ExportTradeVolume);
+                var amountToBuy = Math.Min(inventoryAmount - ship.Cargo.Units, contractTradeModelTradeVolume.Value);
                 purchaseCargoResult = await _marketplacesService.PurchaseAsync(ship.Symbol, contractTradeSymbol, amountToBuy);
                 await Task.Delay(500);
                 agent = purchaseCargoResult.Agent;
@@ -349,7 +349,7 @@ public class ShipCommandsHelperService(
             shouldDock = true;
         }
         // waypoint is the destination for the contract
-        else if (currentWaypoint.Symbol == contractWaypointSymbol && ship.Cargo.Units > 0)
+        else if (contractWaypointSymbol is null || currentWaypoint.Symbol == contractWaypointSymbol && ship.Cargo.Units > 0)
         {
             shouldDock = true;
         }
@@ -1007,6 +1007,12 @@ public class ShipCommandsHelperService(
                 )?.Symbol;
         }
 
+        if (contractTradeModelWaypointSymbol is null)
+        {
+            var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
+            contractTradeModelWaypointSymbol = system.Waypoints.First(w => w.Marketplace?.Exports.Any(e => e.Symbol == inventorySymbol) is not null).Symbol;
+        }
+
         if (contractTradeModelWaypointSymbol is null) return (null, null, null, noWork: true, goal: null);
         if (contractTradeModelWaypointSymbol == currentWaypoint.Symbol) return (null, null, null, noWork: false, goal);
 
@@ -1130,18 +1136,24 @@ public class ShipCommandsHelperService(
         var headquartersSystem = systems.Single(s => s.Symbol == headquartersSystemSymbol);
         var reachableSystems = SystemsService.Traverse(systems, headquartersSystemSymbol);
 
-        if (headquartersSystem.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction))
+        if (headquartersSystem.Waypoints.Any(w => w.JumpGate is not null && w.IsUnderConstruction))
         {
+            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()) < 1)
+            {
+                var shipyard = headquartersSystem.Waypoints.Single(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_LIGHT_HAULER.ToString()) == true);
+                return (shipyard.Symbol, ShipTypesEnum.SHIP_LIGHT_HAULER);
+            }
+
             if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.SURVEYOR.ToString()) < 1)
             {
                 var shipyard = headquartersSystem.Waypoints.Single(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_SURVEYOR.ToString()) == true);
-                return (agent.Headquarters, ShipTypesEnum.SHIP_SURVEYOR);
+                return (shipyard.Symbol, ShipTypesEnum.SHIP_SURVEYOR);
             }
 
             if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.EXCAVATOR.ToString()) < 9)
             {
                 var shipyard = headquartersSystem.Waypoints.Single(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_MINING_DRONE.ToString()) == true);
-                return (agent.Headquarters, ShipTypesEnum.SHIP_MINING_DRONE);
+                return (shipyard.Symbol, ShipTypesEnum.SHIP_MINING_DRONE);
             }
         }
 
@@ -1161,7 +1173,7 @@ public class ShipCommandsHelperService(
             if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()) < 5)
             {
                 var shipyard = headquartersSystem.Waypoints.Single(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_LIGHT_HAULER.ToString()) == true);
-                return (agent.Headquarters, ShipTypesEnum.SHIP_LIGHT_HAULER);
+                return (shipyard.Symbol, ShipTypesEnum.SHIP_LIGHT_HAULER);
             }
         }
         
@@ -1169,7 +1181,8 @@ public class ShipCommandsHelperService(
         {
             if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()) < 10)
             {
-                return (agent.Headquarters, ShipTypesEnum.SHIP_LIGHT_HAULER);
+                var shipyard = headquartersSystem.Waypoints.Single(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_LIGHT_HAULER.ToString()) == true);
+                return (shipyard.Symbol, ShipTypesEnum.SHIP_LIGHT_HAULER);
             }
         }
 

@@ -2,6 +2,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\SpaceTraders.Models\SpaceTraders.Models.csproj" />
+    <ProjectReference Include="..\SpaceTraders.Dispatcher\SpaceTraders.Dispatcher.csproj" />
   </ItemGroup>
 
   <ItemGroup>

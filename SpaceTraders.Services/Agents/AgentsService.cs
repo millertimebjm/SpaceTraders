@@ -2,6 +2,7 @@
 using System.Net.Http.Json;
 using Microsoft.Extensions.Configuration;
 using MongoDB.Driver;
+using SpaceTraders.Dispatcher;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
@@ -9,25 +10,27 @@ using SpaceTraders.Services.MongoCache.Interfaces;
 
 namespace SpaceTraders.Services.Agents;
 
-public class AgentsService : IAgentsService
+public class AgentsService(
+    IConfiguration _configuration,
+    HttpClient _httpClient,
+    IAgentsCacheService _agentsCacheService,
+    IDispatcher _dispatcher) : IAgentsService
 {
     private const string DIRECTORY_PATH = "/v2/my/agent";
-    private readonly string _apiUrl;
-    private readonly HttpClient _httpClient;
-    private readonly string _token;
-    private readonly IAgentsCacheService _agentsCacheService;
 
-    public AgentsService(
-        HttpClient httpClient,
-        IConfiguration configuration,
-        IAgentsCacheService agentsCacheService)
+    private string ApiUrl
     {
-        _httpClient = httpClient;
-        _apiUrl = configuration[$"SpaceTrader:"+ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
-        ArgumentException.ThrowIfNullOrWhiteSpace(_apiUrl);
-        _token = configuration[$"SpaceTrader:"+ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
-        ArgumentException.ThrowIfNullOrWhiteSpace(_token);
-        _agentsCacheService = agentsCacheService;
+        get
+        {
+            return _configuration[$"SpaceTrader:"+ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
+        }
+    }
+    private string Token
+    {
+        get
+        {
+            return _configuration[$"SpaceTrader:"+ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
+        } 
     }
 
     public async Task<Agent> GetAsync(bool refresh = false)
@@ -49,16 +52,26 @@ public class AgentsService : IAgentsService
         
     private async Task<Agent> GetFromApiAsync()
     {
-        var url = new UriBuilder(_apiUrl);
-        url.Path = DIRECTORY_PATH;
+        var urlBuilder = new UriBuilder(ApiUrl)
+        {
+            Path = DIRECTORY_PATH
+        };
+        var url = urlBuilder.ToString();
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", _token);
-        var agentsDataString = await _httpClient.GetAsync(url.ToString());
-        agentsDataString.EnsureSuccessStatusCode();
+            new AuthenticationHeaderValue("Bearer", Token);
+        var agentsDataString = await _httpClient.GetAsync(url);
         var agentsData = await agentsDataString.Content.ReadFromJsonAsync<DataSingle<Agent>>();
         if (agentsData is null) throw new HttpRequestException("Agent Data not retrieved.");
         if (agentsData.Datum is null) throw new HttpRequestException("Agent not retrieved");
         return agentsData.Datum;
+
+        // var request = new HttpRequestMessage(HttpMethod.Get, url);
+        // request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+        // var response = await _dispatcher.SendAsync(request);
+        // //var response = await _httpClient.SendAsync(request);
+        // if (!response.IsSuccessStatusCode) throw new HttpRequestException("Agent not retrieved");
+        // var data = await response.Content.ReadFromJsonAsync<DataSingle<Agent>>();
+        // return data.Datum;
     }
 
     private async Task<Agent?> GetFromCacheAsync()

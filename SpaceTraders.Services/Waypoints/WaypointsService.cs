@@ -13,26 +13,6 @@ public class WaypointsService(
     IWaypointsApiService _waypointsApiService
 ) : IWaypointsService
 {
-    private string ApiUrl
-    {
-        get
-        {
-            var apiUrl = _configuration[$"SpaceTrader:" + ConfigurationEnums.ApiUrl.ToString()] ?? string.Empty;
-            ArgumentException.ThrowIfNullOrWhiteSpace(apiUrl);
-            return apiUrl;
-        }
-    }
-
-    private string BearerToken
-    {
-        get
-        {
-            var token = _configuration[$"SpaceTrader:" + ConfigurationEnums.AgentToken.ToString()] ?? string.Empty;
-            ArgumentException.ThrowIfNullOrWhiteSpace(token);
-            return token;
-        }
-    }
-
     public async Task<Waypoint> GetAsync(
         string waypointSymbol,
         bool refresh = false)

@@ -43,7 +43,7 @@ public class ShipLoopsService(
         if (serverStatus.ServerResets.Next.AddHours(-1) < DateTime.UtcNow)
         {
             _logger.LogInformation("Waiting for next reset.");
-            await Task.Delay(DateTime.UtcNow - serverStatus.ServerResets.Next);
+            //await Task.Delay(DateTime.UtcNow - serverStatus.ServerResets.Next);
             await _collectionFactory.DeleteDatabaseAsync();
             await _accountService.RegisterAsync();
         }
@@ -135,10 +135,12 @@ public class ShipLoopsService(
             _logger.LogInformation("Time until server reset: {hours} Hours", Math.Round((serverStatus.ServerResets.Next - DateTime.UtcNow).TotalHours));
             await SleepUntilNextShipReady(shipStatuses);
 
+            var now = DateTime.UtcNow;
             if (serverStatus.ServerResets.Next.AddHours(-1) < DateTime.UtcNow)
             {
                 _logger.LogInformation("Waiting for next reset.");
-                await Task.Delay(DateTime.UtcNow - serverStatus.ServerResets.Next);
+                var waitInMilliseconds = (int)(serverStatus.ServerResets.Next - now).TotalMilliseconds;
+                await Task.Delay(waitInMilliseconds);
             }
         }
     }

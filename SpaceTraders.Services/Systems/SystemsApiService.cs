@@ -1,6 +1,9 @@
 using System.Net.Http.Headers;
+using System.Net.Http.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using MongoDB.Driver;
+using SpaceTraders.Dispatcher;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.HttpHelpers;
@@ -12,7 +15,8 @@ namespace SpaceTraders.Services.Systems;
 public class SystemsApiService(
     HttpClient _httpClient,
     IConfiguration _configuration,
-    ILogger<SystemsService> _logger
+    ILogger<SystemsService> _logger,
+    IDispatcher _dispatcher
 ) : ISystemsApiService
 {
     private const string DIRECTORY_PATH = "/v2/systems/";
@@ -27,7 +31,7 @@ public class SystemsApiService(
         }
     }
 
-    private string BearerToken
+    private string Token
     {
         get
         {
@@ -39,16 +43,26 @@ public class SystemsApiService(
 
     public async Task<STSystem> GetAsync(string systemSymbol)
     {
-        var url = new UriBuilder(ApiUrl);
-        url.Path = DIRECTORY_PATH + systemSymbol;
+        var urlBuilder = new UriBuilder(ApiUrl)
+        {
+            Path = DIRECTORY_PATH + systemSymbol
+        };
+        var url = urlBuilder.ToString();
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", BearerToken);
+            new AuthenticationHeaderValue("Bearer", Token);
         var data = await HttpHelperService.HttpGetHelper<DataSingle<STSystem>>(
-            url.ToString(),
+            url,
             _httpClient,
             _logger);
         if (data.Datum is null) throw new HttpRequestException("System not retrieved");
-        var system = data.Datum;
-        return system;
+        return data.Datum;
+
+        // var request = new HttpRequestMessage(HttpMethod.Get, url);
+        // request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+        // var response = await _dispatcher.SendAsync(request);
+        // //var response = await _httpClient.SendAsync(request);
+        // if (!response.IsSuccessStatusCode) throw new HttpRequestException("System not retrieved");
+        // var data = await response.Content.ReadFromJsonAsync<DataSingle<STSystem>>();
+        // return data.Datum;
     }
 }

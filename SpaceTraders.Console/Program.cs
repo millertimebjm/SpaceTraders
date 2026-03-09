@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
 using SpaceTraders.Console;
+using SpaceTraders.Dispatcher;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Interfaces;
 using SpaceTraders.Services.ShipLogs.Interfaces;
@@ -66,6 +67,12 @@ public class Program
             {
                 await shipLogsService.WriterAsync();
             }
+        });
+
+        _ = Task.Run(async () =>
+        {
+            var dispatcher = serviceBuilder.Services.GetRequiredService<IDispatcher>();
+            await dispatcher.ProcessQueueAsync(CancellationToken.None);
         });
 
         var shipLoopsService = serviceBuilder.Services.GetRequiredService<IShipLoopsService>();

@@ -1,6 +1,7 @@
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Microsoft.Extensions.Configuration;
+using SpaceTraders.Dispatcher;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.JumpGates.Interfaces;
@@ -10,7 +11,8 @@ namespace SpaceTraders.Services.JumpGates;
 
 public class JumpGatesServices(
     HttpClient _httpClient,
-    IConfiguration _configuration
+    IConfiguration _configuration,
+    IDispatcher _dispatcher
 ) : IJumpGatesServices
 {
     private string ApiUrl
@@ -23,7 +25,7 @@ public class JumpGatesServices(
         }
     }
 
-    private string BearerToken
+    private string Token
     {
         get
         {
@@ -35,15 +37,25 @@ public class JumpGatesServices(
 
     public async Task<JumpGate> GetAsync(string waypointSymbol)
     {
-        var url = new UriBuilder(ApiUrl);
-        url.Path = $"v2/systems/{WaypointsService.ExtractSystemFromWaypoint(waypointSymbol)}/waypoints/{waypointSymbol}/jump-gate";
+        var urlBuilder = new UriBuilder(ApiUrl)
+        {
+            Path = $"v2/systems/{WaypointsService.ExtractSystemFromWaypoint(waypointSymbol)}/waypoints/{waypointSymbol}/jump-gate"
+        };
+        var url = urlBuilder.ToString();
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", BearerToken);
-        var waypointsDataString = await _httpClient.GetAsync(url.ToString());
-        waypointsDataString.EnsureSuccessStatusCode();
+            new AuthenticationHeaderValue("Bearer", Token);
+        var waypointsDataString = await _httpClient.GetAsync(url);
         var waypointsData = await waypointsDataString.Content.ReadFromJsonAsync<DataSingle<JumpGate>>();
         if (waypointsData is null) throw new HttpRequestException("System Data not retrieved.");
         if (waypointsData.Datum is null) throw new HttpRequestException("System not retrieved");
         return waypointsData.Datum;
+
+        // var request = new HttpRequestMessage(HttpMethod.Post, ApiUrl);
+        // request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+        // var response = await _dispatcher.SendAsync(request);
+        // //var response = await _httpClient.SendAsync(request);
+        // if (!response.IsSuccessStatusCode) throw new HttpRequestException("Account not retrieved");
+        // var data = await response.Content.ReadFromJsonAsync<DataSingle<JumpGate>>();
+        // return data.Datum;
     }
 }

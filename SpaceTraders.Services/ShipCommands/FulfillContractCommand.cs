@@ -7,6 +7,7 @@ using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Contracts.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.ShipLogs.Interfaces;
+using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Transactions.Interfaces;
@@ -21,7 +22,8 @@ public class FulfillContractCommand(
     IAgentsService _agentsService,
     ITransactionsCacheService _transactionsService,
     IContractsService _contractsService,
-    IShipLogsService _shipLogsService
+    IShipLogsService _shipLogsService,
+    IShipsService _shipsService
 ) : IShipCommandsService
 {
     private const int COUNT_BEFORE_LOOP = 20;
@@ -92,6 +94,21 @@ public class FulfillContractCommand(
                 ship = ship with { Nav = nav };
                 currentWaypoint = await _waypointsService.GetAsync(currentWaypoint.Symbol, refresh: true);
                 continue;
+            }
+
+            if (contract is null)
+            {
+                if (ship.Nav.Status == NavStatusEnum.DOCKED.ToString())
+                {
+                    contract = (await _contractsService.GetAsync()).SingleOrDefault(c => !c.Fulfilled && !c.Accepted);
+                    if (contract is null)
+                    {
+                        var contractNegotiateResult = await _contractsService.NegotiateAsync(ship.Symbol);
+                        contract = contractNegotiateResult.Contract;
+                    }
+                    await _contractsService.AcceptAsync(contract.ContractId);
+                    continue;
+                }
             }
 
             (STContract? newContract, Cargo? cargo, Agent? agent) = await _shipCommandsHelperService.FulfillContract(ship, contract);

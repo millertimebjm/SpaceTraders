@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SpaceTraders.Dispatcher;
 using SpaceTraders.Services.Accounts;
 using SpaceTraders.Services.Accounts.Interfaces;
 using SpaceTraders.Services.Agents;
@@ -74,6 +75,7 @@ public static class DependencyInjectionHelperService
         services.AddSingleton<IAccountService, AccountService>();
         services.AddSingleton<IAccountApiService, AccountApiService>();
         services.AddSingleton<IContractsApiService, ContractsApiService>();
+        services.AddSingleton<IDispatcher, RateLimitedDispatcher>();
 
         // Ship Commands
         services.AddSingleton<MiningToSellAnywhereCommand>();

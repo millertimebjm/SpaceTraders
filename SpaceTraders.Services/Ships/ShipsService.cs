@@ -3,6 +3,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using SpaceTraders.Dispatcher;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.HttpHelpers;
@@ -20,7 +21,8 @@ public class ShipsService(
     ILogger<ShipsService> _logger,
     IWaypointsService _waypointsService,
     IShipStatusesCacheService _shipStatusesCacheService,
-    IShipLogsService _shipLogsService
+    IShipLogsService _shipLogsService,
+    IDispatcher _dispatcher
 ) : IShipsService
 {
     private const string DIRECTORY_PATH = "/v2/my/ships";
@@ -35,7 +37,7 @@ public class ShipsService(
         }
     }
 
-    private string BearerToken
+    private string Token
     {
         get
         {
@@ -49,9 +51,10 @@ public class ShipsService(
     {
         var page = 0;
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", BearerToken);
+            new AuthenticationHeaderValue("Bearer", Token);
         var ships = new List<Ship>();
-        Data<Ship> dataShip;
+        int total;
+
         do
         {
             page++;
@@ -60,59 +63,78 @@ public class ShipsService(
                 Path = DIRECTORY_PATH,
                 Query = $"limit=20&page={page}", // limit=20
             };
-            dataShip = await HttpHelperService.HttpGetHelper<Data<Ship>>(
+            var dataShip = await HttpHelperService.HttpGetHelper<Data<Ship>>(
                 url.ToString(),
                 _httpClient,
                 _logger);
             if (dataShip.DataList is null) throw new HttpRequestException("Ship not retrieved");
             ships.AddRange(dataShip.DataList);
-            // return data.DataList;
-        } while (dataShip.Meta.Limit * page < dataShip.Meta.Total);
+            total = dataShip.Meta.Total;
+        } while (ships.Count() < total);
 
         return ships;
     }
 
     public async Task<Ship> GetAsync(string shipSymbol)
     {
-        var url = new UriBuilder(ApiUrl)
+        var urlBuilder = new UriBuilder(ApiUrl)
         {
             Path = DIRECTORY_PATH + $"/{shipSymbol}"
         };
+        var url = urlBuilder.ToString();
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", BearerToken);
+            new AuthenticationHeaderValue("Bearer", Token);
         var data = await HttpHelperService.HttpGetHelper<DataSingle<Ship>>(
-            url.ToString(),
+            url,
             _httpClient,
             _logger);
         if (data.Datum is null) throw new HttpRequestException("Ship not retrieved");
         return data.Datum;
+
+        // var request = new HttpRequestMessage(HttpMethod.Get, url);
+        // request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+        // var response = await _dispatcher.SendAsync(request);
+        // //var response = await _httpClient.SendAsync(request);
+        // if (!response.IsSuccessStatusCode) throw new HttpRequestException("Ship not retrieved");
+        // var data = await response.Content.ReadFromJsonAsync<DataSingle<Ship>>();
+        // return data.Datum;
     }
 
     public async Task<Nav> OrbitAsync(string shipSymbol)
     {
-        var url = new UriBuilder(ApiUrl)
+        var urlBuilder = new UriBuilder(ApiUrl)
         {
             Path = $"/v2/my/ships/{shipSymbol}/orbit"
         };
+        var url = urlBuilder.ToString();
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", BearerToken);
+            new AuthenticationHeaderValue("Bearer", Token);
         var data = await HttpHelperService.HttpPostHelper<DataSingle<Ship>>(
-            url.ToString(),
+            url,
             _httpClient,
             null,
             _logger);
         if (data.Datum is null) throw new HttpRequestException("Orbit Nav not retrieved");
         return data.Datum.Nav;
+
+        // var request = new HttpRequestMessage(HttpMethod.Post, url);
+        // request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+        // var response = await _dispatcher.SendAsync(request);
+        // //var response = await _httpClient.SendAsync(request);
+        // if (!response.IsSuccessStatusCode) throw new HttpRequestException("Nav not retrieved");
+        // var data = await response.Content.ReadFromJsonAsync<DataSingle<Nav>>();
+        // return data.Datum;
     }
 
     public async Task<Nav> DockAsync(string shipSymbol)
     {
-        var url = new UriBuilder(ApiUrl)
+        var urlBuilder = new UriBuilder(ApiUrl)
         {
             Path = $"/v2/my/ships/{shipSymbol}/dock"
         };
+        var url = urlBuilder.ToString();
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", BearerToken);
+            new AuthenticationHeaderValue("Bearer", Token);
         var data = await HttpHelperService.HttpPostHelper<DataSingle<Ship>>(
             url.ToString(),
             _httpClient,
@@ -120,6 +142,14 @@ public class ShipsService(
             _logger);
         if (data.Datum is null) throw new HttpRequestException("Dock Nav not retrieved");
         return data.Datum.Nav;
+
+        // var request = new HttpRequestMessage(HttpMethod.Post, url);
+        // request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+        // var response = await _dispatcher.SendAsync(request);
+        // //var response = await _httpClient.SendAsync(request);
+        // if (!response.IsSuccessStatusCode) throw new HttpRequestException("Nav not retrieved");
+        // var data = await response.Content.ReadFromJsonAsync<DataSingle<Nav>>();
+        // return data.Datum;
     }
 
     public async Task<(Nav, Fuel)> NavigateAsync(string waypointSymbol, Ship ship)
@@ -142,15 +172,16 @@ public class ShipsService(
             var flightMode = NavFlightModeEnum.CRUISE;
             await this.SwitchShipFlightMode(ship, flightMode);
         }
-        var url = new UriBuilder(ApiUrl)
+        var urlBuilder = new UriBuilder(ApiUrl)
         {
             Path = $"/v2/my/ships/{ship.Symbol}/navigate"
         };
+        var url = urlBuilder.ToString();
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", BearerToken);
+            new AuthenticationHeaderValue("Bearer", Token);
         var content = JsonContent.Create(new { waypointSymbol = waypoint.Symbol });
         var data = await HttpHelperService.HttpPostHelper<DataSingle<Ship>>(
-            url.ToString(),
+            url,
             _httpClient,
             content,
             _logger);
@@ -158,6 +189,15 @@ public class ShipsService(
             throw new HttpRequestException("Nav error");
         await AddNavigateLog(ship, data.Datum.Nav, data.Datum.Fuel);
         return (data.Datum.Nav, data.Datum.Fuel);
+
+        // var request = new HttpRequestMessage(HttpMethod.Post, url);
+        // request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+        // var response = await _dispatcher.SendAsync(request);
+        // //var response = await _httpClient.SendAsync(request);
+        // if (!response.IsSuccessStatusCode) throw new HttpRequestException("Ship not retrieved");
+        // var data = await response.Content.ReadFromJsonAsync<DataSingle<Ship>>();
+        // await AddNavigateLog(ship, data.Datum.Nav, data.Datum.Fuel);
+        // return (data.Datum.Nav, data.Datum.Fuel);
     }
 
     private async Task AddFlightModeShipLog(string symbol, NavFlightModeEnum flightMode)
@@ -196,21 +236,32 @@ public class ShipsService(
 
     public async Task<(Nav, Cooldown)> JumpAsync(string waypointSymbol, string shipSymbol)
     {
-        var url = new UriBuilder(ApiUrl)
+        var urlBuilder = new UriBuilder(ApiUrl)
         {
             Path = $"/v2/my/ships/{shipSymbol}/jump"
         };
+        var url = urlBuilder.ToString();
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", BearerToken);
+            new AuthenticationHeaderValue("Bearer", Token);
         var content = JsonContent.Create(new { waypointSymbol });
         var data = await HttpHelperService.HttpPostHelper<DataSingle<Ship>>(
-            url.ToString(),
+            url,
             _httpClient,
             content,
             _logger);
         if (data.Datum is null) throw new HttpRequestException("Jump Nav not retrieved");
         await AddJumpLog(shipSymbol, data.Datum.Nav, data.Datum.Cooldown);
         return (data.Datum.Nav, data.Datum.Cooldown);
+
+        // var request = new HttpRequestMessage(HttpMethod.Post, url);
+        // request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+        // request.Content = JsonContent.Create(new { waypointSymbol });
+        // var response = await _dispatcher.SendAsync(request);
+        // //var response = await _httpClient.SendAsync(request);
+        // if (!response.IsSuccessStatusCode) throw new HttpRequestException("Ship not retrieved");
+        // var data = await response.Content.ReadFromJsonAsync<DataSingle<Ship>>();
+        // await AddJumpLog(shipSymbol, data.Datum.Nav, data.Datum.Cooldown);
+        // return (data.Datum.Nav, data.Datum.Cooldown);
     }
 
     private async Task AddJumpLog(string shipSymbol, Nav nav, Cooldown cooldown)
@@ -231,20 +282,30 @@ public class ShipsService(
 
     public async Task<ExtractionResult> ExtractAsync(string shipSymbol)
     {
-        var url = new UriBuilder(ApiUrl)
+        var urlBuilder = new UriBuilder(ApiUrl)
         {
             Path = $"/v2/my/ships/{shipSymbol}/extract"
         };
+        var url = urlBuilder.ToString();
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", BearerToken);
+            new AuthenticationHeaderValue("Bearer", Token);
         var data = await HttpHelperService.HttpPostHelper<DataSingle<ExtractionResult>>(
-            url.ToString(),
+            url,
             _httpClient,
             null,
             _logger);
-        if (data.Datum is null) throw new HttpRequestException("Jump Nav not retrieved");
+        if (data.Datum is null) throw new HttpRequestException("Extract not retrieved");
         await AddExtractLog(shipSymbol, data.Datum.Cooldown, data.Datum.Extraction, data.Datum.Cargo);
         return data.Datum;
+
+        // var request = new HttpRequestMessage(HttpMethod.Post, url);
+        // request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+        // var response = await _dispatcher.SendAsync(request);
+        // //var response = await _httpClient.SendAsync(request);
+        // if (!response.IsSuccessStatusCode) throw new HttpRequestException("Extraction not retrieved");
+        // var data = await response.Content.ReadFromJsonAsync<DataSingle<ExtractionResult>>();
+        // await AddExtractLog(shipSymbol, data.Datum.Cooldown, data.Datum.Extraction, data.Datum.Cargo);
+        // return data.Datum;
     }
 
     private async Task AddExtractLog(
@@ -273,40 +334,62 @@ public class ShipsService(
 
     public async Task<ExtractionResult> ExtractAsync(string shipSymbol, Survey survey)
     {
-        var url = new UriBuilder(ApiUrl)
+        var urlBuilder = new UriBuilder(ApiUrl)
         {
             Path = $"/v2/my/ships/{shipSymbol}/extract/survey"
         };
+        var url = urlBuilder.ToString();
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", BearerToken);
+            new AuthenticationHeaderValue("Bearer", Token);
         var content = JsonContent.Create(survey);
         var data = await HttpHelperService.HttpPostHelper<DataSingle<ExtractionResult>>(
-            url.ToString(),
+            url,
             _httpClient,
             content,
             _logger);
         if (data.Datum is null) throw new HttpRequestException("Survey not retrieved");
         await AddExtractLog(shipSymbol, data.Datum.Cooldown, data.Datum.Extraction, data.Datum.Cargo, survey);
         return data.Datum;
+
+        // var request = new HttpRequestMessage(HttpMethod.Post, url);
+        // request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+        // request.Content = JsonContent.Create(survey);
+        // var response = await _dispatcher.SendAsync(request);
+        // //var response = await _httpClient.SendAsync(request);
+        // if (!response.IsSuccessStatusCode) throw new HttpRequestException("Survey not retrieved");
+        // var data = await response.Content.ReadFromJsonAsync<DataSingle<ExtractionResult>>();
+        // await AddExtractLog(shipSymbol, data.Datum.Cooldown, data.Datum.Extraction, data.Datum.Cargo, survey);
+        // return data.Datum;
     }
 
     public async Task<Cargo> JettisonAsync(string shipSymbol, string inventorySymbol, int units)
     {
-        var url = new UriBuilder(ApiUrl)
+        var urlBuilder = new UriBuilder(ApiUrl)
         {
             Path = $"/v2/my/ships/{shipSymbol}/jettison"
         };
+        var url = urlBuilder.ToString();
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", BearerToken);
+            new AuthenticationHeaderValue("Bearer", Token);
         var content = JsonContent.Create(new { symbol = inventorySymbol, units });
         var response = await HttpHelperService.HttpPostHelper<DataSingle<Cargo>>(
-            url.ToString(),
+            url,
             _httpClient,
             content,
             _logger);
         await AddJettisonLog(shipSymbol, inventorySymbol, units);
         _logger.LogInformation("Data returned from Jettison: {response}", response);
         return response.Datum;
+
+        // var request = new HttpRequestMessage(HttpMethod.Post, url);
+        // request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+        // var response = await _dispatcher.SendAsync(request);
+        // //var response = await _httpClient.SendAsync(request);
+        // if (!response.IsSuccessStatusCode) throw new HttpRequestException("Jettison not retrieved");
+        // var data = await response.Content.ReadFromJsonAsync<DataSingle<Cargo>>();
+        // await AddJettisonLog(shipSymbol, inventorySymbol, units);
+        // _logger.LogInformation("Data returned from Jettison: {response}", response);
+        // return data.Datum;
     }
 
     private async Task AddJettisonLog(string shipSymbol, string inventorySymbol, int units)
@@ -341,12 +424,13 @@ public class ShipsService(
 
     public async Task<SurveyResult> SurveyAsync(string shipSymbol)
     {
-        var url = new UriBuilder(ApiUrl)
+        var urlBuilder = new UriBuilder(ApiUrl)
         {
             Path = $"/v2/my/ships/{shipSymbol}/survey"
         };
+        var url = urlBuilder.ToString();
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", BearerToken);
+            new AuthenticationHeaderValue("Bearer", Token);
         var data = await HttpHelperService.HttpPostHelper<DataSingle<SurveyResult>>(
             url.ToString(),
             _httpClient,
@@ -355,6 +439,15 @@ public class ShipsService(
         if (data?.Datum is null) throw new HttpRequestException("Survey not retrieved");
         await AddSurveyShipLog(shipSymbol, data.Datum.Surveys, data.Datum.Cooldown);
         return data.Datum;
+
+        // var request = new HttpRequestMessage(HttpMethod.Post, url);
+        // request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+        // var response = await _dispatcher.SendAsync(request);
+        // //var response = await _httpClient.SendAsync(request);
+        // if (!response.IsSuccessStatusCode) throw new HttpRequestException("Survey not retrieved");
+        // var data = await response.Content.ReadFromJsonAsync<DataSingle<SurveyResult>>();
+        // await AddSurveyShipLog(shipSymbol, data.Datum.Surveys, data.Datum.Cooldown);
+        // return data.Datum;
     }
 
     private async Task AddSurveyShipLog(string shipSymbol, IEnumerable<Survey> surveys, Cooldown cooldown)
@@ -375,19 +468,28 @@ public class ShipsService(
 
     public async Task<ScanWaypointsResult> ScanWaypointsAsync(string shipSymbol)
     {
-        var url = new UriBuilder(ApiUrl)
+        var urlBuilder = new UriBuilder(ApiUrl)
         {
             Path = $"/my/ships/{shipSymbol}/scan/waypoints"
         };
+        var url = urlBuilder.ToString();
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", BearerToken);
+            new AuthenticationHeaderValue("Bearer", Token);
         var data = await HttpHelperService.HttpPostHelper<DataSingle<ScanWaypointsResult>>(
-            url.ToString(),
+            url,
             _httpClient,
             null,
             _logger);
         if (data.Datum is null) throw new HttpRequestException("Scan not retrieved");
         return data.Datum;
+
+        // var request = new HttpRequestMessage(HttpMethod.Post, url);
+        // request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+        // var response = await _dispatcher.SendAsync(request);
+        // //var response = await _httpClient.SendAsync(request);
+        // if (!response.IsSuccessStatusCode) throw new HttpRequestException("Scan not retrieved");
+        // var data = await response.Content.ReadFromJsonAsync<DataSingle<ScanWaypointsResult>>();
+        // return data.Datum;
     }
 
     public async Task<Nav> NavToggleAsync(string shipSymbol, NavFlightModeEnum flightMode)
@@ -403,39 +505,60 @@ public class ShipsService(
     private async Task<Nav> NavToggleAsync(Ship ship, NavFlightModeEnum flightMode)
     {
         var flightModeString = flightMode.ToString();
-        var url = new UriBuilder(ApiUrl)
+        var urlBuilder = new UriBuilder(ApiUrl)
         {
             Path = $"/my/ships/{ship.Symbol}/nav"
         };
+        var url = urlBuilder.ToString();
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", BearerToken);
+            new AuthenticationHeaderValue("Bearer", Token);
         var content = JsonContent.Create(new { flightMode = flightModeString });
         var data = await HttpHelperService.HttpPatchHelper<DataSingle<NavToggleResult>>(
-            url.ToString(),
+            url,
             _httpClient,
             content,
             _logger);
         if (data.Datum is null) throw new HttpRequestException("Nav Toggle not retrieved");
         await AddFlightModeShipLog(ship.Symbol, flightMode);
         return data.Datum.Nav;
+
+        // var request = new HttpRequestMessage(HttpMethod.Patch, url);
+        // request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+        // request.Content = JsonContent.Create(new { flightMode = flightModeString });
+        // var response = await _dispatcher.SendAsync(request);
+        // //var response = await _httpClient.SendAsync(request);
+        // if (!response.IsSuccessStatusCode) throw new HttpRequestException("Nav Toggle not retrieved");
+        // var data = await response.Content.ReadFromJsonAsync<DataSingle<NavToggleResult>>();
+        // await AddFlightModeShipLog(ship.Symbol, flightMode);
+        // return data.Datum.Nav;
     }
 
     public async Task<ChartWaypointResult> ChartAsync(string shipSymbol)
     {
-        var url = new UriBuilder(ApiUrl)
+        var urlBuilder = new UriBuilder(ApiUrl)
         {
             Path = $"/my/ships/{shipSymbol}/chart"
         };
+        var url = urlBuilder.ToString();
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", BearerToken);
+            new AuthenticationHeaderValue("Bearer", Token);
         var data = await HttpHelperService.HttpPostHelper<DataSingle<ChartWaypointResult>>(
-            url.ToString(),
+            url,
             _httpClient,
             null,
             _logger);
         if (data.Datum is null) throw new HttpRequestException("Scan not retrieved");
         await AddChartShipLog(shipSymbol, data.Datum.Waypoint);
         return data.Datum;
+
+        // var request = new HttpRequestMessage(HttpMethod.Post, url);
+        // request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+        // var response = await _dispatcher.SendAsync(request);
+        // //var response = await _httpClient.SendAsync(request);
+        // if (!response.IsSuccessStatusCode) throw new HttpRequestException("Scan not retrieved");
+        // var data = await response.Content.ReadFromJsonAsync<DataSingle<ChartWaypointResult>>();
+        // await AddChartShipLog(shipSymbol, data.Datum.Waypoint);
+        // return data.Datum;
     }
 
     private async Task AddChartShipLog(string shipSymbol, Waypoint waypoint)
@@ -456,19 +579,28 @@ public class ShipsService(
 
     public async Task<ScanSystemsResult> ScanSystemsAsync(string shipSymbol)
     {
-        var url = new UriBuilder(ApiUrl)
+        var urlBuilder = new UriBuilder(ApiUrl)
         {
             Path = $"/my/ships/{shipSymbol}/scan/systems"
         };
+        var url = urlBuilder.ToString();
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", BearerToken);
+            new AuthenticationHeaderValue("Bearer", Token);
         var data = await HttpHelperService.HttpPostHelper<DataSingle<ScanSystemsResult>>(
-            url.ToString(),
+            url,
             _httpClient,
             null,
             _logger);
         if (data.Datum is null) throw new HttpRequestException("Scan not retrieved");
         return data.Datum;
+
+        // var request = new HttpRequestMessage(HttpMethod.Post, url);
+        // request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+        // var response = await _dispatcher.SendAsync(request);
+        // //var response = await _httpClient.SendAsync(request);
+        // if (!response.IsSuccessStatusCode) throw new HttpRequestException("Scan not retrieved");
+        // var data = await response.Content.ReadFromJsonAsync<DataSingle<ScanSystemsResult>>();
+        // return data.Datum;
     }
 
     public async Task SwitchShipFlightMode(Ship ship, NavFlightModeEnum flightMode)

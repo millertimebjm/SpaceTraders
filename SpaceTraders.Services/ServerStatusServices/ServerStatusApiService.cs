@@ -1,8 +1,8 @@
 using System.Net.Http.Headers;
-using System.Security.Cryptography.X509Certificates;
-using DnsClient.Internal;
+using System.Net.Http.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using SpaceTraders.Dispatcher;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.HttpHelpers;
@@ -10,9 +10,13 @@ using SpaceTraders.Services.ServerStatusServices.Interfaces;
 
 namespace SpaceTraders.Services.ServerStatusServices;
 
-public class ServerStatusApiService(IConfiguration _configuration, HttpClient _httpClient, ILogger<ServerStatusApiService> _logger) : IServerStatusApiService
+public class ServerStatusApiService(
+    IConfiguration _configuration, 
+    HttpClient _httpClient, 
+    ILogger<ServerStatusApiService> _logger,
+    IDispatcher _dispatcher) : IServerStatusApiService
 {
-    private string BearerToken
+    private string Token
     {
         get
         {
@@ -26,13 +30,21 @@ public class ServerStatusApiService(IConfiguration _configuration, HttpClient _h
 
     public async Task<ServerStatus> GetAsync()
     {
-        var url = new UriBuilder(_apiUrl);
+        var urlBuilder = new UriBuilder(_apiUrl);
+        var url = urlBuilder.ToString();
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", BearerToken);
+            new AuthenticationHeaderValue("Bearer", Token);
         var data = await HttpHelperService.HttpGetHelper<ServerStatus>(
-            url.ToString(),
+            url,
             _httpClient,
             _logger) ?? throw new HttpRequestException("Server Status error");
         return data;
+
+        // var request = new HttpRequestMessage(HttpMethod.Get, url);
+        // request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+        // var response = await _dispatcher.SendAsync(request);
+        // //var response = await _httpClient.SendAsync(request);
+        // if (!response.IsSuccessStatusCode) throw new HttpRequestException("Server Status not retrieved");
+        // return await response.Content.ReadFromJsonAsync<ServerStatus>();
     }
 }

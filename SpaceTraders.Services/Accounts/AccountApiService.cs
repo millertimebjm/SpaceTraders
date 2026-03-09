@@ -2,6 +2,7 @@ using System.Net.Http.Headers;
 using System.Net.Http.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using SpaceTraders.Dispatcher;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Models.Results;
@@ -10,10 +11,14 @@ using SpaceTraders.Services.HttpHelpers;
 
 namespace SpaceTraders.Services.Accounts;
 
-public class AccountApiService(IConfiguration _configuration, HttpClient _httpClient, ILogger<AccountApiService> _logger) : IAccountApiService
+public class AccountApiService(
+    IConfiguration _configuration, 
+    HttpClient _httpClient, 
+    ILogger<AccountApiService> _logger,
+    IDispatcher _dispatcher) : IAccountApiService
 {
     private const string _apiUrl = "https://api.spacetraders.io/v2/register";
-    private string BearerToken
+    private string Token
     {
         get
         {
@@ -27,7 +32,7 @@ public class AccountApiService(IConfiguration _configuration, HttpClient _httpCl
         var faction = "COSMIC";
         var symbol = "SPATIAL" + DateTime.Today.ToString("yyMMdd");
         _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", BearerToken);
+            new AuthenticationHeaderValue("Bearer", Token);
         var content = JsonContent.Create(new { symbol, faction });
         var data = await HttpHelperService.HttpPostHelper<DataSingle<AccountRegistrationResult>>(
             _apiUrl,
@@ -36,5 +41,14 @@ public class AccountApiService(IConfiguration _configuration, HttpClient _httpCl
             _logger);
         if (data.Datum is null) throw new HttpRequestException("Account not registered");
         return data.Datum;
+
+        // var request = new HttpRequestMessage(HttpMethod.Post, _apiUrl);
+        // request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+        // request.Content = JsonContent.Create(new { symbol, faction });
+        // var response = await _dispatcher.SendAsync(request);
+        // //var response = await _httpClient.SendAsync(request);
+        // if (!response.IsSuccessStatusCode) throw new HttpRequestException("Account not retrieved");
+        // var data = await response.Content.ReadFromJsonAsync<DataSingle<AccountRegistrationResult>>();
+        // return data.Datum;
     }
 }
