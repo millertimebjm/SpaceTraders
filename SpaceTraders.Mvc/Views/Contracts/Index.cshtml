@@ -12,7 +12,7 @@
 
 @foreach (var contract in Model.OrderByDescending(c => c.DeadlineToAccept))
 {
-    <h6>Contract @contract.Id</h6>
+    <h6>Contract @contract.ContractId</h6>
     <ul>
         <li><b>FactionSymbol:</b> @contract.FactionSymbol</li>
         <li><b>Type:</b> @contract.Type</li>
@@ -29,12 +29,12 @@
                     <li><b>Deliver Units Fulfilled:</b> @deliver.UnitsFulfilled</li>
                     @if (deliver.UnitsFulfilled < deliver.UnitsRequired)
                     {
-                        <li><a href="/contracts/@contract.Id/deliver">Deliver</a></li>
+                        <li><a href="/contracts/@contract.ContractId/deliver">Deliver</a></li>
                     }
                     else if (deliver.UnitsFulfilled == deliver.UnitsRequired
                         && !contract.Fulfilled)
                     {
-                        <li><a href="/contracts/@contract.Id/fulfill">Fulfill</a></li>
+                        <li><a href="/contracts/@contract.ContractId/fulfill">Fulfill</a></li>
                     }
                 </ul>
             </div>
@@ -42,7 +42,7 @@
         @if(!contract.Accepted)
         {
             <li><b>DeadlineToAccept:</b> @ViewHelperService.MinimalHumanReadableTimeSpan(contract.DeadlineToAccept - DateTime.UtcNow)</li>
-            <li><a href="/contracts/accept/@contract.Id">Accept</a></li>
+            <li><a href="/contracts/accept/@contract.ContractId">Accept</a></li>
         }
     </ul>
 }

@@ -1,3 +1,3 @@
 namespace SpaceTraders.Models.Results;
 
-public record ContractFulfillResult(STContract Contract, Agent Agent);
+public record ContractFulfillResult(STContractApi Contract, Agent Agent);

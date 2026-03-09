@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Serilog;
+using SpaceTraders.Dispatcher;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Accounts;
 using SpaceTraders.Services.Accounts.Interfaces;
@@ -70,6 +71,7 @@ builder.Services.AddScoped<IServerStatusApiService, ServerStatusApiService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IAccountApiService, AccountApiService>();
 builder.Services.AddScoped<IContractsApiService, ContractsApiService>();
+builder.Services.AddScoped<IDispatcher, RateLimitedDispatcher>();
 
 // Cache Services
 builder.Services.AddSingleton<IMongoCollectionFactory, MongoCollectionFactory>();

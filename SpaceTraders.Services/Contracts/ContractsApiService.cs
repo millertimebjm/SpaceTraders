@@ -36,18 +36,20 @@ public class ContractsApiService(
 
     public async Task<IEnumerable<STContract>> GetAsync()
     {
-        var urlBuilder = new UriBuilder(ApiUrl);
-        urlBuilder.Path = DIRECTORY_PATH;
+        var urlBuilder = new UriBuilder(ApiUrl)
+        {
+            Path = DIRECTORY_PATH
+        };
         var page = 1;
         var url = urlBuilder.ToString() + $"?page={page}&limit=20";
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", Token);
-        var allData = new List<STContract>();
-        Data<STContract> latestPull;
+        var allData = new List<STContractApi>();
+        Data<STContractApi> latestPull;
         
         do
         {
-            latestPull = await HttpHelperService.HttpGetHelper<Data<STContract>>(
+            latestPull = await HttpHelperService.HttpGetHelper<Data<STContractApi>>(
                 url,
                 _httpClient,
                 _logger);
@@ -56,7 +58,8 @@ public class ContractsApiService(
         } while (allData.Count < latestPull.Meta.Total);
         
         if (allData is null) throw new HttpRequestException("Contracts not retrieved");
-        return allData;
+        var allContracts = allData.Select(c => STContractApi.MapToSTContract(c)).OrderByDescending(c => c.DeadlineToAccept).ToList();
+        return allContracts;
     }
 
     public async Task<STContract?> GetActiveAsync()

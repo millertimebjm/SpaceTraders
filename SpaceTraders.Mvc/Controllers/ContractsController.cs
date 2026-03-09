@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using SpaceTraders.Models;
+using SpaceTraders.Models.Results;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Contracts.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
@@ -26,7 +27,8 @@ public class ContractsController(
     public async Task<IActionResult> Accept(string contractId)
     {
         var contractAcceptResult = await _contractsService.AcceptAsync(contractId);
-        return View("~/Views/Contracts/Index.cshtml", new List<STContract> { contractAcceptResult.Contract });
+        var contract = STContractApi.MapToSTContract(contractAcceptResult.Contract);
+        return View("~/Views/Contracts/Index.cshtml", new List<STContract> { contract });
     }
 
     [Route("/contracts/{contractId}/deliver")]

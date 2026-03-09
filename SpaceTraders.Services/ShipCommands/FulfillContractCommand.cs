@@ -3,6 +3,7 @@ using System.Text.Json;
 using SpaceTraders.Model.Exceptions;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
+using SpaceTraders.Models.Results;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Contracts.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
@@ -49,7 +50,7 @@ public class FulfillContractCommand(
             contract = await _contractsService.GetActiveAsync();
             if (contract is not null)
             {
-                ship = ship with { Goal = contract.Id };
+                ship = ship with { Goal = contract.ContractId };
             }
         }
         var goal = ship.Goal;
@@ -104,7 +105,7 @@ public class FulfillContractCommand(
                     if (contract is null)
                     {
                         var contractNegotiateResult = await _contractsService.NegotiateAsync(ship.Symbol);
-                        contract = contractNegotiateResult.Contract;
+                        contract = STContractApi.MapToSTContract(contractNegotiateResult.Contract);
                     }
                     await _contractsService.AcceptAsync(contract.ContractId);
                     continue;
@@ -117,7 +118,7 @@ public class FulfillContractCommand(
                 await _agentsService.SetAsync(agent);
                 await AddFulfillShipLog(ship.Symbol, contract);
                 contract = newContract;
-                ship = ship with { Cargo = cargo, Goal = contract.Id };
+                ship = ship with { Cargo = cargo, Goal = contract.ContractId };
                 continue;
             }
 
@@ -173,7 +174,7 @@ public class FulfillContractCommand(
             ShipLogEnum.FulfillContract,
             JsonSerializer.Serialize(new
             {
-                ContractId = contract.Id,
+                ContractId = contract.ContractId,
                 InventorySymbol = contract.Terms.Deliver[0].TradeSymbol,
                 InventoryUnits = contract.Terms.Deliver[0].UnitsRequired,
                 TotalCredits = contract.Terms.Payment.OnAccepted + contract.Terms.Payment.OnFulfilled,

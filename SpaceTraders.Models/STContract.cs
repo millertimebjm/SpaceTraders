@@ -6,22 +6,9 @@ public record STContract(
     Terms Terms,
     bool Accepted,
     bool Fulfilled,
-    DateTime DeadlineToAccept
-)
-{
-    public string Id
-    {
-        get
-        {
-            return ContractId;
-        }
-        set
-        {
-            ContractId = value;
-        }
-    }
-    public string ContractId {get; set;} = "";
-}
+    DateTime DeadlineToAccept,
+    string ContractId
+);
 
 public record Deliver(
     string TradeSymbol,

@@ -41,14 +41,16 @@ public class ContractsService(
     public async Task<ContractAcceptResult> AcceptAsync(string contractId)
     {
         var result = await _contractsApiService.AcceptAsync(contractId);
-        await _contractsCacheService.SetAsync(result.Contract);
+        var contract = STContractApi.MapToSTContract(result.Contract);
+        await _contractsCacheService.SetAsync(contract);
         return result;
     }
 
     public async Task<ContractFulfillResult> FulfillAsync(string contractId)
     {
         var result = await _contractsApiService.FulfillAsync(contractId);
-        await _contractsCacheService.SetAsync(result.Contract);
+        var contract = STContractApi.MapToSTContract(result.Contract);
+        await _contractsCacheService.SetAsync(contract);
         return result;
     }
 
@@ -58,14 +60,16 @@ public class ContractsService(
         int units)
     {
         var result = await _contractsApiService.DeliverAsync(contractId, shipSymbol, tradeSymbol, units);
-        await _contractsCacheService.SetAsync(result.Contract);
+        var contract = STContractApi.MapToSTContract(result.Contract);
+        await _contractsCacheService.SetAsync(contract);
         return result;
     }
 
     public async Task<ContractNegotiateResult> NegotiateAsync(string shipSymbol)
     {
         var result = await _contractsApiService.NegotiateAsync(shipSymbol);
-        await _contractsCacheService.SetAsync(result.Contract);
+        var contract = STContractApi.MapToSTContract(result.Contract);
+        await _contractsCacheService.SetAsync(contract);
         return result;
     }
 }
