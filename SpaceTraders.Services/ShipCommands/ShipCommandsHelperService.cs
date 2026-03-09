@@ -103,26 +103,31 @@ public class ShipCommandsHelperService(
         var contractTradeModel = tradeModels
             .Where(tm => tm.TradeSymbol == contractTradeSymbol)
             .OrderByDescending(tm => (int)tm.ExportSupplyEnum)
-            .OrderBy(tm => tm.ExportWaypointSymbol)
+            .ThenBy(tm => tm.ExportWaypointSymbol)
             .FirstOrDefault();
         var contractTradeModelWaypointSymbol = contractTradeModel?.ExportWaypointSymbol;
         var contractTradeModelTradeVolume = contractTradeModel?.ExportTradeVolume;
+        
+        var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
         if (contractTradeModelWaypointSymbol is null)
         {
-            var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
-            contractTradeModelWaypointSymbol = system
-                .Waypoints
-                .FirstOrDefault(w => 
-                    w.Marketplace is not null 
-                    && w.Marketplace.Exchange.Any(e => e.Symbol == contractTradeSymbol)
-                )?.Symbol;
+            contractTradeModelWaypointSymbol = system.Waypoints.FirstOrDefault(w => w.Marketplace?.Exports.Any(e => e.Symbol == contractTradeSymbol) == true)?.Symbol;
             contractTradeModelTradeVolume = system
                 .Waypoints
-                .FirstOrDefault(w => 
-                    w.Marketplace is not null 
-                    && w.Marketplace.Exchange.Any(e => e.Symbol == contractTradeSymbol)
-                )?.Marketplace?.TradeGoods?.Single(e => e.Symbol == contractTradeSymbol).TradeVolume;
+                .FirstOrDefault(w => w.Marketplace?.Exports.Any(e => e.Symbol == contractTradeSymbol) == true)?
+                .Marketplace.TradeGoods.Single(m => m.Symbol == contractTradeSymbol)
+                .TradeVolume;
         }
+
+        if (contractTradeModelWaypointSymbol is null)
+        {
+            contractTradeModelWaypointSymbol = system.Waypoints.FirstOrDefault(w => w.Marketplace?.Exchange.Any(e => e.Symbol == contractTradeSymbol) == true)?.Symbol;
+            contractTradeModelTradeVolume = system
+                .Waypoints
+                .FirstOrDefault(w => w.Marketplace?.Exchange.Any(e => e.Symbol == contractTradeSymbol) == true)?
+                .Marketplace.TradeGoods.Single(m => m.Symbol == contractTradeSymbol)
+                .TradeVolume;
+        }        
 
         PurchaseCargoResult? purchaseCargoResult = null;
         if (contractTradeModelWaypointSymbol == currentWaypoint.Symbol)
@@ -360,19 +365,21 @@ public class ShipCommandsHelperService(
             var contractTradeModelWaypointSymbol = tradeModels
                 .Where(tm => tm.TradeSymbol == inventorySymbol)
                 .OrderByDescending(tm => (int)tm.ExportSupplyEnum)
-                .OrderBy(tm => tm.ExportWaypointSymbol)
+                .ThenBy(tm => tm.ExportWaypointSymbol)
                 .FirstOrDefault()
                 ?.ExportWaypointSymbol;
             if (contractTradeModelWaypointSymbol is null)
             {
                 var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
-                contractTradeModelWaypointSymbol = system
-                    .Waypoints
-                    .FirstOrDefault(w => 
-                        w.Marketplace is not null 
-                        && w.Marketplace.Exchange.Any(e => e.Symbol == inventorySymbol)
-                    )?.Symbol;
+                contractTradeModelWaypointSymbol = system.Waypoints.FirstOrDefault(w => w.Marketplace?.Exports.Any(e => e.Symbol == inventorySymbol) == true)?.Symbol;
             }
+
+            if (contractTradeModelWaypointSymbol is null)
+            {
+                var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
+                contractTradeModelWaypointSymbol = system.Waypoints.FirstOrDefault(w => w.Marketplace?.Exchange.Any(e => e.Symbol == inventorySymbol) == true)?.Symbol;
+            }
+
             if (contractTradeModelWaypointSymbol == currentWaypoint.Symbol)
             {
                 shouldDock = true;
@@ -993,24 +1000,20 @@ public class ShipCommandsHelperService(
         var contractTradeModelWaypointSymbol = tradeModels
             .Where(tm => tm.TradeSymbol == inventorySymbol)
             .OrderByDescending(tm => (int)tm.ExportSupplyEnum)
-            .OrderBy(tm => tm.ExportWaypointSymbol)
+            .ThenBy(tm => tm.ExportWaypointSymbol)
             .FirstOrDefault()?
             .ExportWaypointSymbol;
+
         if (contractTradeModelWaypointSymbol is null)
         {
             var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
-            contractTradeModelWaypointSymbol = system
-                .Waypoints
-                .FirstOrDefault(w => 
-                    w.Marketplace is not null 
-                    && w.Marketplace.Exchange.Any(e => e.Symbol == inventorySymbol)
-                )?.Symbol;
+            contractTradeModelWaypointSymbol = system.Waypoints.FirstOrDefault(w => w.Marketplace?.Exports.Any(e => e.Symbol == inventorySymbol) == true)?.Symbol;
         }
 
         if (contractTradeModelWaypointSymbol is null)
         {
             var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
-            contractTradeModelWaypointSymbol = system.Waypoints.First(w => w.Marketplace?.Exports.Any(e => e.Symbol == inventorySymbol) is not null).Symbol;
+            contractTradeModelWaypointSymbol = system.Waypoints.FirstOrDefault(w => w.Marketplace?.Exchange.Any(e => e.Symbol == inventorySymbol) == true)?.Symbol;
         }
 
         if (contractTradeModelWaypointSymbol is null) return (null, null, null, noWork: true, goal: null);
