@@ -41,7 +41,7 @@ public class ContractsApiService(
             Path = DIRECTORY_PATH
         };
         var page = 1;
-        var url = urlBuilder.ToString() + $"?page={page}&limit=20";
+        
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", Token);
         var allData = new List<STContractApi>();
@@ -49,6 +49,7 @@ public class ContractsApiService(
         
         do
         {
+            var url = urlBuilder.ToString() + $"?page={page}&limit=20";
             latestPull = await HttpHelperService.HttpGetHelper<Data<STContractApi>>(
                 url,
                 _httpClient,

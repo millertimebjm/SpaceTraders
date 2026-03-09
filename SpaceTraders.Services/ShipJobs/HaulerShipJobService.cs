@@ -22,12 +22,13 @@ public class HaulerShipJobService(
         }
         if (!ships.Any(s => s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.FulfillContract))
         {
-            var contract = await _contractsService.GetActiveAsync();
             var inventory = ship.Cargo.Inventory;
             if (inventory.Count == 0)
             {
                 return new ShipCommand(ship.Symbol, ShipCommandEnum.FulfillContract);
             }
+
+            var contract = await _contractsService.GetActiveAsync();
             if (contract is not null 
                 && inventory.Count == 1 
                 && inventory.Single().Symbol == contract.Terms.Deliver[0].TradeSymbol

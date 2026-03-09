@@ -50,7 +50,7 @@ public class ContractsCacheMongoService(
     public async Task SetAsync(IEnumerable<STContract> contracts)
     {
         var collection = _collectionFactory.GetCollection<STContract>();
-        await collection.DeleteManyAsync(FilterDefinition<STContract>.Empty, CancellationToken.None);
-        await collection.InsertManyAsync(contracts, options: null, CancellationToken.None);
+        await collection.DeleteManyAsync(FilterDefinition<STContract>.Empty);
+        await collection.InsertManyAsync(contracts);
     }
 }

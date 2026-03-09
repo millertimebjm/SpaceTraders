@@ -22,11 +22,14 @@ public class ContractsService(
         return contracts;
     }
 
-    public async Task<STContract?> GetActiveAsync()
+    public async Task<STContract?> GetActiveAsync(bool refresh = false)
     {
-        var cacheContracts = await _contractsCacheService.GetAsync();
-        var activeCacheContract = cacheContracts.SingleOrDefault(c => c.Accepted && !c.Fulfilled);
-        if (activeCacheContract is not null) return activeCacheContract; 
+        if (!refresh)
+        {
+            var cacheContracts = await _contractsCacheService.GetAsync();
+            var activeCacheContract = cacheContracts.SingleOrDefault(c => c.Accepted && !c.Fulfilled);
+            if (activeCacheContract is not null) return activeCacheContract; 
+        }
         
         var contracts = await _contractsApiService.GetAsync();
         await _contractsCacheService.SetAsync(contracts);

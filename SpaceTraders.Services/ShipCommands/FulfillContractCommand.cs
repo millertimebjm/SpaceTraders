@@ -48,6 +48,22 @@ public class FulfillContractCommand(
         if (contract is null)
         {
             contract = await _contractsService.GetActiveAsync();
+            if (contract is null)
+            {
+                contract = await _contractsService.GetActiveAsync(refresh: true);
+            }
+
+            if (contract is null)
+            {
+                if (ship.Nav.Status != NavStatusEnum.DOCKED.ToString())
+                {
+                    var dockResult = await _shipsService.DockAsync(ship.Symbol);
+                    ship = ship with { Nav = dockResult };
+                }
+                var negotiateResult = await _contractsService.NegotiateAsync(ship.Symbol);
+                var acceptResult = await _contractsService.AcceptAsync(negotiateResult.Contract.Id);
+                contract = STContractApi.MapToSTContract(acceptResult.Contract);
+            }
             if (contract is not null)
             {
                 ship = ship with { Goal = contract.ContractId };
