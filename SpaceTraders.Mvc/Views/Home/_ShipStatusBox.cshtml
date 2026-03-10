@@ -1,0 +1,41 @@
+@using SpaceTraders.Models
+@using SpaceTraders.Mvc.Services
+@using SpaceTraders.Services.Shipyards
+@model ShipStatus
+
+@{
+    var shipStatus = Model;
+}
+<div class="shadow-lg p-3 bg-white rounded" style="width: 250px; margin: 10px; position: relative;">
+    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 150px;">
+        @if (shipStatus.Ship.ShipCommand is not null)
+        {
+            <span><b>@shipStatus.Ship.ShipCommand.ShipCommandEnum.ToString()</b></span>
+        }
+        <span><a href="/ships/@shipStatus.Ship.Symbol" target="_blank">@shipStatus.Ship.Symbol</a> <small>(<a href="/shiplogs/?shipsymbol=@shipStatus.Ship.Symbol" target="_blank">Logs</a>)</small> (@shipStatus.Ship.Registration.Role)</span>
+        
+        @if (shipStatus.Ship.Cargo.Units > 0)
+        {
+            <span data-toggle="tooltip" data-placement="top" title="@(string.Join(" ", shipStatus.Ship.Cargo.Inventory.Select(i => $"{i.Symbol} ({i.Units})")))">Cargo: @shipStatus.Ship.Cargo.Units</span>
+        }
+        
+        @if (shipStatus.Ship.Goal is not null)
+        {
+            <span>Goal: @shipStatus.Ship.Goal</span>
+        }
+
+        <span>@shipStatus.LastMessage</span>
+        <span>@ViewHelperService.HumanReadableTimeSpan(DateTime.UtcNow - shipStatus.DateTimeOfLastInstruction) ago</span>
+        @{
+            var cooldown = ShipsService.GetShipCooldown(shipStatus.Ship);
+        }
+        @if (cooldown.HasValue)
+        {
+            <span>Available in <span class="countdown" data-countdown="@((DateTime.UtcNow + cooldown.Value).ToString("o"))">@ViewHelperService.MinimalHumanReadableTimeSpan(cooldown.Value)</span></span>
+        }
+        @if (!string.IsNullOrWhiteSpace(shipStatus.Ship.Error))
+        {
+            <span data-toggle="tooltip" data-placement="top" title="@shipStatus.Ship.Error"><b>Error</b></span>
+        }
+    </div>
+</div>

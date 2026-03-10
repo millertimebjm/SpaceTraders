@@ -2,6 +2,7 @@ using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
+using SpaceTraders.Services.ShipStatuses.Interfaces;
 using SpaceTraders.Services.Shipyards.Interfaces;
 using SpaceTraders.Services.Systems;
 using SpaceTraders.Services.Systems.Interfaces;
@@ -12,7 +13,8 @@ public class CommandShipJobService(
     IAgentsService _agentsService,
     ISystemsService _systemsService,
     IShipCommandsHelperService _shipCommandHelperService,
-    IShipyardsService _shipyardsService
+    IShipyardsService _shipyardsService,
+    IShipStatusesCacheService _shipStatusesCacheService
 ) : IShipJobService
 {
     private const long INITIAL_SURVEYOR_SHIP_CREDITS_THRESHOLD = 50_000;
@@ -47,7 +49,9 @@ public class CommandShipJobService(
     {
         if (ships.Any(s => s.Nav.WaypointSymbol == shipyardWaypoint && s.Nav.Status == NavStatusEnum.DOCKED.ToString()))
         {
-            await _shipyardsService.PurchaseShipAsync(shipyardWaypoint, shipType.ToString());
+            var purchaseShipResponse = await _shipyardsService.PurchaseShipAsync(shipyardWaypoint, shipType.ToString());
+            await _shipStatusesCacheService.SetAsync(new ShipStatus(purchaseShipResponse.Ship, $"Newly purchase ship.", DateTime.UtcNow));
+            await _agentsService.SetAsync(purchaseShipResponse.Agent);            
             return true;
         }
         return false;
