@@ -61,10 +61,14 @@ public class ShipLoopsService(
 
         while (true)
         {
-            await UpdateSystemWaypoints(ships);
-            await BuyNewShipIfPossible(ships);
-
             var shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
+
+            await UpdateSystemWaypoints(ships);
+            if (await BuyNewShipIfPossible(shipStatuses.Select(ss => ss.Ship).ToList()))
+            {
+                shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
+            }
+
             shipStatuses = shipStatuses
                 .OrderBy(s => {
                     var parts = s.Ship.Symbol.Split('-');
@@ -148,13 +152,15 @@ public class ShipLoopsService(
         }
     }
 
-    private async Task BuyNewShipIfPossible(IEnumerable<Ship> ships)
+    private async Task<bool> BuyNewShipIfPossible(IEnumerable<Ship> ships)
     {
         var shipToBuy = await _shipCommandHelperService.ShipToBuy(ships);
         if (shipToBuy.Item1 is not null && shipToBuy.Item2 is not null)
         {
             await _shipCommandHelperService.CheckRemotePurchaseShip(ships, shipToBuy.Item1, shipToBuy.Item2.Value);
+            return true;
         }
+        return false;
     }
 
     private async Task SleepUntilNextShipReady(List<ShipStatus> shipStatuses)

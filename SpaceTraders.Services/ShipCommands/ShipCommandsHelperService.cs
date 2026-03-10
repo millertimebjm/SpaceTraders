@@ -1254,20 +1254,6 @@ public class ShipCommandsHelperService(
         return (null, null);
     }
 
-    public async Task<PurchaseCargoResult?> PurchaseFuelForRescue(Ship ship, Waypoint currentWaypoint, int fuelToBuy)
-    {
-        if (ship.Cargo.Inventory.Count > 0
-            || ship.Nav.Status == NavStatusEnum.IN_ORBIT.ToString()
-            || currentWaypoint.Marketplace?.TradeGoods is null
-            || (!currentWaypoint.Marketplace.TradeGoods.Any(tg => tg.Symbol == InventoryEnum.FUEL.ToString())))
-        {
-            return null;
-        }
-
-        var inventoryToBuy = currentWaypoint.Marketplace.TradeGoods.Single(tg => tg.Symbol == InventoryEnum.FUEL.ToString());
-        return await _marketplacesService.PurchaseAsync(ship.Symbol, inventoryToBuy.Symbol, fuelToBuy);
-    }
-
     public async Task<(Nav? nav, Fuel? fuel, Cooldown? cooldown, string? goal)> NavigateToExplore(
         Ship ship, 
         Waypoint currentWaypoint,
@@ -1358,13 +1344,6 @@ public class ShipCommandsHelperService(
         }
         var (nav, fuel) = await _shipsService.NavigateAsync(closestUnmappedPath.Value.Item1[1], ship);
         return (nav, fuel, ship.Cooldown, goal);
-    }
-
-    public async Task<(Nav? nav, Fuel? fuel)> NavigateToShipToRescue(Ship ship, Waypoint currentWaypoint, Waypoint rescueShipWaypoint)
-    {
-        await _pathsService.BuildSystemPath(currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
-
-        return (null, null);
     }
 
     public async Task<Nav?> Dock(Ship ship, Waypoint waypoint)

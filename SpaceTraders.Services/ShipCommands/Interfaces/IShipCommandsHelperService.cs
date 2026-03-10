@@ -37,8 +37,6 @@ public interface IShipCommandsHelperService
     Task<(Nav? nav, Fuel? fuel)> NavigateToShipyard(Ship ship, Waypoint currentWaypoint);
     Task<PurchaseShipResponse?> PurchaseShip(Ship ship, Waypoint currentWaypoint);
     Task<(Nav? nav, Fuel? fuel, Cooldown? cooldown, string? goal)> NavigateToExplore(Ship ship, Waypoint currentWaypoint, List<string> otherShipGoals);
-    Task<PurchaseCargoResult?> PurchaseFuelForRescue(Ship ship, Waypoint currentWaypoint, int v);
-    Task<(Nav? nav, Fuel? fuel)> NavigateToShipToRescue(Ship ship, Waypoint currentWaypoint, Waypoint rescueShipWaypoint);
     bool IsFuelNeeded(Ship ship);
     bool IsWaypointFuelAvailable(Waypoint waypoint);
     Task<Nav?> Dock(Ship ship, Waypoint waypoint);
