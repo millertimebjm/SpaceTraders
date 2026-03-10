@@ -1,16 +1,20 @@
 ﻿using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using DnsClient.Internal;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using SpaceTraders.Dispatcher;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
+using SpaceTraders.Services.HttpHelpers;
 using SpaceTraders.Services.MongoCache.Interfaces;
 
 namespace SpaceTraders.Services.Agents;
 
 public class AgentsService(
+    ILogger<AgentsService> _logger,
     IConfiguration _configuration,
     HttpClient _httpClient,
     IAgentsCacheService _agentsCacheService,
@@ -59,8 +63,7 @@ public class AgentsService(
         var url = urlBuilder.ToString();
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", Token);
-        var agentsDataString = await _httpClient.GetAsync(url);
-        var agentsData = await agentsDataString.Content.ReadFromJsonAsync<DataSingle<Agent>>();
+        var agentsData = await HttpHelperService.HttpGetHelper<DataSingle<Agent>>(url, _httpClient, _logger);
         if (agentsData is null) throw new HttpRequestException("Agent Data not retrieved.");
         if (agentsData.Datum is null) throw new HttpRequestException("Agent not retrieved");
         return agentsData.Datum;

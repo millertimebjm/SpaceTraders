@@ -47,13 +47,13 @@ public class WaypointsApiService(
 
     public async Task<Waypoint> GetAsync(string waypointSymbol)
     {
-        var url = new UriBuilder(ApiUrl);
-        url.Path = $"v2/systems/{WaypointsService.ExtractSystemFromWaypoint(waypointSymbol)}/waypoints/{waypointSymbol}";
+        var url = new UriBuilder(ApiUrl)
+        {
+            Path = $"v2/systems/{WaypointsService.ExtractSystemFromWaypoint(waypointSymbol)}/waypoints/{waypointSymbol}"
+        };
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", Token);
-        var waypointsDataString = await _httpClient.GetAsync(url.ToString());
-        waypointsDataString.EnsureSuccessStatusCode();
-        var waypointsData = await waypointsDataString.Content.ReadFromJsonAsync<DataSingle<Waypoint>>();
+        var waypointsData = await HttpHelperService.HttpGetHelper<DataSingle<Waypoint>>(url.ToString(), _httpClient, _logger);
         if (waypointsData is null) throw new HttpRequestException("System Data not retrieved.");
         if (waypointsData.Datum is null) throw new HttpRequestException("System not retrieved");
         var waypoint = waypointsData.Datum;

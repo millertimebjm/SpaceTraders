@@ -25,7 +25,7 @@ public class SiphonToSellAnywhereCommand(
         {
             if (ShipsService.GetShipCooldown(ship) is not null) return shipStatus;
 
-            await Task.Delay(1000);
+            //await Task.Delay(1000);
 
             var cargo = await _shipCommandsHelperService.Jettison(ship);
             if (cargo is not null) 

@@ -49,7 +49,7 @@ public class BuyAndSellCommandV2(
         var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
         var inventorySymbols = ship.Cargo.Inventory.Select(i => i.Symbol).ToHashSet();
 
-        await Task.Delay(500);
+        //await Task.Delay(500);
 
         if (_shipCommandsHelperService.IsFuelNeeded(ship)
             && _shipCommandsHelperService.IsWaypointFuelAvailable(currentWaypoint))

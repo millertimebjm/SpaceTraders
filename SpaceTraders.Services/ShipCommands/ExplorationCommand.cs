@@ -44,7 +44,7 @@ public class ExplorationCommand(
         }
         
         if (ShipsService.GetShipCooldown(ship) is not null) return shipStatus;
-        await Task.Delay(500);
+        //await Task.Delay(500);
         currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol, refresh: true);
         // Exploration goal can be for marketplace or uncharted
         if (ship.Goal == ship.Nav.WaypointSymbol)
@@ -56,7 +56,7 @@ public class ExplorationCommand(
         {
             if (ShipsService.GetShipCooldown(ship) is not null) return shipStatus;
 
-            await Task.Delay(1000);
+            //await Task.Delay(1000);
 
             var refuelResponse = await _shipCommandsHelperService.Refuel(ship, currentWaypoint);
             if (refuelResponse is not null)

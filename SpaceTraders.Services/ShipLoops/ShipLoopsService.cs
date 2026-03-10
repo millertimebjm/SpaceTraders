@@ -117,6 +117,7 @@ public class ShipLoopsService(
                 catch (SpaceTraderResultException ex)
                 {
                     var timeSpan = TimeSpan.FromMinutes(2);
+                    //await Task.Delay(1000);
                     ship = await _shipsService.GetAsync(ship.Symbol);
                     if (ship.Cooldown is null)
                     {
@@ -131,7 +132,7 @@ public class ShipLoopsService(
                 }
                 await _shipStatusesCacheService.SetAsync(shipStatuses[i]);
 
-                await Task.Delay(1000);
+                //await Task.Delay(1000);
             }
 
             _logger.LogInformation("Time until server reset: {hours} Hours", Math.Round((serverStatus.ServerResets.Next - DateTime.UtcNow).TotalHours));
@@ -192,7 +193,7 @@ public class ShipLoopsService(
             {
                 _logger.LogInformation("Refreshing Waypoint {waypoint}", waypoint.Symbol);
                 await _waypointsService.GetAsync(waypoint.Symbol, refresh: true);
-                await Task.Delay(500);
+                //await Task.Delay(500);
             }
         }
     }

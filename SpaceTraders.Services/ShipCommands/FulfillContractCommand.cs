@@ -90,7 +90,7 @@ public class FulfillContractCommand(
             var cooldownDelay = ShipsService.GetShipCooldown(ship);
             if (cooldownDelay is not null) return shipStatus;
 
-            await Task.Delay(500);
+            //await Task.Delay(500);
 
             var refuelResponse = await _shipCommandsHelperService.Refuel(ship, currentWaypoint);
             if (refuelResponse is not null)

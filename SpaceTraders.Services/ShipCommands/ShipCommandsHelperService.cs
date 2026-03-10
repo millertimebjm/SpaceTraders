@@ -66,13 +66,13 @@ public class ShipCommandsHelperService(
                 amountToBuy = 1;
             }
             purchaseCargoResult = await _marketplacesService.PurchaseAsync(ship.Symbol, inventoryToBuy.Symbol, amountToBuy);
-            await Task.Delay(500);
+            //await Task.Delay(500);
             agent = purchaseCargoResult.Agent;
             ship = ship with { Cargo = purchaseCargoResult.Cargo };
             await _transactionsService.SetAsync(purchaseCargoResult.Transaction);
 
             currentWaypoint = await _waypointsService.GetAsync(currentWaypoint.Symbol, refresh: true);
-            await Task.Delay(500);
+            //await Task.Delay(500);
         } while ((int)Enum.Parse<SupplyEnum>(currentWaypoint.Marketplace.TradeGoods.Single(tg => tg.Symbol == ship.Goal).Supply) > (int)SupplyEnum.MODERATE
             && ship.Cargo.Capacity - ship.Cargo.Units > 0);
 
@@ -96,7 +96,7 @@ public class ShipCommandsHelperService(
         var contractTradeModel = tradeModels
             .Where(tm => tm.TradeSymbol == contractTradeSymbol)
             .OrderByDescending(tm => (int)tm.ExportSupplyEnum)
-            .OrderBy(tm => tm.ExportWaypointSymbol)
+            .ThenBy(tm => tm.ExportWaypointSymbol)
             .FirstOrDefault();
         var contractTradeModelWaypointSymbol = contractTradeModel?.ExportWaypointSymbol;
         var contractTradeModelTradeVolume = contractTradeModel?.ExportTradeVolume;
@@ -142,11 +142,11 @@ public class ShipCommandsHelperService(
             {
                 var amountToBuy = Math.Min(inventoryAmount - ship.Cargo.Units, contractTradeModelTradeVolume.Value);
                 purchaseCargoResult = await _marketplacesService.PurchaseAsync(ship.Symbol, contractTradeSymbol, amountToBuy);
-                await Task.Delay(500);
+                //await Task.Delay(500);
                 agent = purchaseCargoResult.Agent;
                 ship = ship with { Cargo = purchaseCargoResult.Cargo };
                 await _transactionsService.SetAsync(purchaseCargoResult.Transaction);
-                await Task.Delay(500);
+                //await Task.Delay(500);
             }  while (ship.Cargo.Units != inventoryAmount);
         }
 
@@ -515,7 +515,7 @@ public class ShipCommandsHelperService(
                 {
                     await _surveysCacheService.DeleteAsync(surveys.First().Signature);
                 }
-                await Task.Delay(1000);
+                //await Task.Delay(1000);
             }
         }
         return (null, null);
@@ -798,7 +798,6 @@ public class ShipCommandsHelperService(
             return (null, null, null);
         }
 
-        var agent = await _agentsService.GetAsync();
         var paths = await _pathsService.BuildSystemPath(currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
         if (!paths.TryGetValue(contractDestinationWaypointSymbol, out var path))
         {
@@ -1236,7 +1235,7 @@ public class ShipCommandsHelperService(
 
         if (headquartersSystem.Waypoints.Any(w => w.JumpGate is not null && w.IsUnderConstruction))
         {
-            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()) < 2)
+            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()) < 4)
             {
                 var shipyard = headquartersSystem.Waypoints.Single(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_LIGHT_HAULER.ToString()) == true);
                 return (shipyard.Symbol, ShipTypesEnum.SHIP_LIGHT_HAULER);
@@ -1375,7 +1374,6 @@ public class ShipCommandsHelperService(
 
     public async Task<(STContract?, Cargo?, Agent?)> FulfillContract(Ship ship, STContract contract)
     {
-        var contractActive = await _contractsApiService.GetActiveAsync();
         Cargo? cargo = null;
         Agent? agent = await _agentsService.GetAsync();
         if (ship.Cargo.Inventory.Count > 0
@@ -1383,7 +1381,7 @@ public class ShipCommandsHelperService(
             && contract.Terms.Deliver[0].UnitsRequired == ship.Cargo.Inventory[0].Units
             && ship.Nav.WaypointSymbol == contract.Terms.Deliver[0].DestinationSymbol)
         {
-            var contractDeliverResult = await _contractsService.DeliverAsync(contractActive.ContractId, ship.Symbol, ship.Cargo.Inventory[0].Symbol, ship.Cargo.Inventory[0].Units);
+            var contractDeliverResult = await _contractsService.DeliverAsync(contract.ContractId, ship.Symbol, ship.Cargo.Inventory[0].Symbol, ship.Cargo.Inventory[0].Units);
             contract = STContractApi.MapToSTContract(contractDeliverResult.Contract);
             cargo = contractDeliverResult.Cargo;
 

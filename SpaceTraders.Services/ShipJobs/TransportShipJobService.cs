@@ -67,7 +67,7 @@ public class TransportShipJobService(
                     {
                         _logger.LogInformation("Loading waypoint {waypointSymbol}", newWaypoint.Symbol);
                         await _waypointsService.GetAsync(newWaypoint.Symbol, true);
-                        await Task.Delay(500);
+                        //await Task.Delay(500);
                     }
                     _logger.LogInformation("One system refreshed.");
                     return;

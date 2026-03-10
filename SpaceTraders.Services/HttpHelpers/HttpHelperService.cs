@@ -16,6 +16,7 @@ public static class HttpHelperService
         var response = await httpClient.GetAsync(url);
         var responseString = await response.Content.ReadAsStringAsync();
         logger.LogInformation("{responseString}", responseString);
+        await Task.Delay(400);
         try
         {
             response.EnsureSuccessStatusCode();
@@ -44,6 +45,7 @@ public static class HttpHelperService
         logger.LogInformation("{url}", url);
         var response = await httpClient.GetAsync(url);
         logger.LogInformation("{responseString}", await response.Content.ReadAsStringAsync());
+        await Task.Delay(400);
         try
         {
             response.EnsureSuccessStatusCode();
@@ -70,39 +72,11 @@ public static class HttpHelperService
         logger.LogInformation("{url}", url);
         var response = await httpClient.PostAsync(url, content);
         logger.LogInformation("{responseString}", await response.Content.ReadAsStringAsync());
+        await Task.Delay(400);
         try
         {
             response.EnsureSuccessStatusCode();
             var data = await response.Content.ReadFromJsonAsync<T>();
-            if (data is null) throw new HttpRequestException("HttpPost returned null data.");
-            return data;
-        }
-        catch (HttpRequestException ex)
-        {
-            string responseBody = null;
-            if (response != null)
-            {
-                // Read the response body (if any) from the failed response
-                responseBody = await response.Content.ReadAsStringAsync();
-            }
-            var detailedMessage = $"HTTP request failed. Status code: {response?.StatusCode}";
-            throw new SpaceTraderResultException(detailedMessage, ex, responseBody);
-        }
-    }
-
-    internal static async Task<string> HttpPostHelper(
-        string url,
-        HttpClient httpClient,
-        HttpContent? content,
-        ILogger logger)
-    {
-        logger.LogInformation("{url}", url);
-        var response = await httpClient.PostAsync(url, content);
-        logger.LogInformation("{responseString}", await response.Content.ReadAsStringAsync());
-        try
-        {
-            response.EnsureSuccessStatusCode();
-            var data = await response.Content.ReadAsStringAsync();
             if (data is null) throw new HttpRequestException("HttpPost returned null data.");
             return data;
         }
@@ -128,6 +102,7 @@ public static class HttpHelperService
         logger.LogInformation("{url}", url);
         var response = await httpClient.PatchAsync(url, content);
         logger.LogInformation("{responseString}", await response.Content.ReadAsStringAsync());
+        await Task.Delay(400);
         try
         {
             response.EnsureSuccessStatusCode();

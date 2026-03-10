@@ -691,7 +691,7 @@ public class ShipsService(
         ship = ship with { Nav = nav };
         shipStatuses = shipStatuses with { Ship = ship };
         await _shipStatusesCacheService.SetAsync(shipStatuses);
-        await Task.Delay(500);
+        //await Task.Delay(500);
     }
 
     // public static async Task<IEnumerable<Ship>> HexadecimalSort(this IEnumerable<Ship> ships)
