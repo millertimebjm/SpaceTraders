@@ -6,6 +6,8 @@
     var waypoints = await Model.WaypointsTask;
 }
 
+<h3>Ships <small><a href="/ships/reset">(reset)</a></small></h3>
+<br/>
 @foreach (var ship in await Model.ShipsTask)
 {
     //ShipViewModel shipViewModel = new(ship, Model.ContractTask);

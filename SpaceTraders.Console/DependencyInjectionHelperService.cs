@@ -86,6 +86,7 @@ public static class DependencyInjectionHelperService
         services.AddSingleton<ExplorationCommand>();
         services.AddSingleton<FulfillContractCommand>();
         services.AddSingleton<MarketWatchCommand>();
+        services.AddSingleton<SiphonToSellAnywhereCommand>();
 
         // Ship Jobs
         services.AddSingleton<HaulerShipJobService>();
@@ -94,6 +95,7 @@ public static class DependencyInjectionHelperService
         services.AddSingleton<SurveyorShipJobService>();
         services.AddSingleton<TransportShipJobService>();
         services.AddSingleton<ProbeShipJobService>();
+        services.AddSingleton<SiphonShipJobService>();
 
         // Cache Services
         services.AddSingleton<IMongoCollectionFactory, MongoCollectionFactory>();

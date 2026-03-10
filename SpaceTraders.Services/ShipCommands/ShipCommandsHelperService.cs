@@ -94,7 +94,7 @@ public class ShipCommandsHelperService(
             || ship.Nav.Status == NavStatusEnum.IN_ORBIT.ToString()
             || currentWaypoint.Marketplace is null
             || (!currentWaypoint.Marketplace.Exports.Any()
-            && currentWaypoint.Marketplace.Exchange.Any()))
+            && !currentWaypoint.Marketplace.Exchange.Any()))
         {
             return null;
         }
@@ -529,6 +529,19 @@ public class ShipCommandsHelperService(
         return (null, null);
     }
 
+    public async Task<(Cargo?, Cooldown?)> Siphon(Ship ship, Waypoint currentWaypoint)
+    {
+        if (ship.Nav.Status == NavStatusEnum.DOCKED.ToString()
+            || ship.Cargo.Units == ship.Cargo.Capacity
+            || currentWaypoint.Type != WaypointTypesEnum.GAS_GIANT.ToString())
+        {
+            return (null, null);
+        }
+
+        var siphonResult = await _shipsService.SiphonAsync(ship.Symbol);
+        return (siphonResult.Cargo, siphonResult.Cooldown);
+    }
+
     public async Task<(Nav?, Fuel?)> NavigateToEndWaypoint(Ship ship, Waypoint currentWaypoint, Waypoint endWaypoint)
     {
         if (ship.Nav.Status != NavStatusEnum.IN_ORBIT.ToString()
@@ -581,6 +594,32 @@ public class ShipCommandsHelperService(
             || w.Type == WaypointTypesEnum.ENGINEERED_ASTEROID.ToString()).ToList();
         var asteroidPaths = paths.Where(p => asteroidWaypoints.Select(w => w.Symbol).Contains(p.Key.Symbol));
         var closestAsteroidPath = asteroidPaths.OrderBy(p => p.Value.Item1.Count()).FirstOrDefault();
+        return await _shipsService.NavigateAsync(closestAsteroidPath.Value.Item1[1].Symbol, ship);
+    }
+
+    public async Task<(Nav?, Fuel?)> NavigateToSiphonWaypoint(Ship ship, Waypoint currentWaypoint)
+    {
+        if (ship.Nav.Status != NavStatusEnum.IN_ORBIT.ToString()
+            || ship.Cargo.Units != 0
+            || currentWaypoint.Type == WaypointTypesEnum.GAS_GIANT.ToString())
+        {
+            return (null, null);
+        }
+
+        var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
+        var asteroidWaypoints = system.Waypoints.Where(w =>
+            w.Type == WaypointTypesEnum.GAS_GIANT.ToString()).ToList();
+
+        var paths = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
+        var asteroidPaths = paths.Where(p => asteroidWaypoints.Any(w => w.Symbol == p.Key.Symbol));
+        
+        if (!asteroidPaths.Any())
+        {
+            paths = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, 10000, 10000);
+            asteroidPaths = paths.Where(p => asteroidWaypoints.Any(w => w.Symbol == p.Key.Symbol));
+        }
+        var closestAsteroidPath = asteroidPaths.OrderBy(p => p.Value.Item1.Count()).FirstOrDefault();
+
         return await _shipsService.NavigateAsync(closestAsteroidPath.Value.Item1[1].Symbol, ship);
     }
 
@@ -1167,10 +1206,18 @@ public class ShipCommandsHelperService(
                 return (shipyard.Symbol, ShipTypesEnum.SHIP_SURVEYOR);
             }
 
-            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.EXCAVATOR.ToString()) < 9)
+            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.EXCAVATOR.ToString()
+                && s.Mounts.Any(m => m.Symbol.Contains("MINING_LASER"))) < 9)
             {
                 var shipyard = headquartersSystem.Waypoints.Single(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_MINING_DRONE.ToString()) == true);
                 return (shipyard.Symbol, ShipTypesEnum.SHIP_MINING_DRONE);
+            }
+
+            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.EXCAVATOR.ToString()
+                && s.Mounts.Any(m => m.Symbol.Contains("GAS_SIPHON"))) < 9)
+            {
+                var shipyard = headquartersSystem.Waypoints.Single(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_SIPHON_DRONE.ToString()) == true);
+                return (shipyard.Symbol, ShipTypesEnum.SHIP_SIPHON_DRONE);
             }
         }
 
@@ -1185,9 +1232,9 @@ public class ShipCommandsHelperService(
             }
         }
 
-        if (headquartersSystem.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction))
+        if (headquartersSystem.Waypoints.Any(w => w.JumpGate is not null && w.IsUnderConstruction))
         {
-            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()) < 5)
+            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()) < 2)
             {
                 var shipyard = headquartersSystem.Waypoints.Single(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_LIGHT_HAULER.ToString()) == true);
                 return (shipyard.Symbol, ShipTypesEnum.SHIP_LIGHT_HAULER);

@@ -126,6 +126,42 @@ public class MarketplacesController(
         return shipRevenueEvents;
     }
 
+    private static List<ShipRevenueEvent> ProcessSiphonerShipRevenueEvents(IGrouping<string, ShipLog> shipLogsSet)
+    {
+        var shipSymbol = shipLogsSet.Key;
+        DateTime? currentStartTime = null;
+        int currentRevenueAmount = 0;
+        List<ShipRevenueEvent> shipRevenueEvents = [];
+        foreach (var shipLog in shipLogsSet.OrderBy(sls => sls.StartedDateTimeUtc))
+        {
+            if (currentStartTime is not null && shipLog.ShipLogEnum == ShipLogEnum.Siphon)
+            {
+                if (currentRevenueAmount > 0)
+                {
+                    shipRevenueEvents.Add(new ShipRevenueEvent(shipSymbol, currentRevenueAmount, shipLog.CompletedDateTimeUtc, shipLog.CompletedDateTimeUtc - currentStartTime.Value));
+                }
+                currentStartTime = null;
+                currentRevenueAmount = 0;
+                continue;
+            }
+            if (currentStartTime is null && (shipLog.ShipLogEnum == ShipLogEnum.Refuel || shipLog.ShipLogEnum == ShipLogEnum.SellCommodity))
+            {
+                currentStartTime = shipLog.StartedDateTimeUtc;
+            }
+            if (shipLog.ShipLogEnum == ShipLogEnum.Refuel)
+            {
+                var data = JsonSerializer.Deserialize<ShipLogTotalCredits>(shipLog.JsonData);
+                currentRevenueAmount -= data.TotalCredits;
+            }
+            if (shipLog.ShipLogEnum == ShipLogEnum.SellCommodity)
+            {
+                var data = JsonSerializer.Deserialize<ShipLogTotalCredits>(shipLog.JsonData);
+                currentRevenueAmount += data.TotalCredits;
+            }
+        }
+        return shipRevenueEvents;
+    }
+
     private static List<ShipRevenueEvent> ProcessHaulerShipRevenueEvents(IGrouping<string, ShipLog> shipLogsSet)
     {
         var shipSymbol = shipLogsSet.Key;

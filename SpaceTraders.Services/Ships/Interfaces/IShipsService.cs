@@ -1,5 +1,6 @@
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
+using SpaceTraders.Models.Results;
 
 namespace SpaceTraders.Services.Ships.Interfaces;
 
@@ -11,6 +12,7 @@ public interface IShipsService
     Task<Nav> DockAsync(string shipSymbol);
     Task<(Nav, Fuel)> NavigateAsync(Waypoint waypoint, Waypoint currentWaypoint, Ship ship);
     Task<(Nav, Fuel)> NavigateAsync(string waypointSymbol, Ship ship);
+    Task<SiphonResult> SiphonAsync(string shipSymbol);
     Task<ExtractionResult> ExtractAsync(string shipSymbol);
     Task<ExtractionResult> ExtractAsync(string shipSymbol, Survey survey);
     Task<(Nav, Cooldown)> JumpAsync(string waypointSymbol, string shipSymbol);

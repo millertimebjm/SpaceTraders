@@ -8,4 +8,5 @@ public enum WaypointTypesEnum
     ENGINEERED_ASTEROID,
     FUEL_STATION,
     MARKETPLACE,
+    GAS_GIANT,
 }

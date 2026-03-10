@@ -65,6 +65,13 @@ public class ShipsController(
     public async Task<IActionResult> Orbit(string shipSymbol)
     {
         var nav = await _shipsService.OrbitAsync(shipSymbol);
+
+        var shipStatus = await _shipStatusesCacheService.GetAsync(shipSymbol);
+        var ship = shipStatus.Ship;
+        ship = ship with { Nav = nav };
+        shipStatus = shipStatus with { Ship = ship };
+        await _shipStatusesCacheService.SetAsync(shipStatus);
+
         return Redirect($"/ships/{shipSymbol}");
     }
 
@@ -72,6 +79,13 @@ public class ShipsController(
     public async Task<IActionResult> Dock(string shipSymbol)
     {
         var nav = await _shipsService.DockAsync(shipSymbol);
+
+        var shipStatus = await _shipStatusesCacheService.GetAsync(shipSymbol);
+        var ship = shipStatus.Ship;
+        ship = ship with { Nav = nav };
+        shipStatus = shipStatus with { Ship = ship };
+        await _shipStatusesCacheService.SetAsync(shipStatus);
+
         return Redirect($"/ships/{shipSymbol}");
     }
 
@@ -80,7 +94,30 @@ public class ShipsController(
     {
         var shipSymbol = SessionHelper.Get<string>(HttpContext, SessionEnum.CurrentShipSymbol);
         ArgumentException.ThrowIfNullOrWhiteSpace(shipSymbol);
-        await _shipsService.ExtractAsync(shipSymbol);
+        var extractResult = await _shipsService.ExtractAsync(shipSymbol);
+
+        var shipStatus = await _shipStatusesCacheService.GetAsync(shipSymbol);
+        var ship = shipStatus.Ship;
+        ship = ship with { Cargo = extractResult.Cargo, Cooldown = extractResult.Cooldown};
+        shipStatus = shipStatus with { Ship = ship };
+        await _shipStatusesCacheService.SetAsync(shipStatus);
+
+        return Redirect($"/ships/{shipSymbol}");
+    }
+
+    [Route("/ships/siphon")]
+    public async Task<IActionResult> Siphon()
+    {
+        var shipSymbol = SessionHelper.Get<string>(HttpContext, SessionEnum.CurrentShipSymbol);
+        ArgumentException.ThrowIfNullOrWhiteSpace(shipSymbol);
+        var siphonResult = await _shipsService.SiphonAsync(shipSymbol);
+        
+        var shipStatus = await _shipStatusesCacheService.GetAsync(shipSymbol);
+        var ship = shipStatus.Ship;
+        ship = ship with { Cargo = siphonResult.Cargo, Cooldown = siphonResult.Cooldown};
+        shipStatus = shipStatus with { Ship = ship };
+        await _shipStatusesCacheService.SetAsync(shipStatus);
+
         return Redirect($"/ships/{shipSymbol}");
     }
 
@@ -240,6 +277,38 @@ public class ShipsController(
             controller = "Ships",
             action = "Ship",
             shipSymbol
+        });
+    }
+
+    [Route("/ships/reset")]
+    public async Task<IActionResult> Reset()
+    {
+        var ships = await _shipsService.GetAsync();
+        var shipStatuses = await _shipStatusesCacheService.GetAsync();
+        foreach (var ship in ships)
+        {
+            var shipStatus = shipStatuses.SingleOrDefault(ss => ss.Ship.Symbol == ship.Symbol);
+            if (shipStatus is not null)
+            {
+                shipStatus = shipStatus with { Ship = ship };
+            }
+            else
+            {
+                shipStatus = new ShipStatus(ship, "New ship", DateTime.UtcNow);
+            }
+            await _shipStatusesCacheService.SetAsync(shipStatus);
+
+            var currentShipSymbol = SessionHelper.Get<string>(HttpContext, SessionEnum.CurrentShipSymbol);
+            if (currentShipSymbol == ship.Symbol)
+            {
+                SessionHelper.Set(HttpContext, SessionEnum.CurrentWaypointSymbol, ship.Nav.WaypointSymbol);
+            }
+        }
+        
+        return RedirectToRoute(new
+        {
+            controller = "Ships",
+            action = "Index",
         });
     }
 }

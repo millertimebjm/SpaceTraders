@@ -18,6 +18,7 @@ public interface IShipCommandsHelperService
     Task<PurchaseCargoResult?> PurchaseCargo(Ship ship, Waypoint currentWaypoint);
     Task<SupplyResult?> SupplyConstructionSite(Ship ship, Waypoint currentWaypoint);
     Task<(Cargo?, Cooldown?)> Extract(Ship ship, Waypoint currentWaypoint);
+    Task<(Cargo?, Cooldown?)> Siphon(Ship ship, Waypoint currentWaypoint);
     Task<Cargo?> Jettison(Ship ship);
     Task<(Nav?, Fuel?, Cooldown?)> NavigateToMarketplaceImport(Ship ship, Waypoint currentWaypoint);
     Task<(Nav?, Fuel?)> NavigateToConstructionWaypoint(Ship ship, Waypoint currentWaypoint);
@@ -30,6 +31,7 @@ public interface IShipCommandsHelperService
         IEnumerable<string> otherShipGoalSymbols);
     Task<(Nav?, Fuel?)> NavigateToSurvey(Ship ship, Waypoint currentWaypoint);
     Task<(Nav?, Fuel?)> NavigateToMiningWaypoint(Ship ship, Waypoint currentWaypoint);
+    Task<(Nav?, Fuel?)> NavigateToSiphonWaypoint(Ship ship, Waypoint currentWaypoint);
 
     Task<Cooldown> Survey(Ship ship);
     Task<(Nav? nav, Fuel? fuel)> NavigateToShipyard(Ship ship, Waypoint currentWaypoint);

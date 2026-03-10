@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using SpaceTraders.Dispatcher;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
+using SpaceTraders.Models.Results;
 using SpaceTraders.Services.HttpHelpers;
 using SpaceTraders.Services.ShipLogs.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
@@ -306,6 +307,56 @@ public class ShipsService(
         // var data = await response.Content.ReadFromJsonAsync<DataSingle<ExtractionResult>>();
         // await AddExtractLog(shipSymbol, data.Datum.Cooldown, data.Datum.Extraction, data.Datum.Cargo);
         // return data.Datum;
+    }
+
+    public async Task<SiphonResult> SiphonAsync(string shipSymbol)
+    {
+        var urlBuilder = new UriBuilder(ApiUrl)
+        {
+            Path = $"/v2/my/ships/{shipSymbol}/siphon"
+        };
+        var url = urlBuilder.ToString();
+        _httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", Token);
+        var data = await HttpHelperService.HttpPostHelper<DataSingle<SiphonResult>>(
+            url,
+            _httpClient,
+            null,
+            _logger);
+        if (data.Datum is null) throw new HttpRequestException("Siphon not retrieved");
+        await AddSiphonLog(shipSymbol, data.Datum.Cooldown, data.Datum.Siphon, data.Datum.Cargo);
+        return data.Datum;
+
+        // var request = new HttpRequestMessage(HttpMethod.Post, url);
+        // request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+        // var response = await _dispatcher.SendAsync(request);
+        // //var response = await _httpClient.SendAsync(request);
+        // if (!response.IsSuccessStatusCode) throw new HttpRequestException("Siphon not retrieved");
+        // var data = await response.Content.ReadFromJsonAsync<DataSingle<SiphonResult>>();
+        // await AddSiphonLog(shipSymbol, data.Datum.Cooldown, data.Datum.Siphon, data.Datum.Cargo);
+        // return data.Datum;
+    }
+
+    private async Task AddSiphonLog(
+        string shipSymbol, 
+        Cooldown cooldown, 
+        Siphon siphon, 
+        Cargo cargo)
+    {
+        var shipLog = new ShipLog(
+            shipSymbol,
+            ShipLogEnum.Siphon,
+            JsonSerializer.Serialize(new
+            {
+                SiphonYieldSymbol = siphon.Yield.Symbol,
+                SiphonYieldAmount = siphon.Yield.Units,
+                CargoUnits = cargo.Units,
+                CargoCapacity = cargo.Capacity,
+            }),
+            cooldown.Expiration.AddSeconds(-cooldown.TotalSeconds),
+            cooldown.Expiration
+        );
+        await _shipLogsService.AddAsync(shipLog);
     }
 
     private async Task AddExtractLog(

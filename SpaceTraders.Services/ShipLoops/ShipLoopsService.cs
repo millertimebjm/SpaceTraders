@@ -82,7 +82,7 @@ public class ShipLoopsService(
 
                 if (ship.ShipCommand is null)
                 {
-                    var shipJobsService = _shipJobsFactory.Get(Enum.Parse<ShipRegistrationRolesEnum>(shipStatus.Ship.Registration.Role));
+                    var shipJobsService = _shipJobsFactory.Get(shipStatus.Ship);
                     if (shipJobsService is null)
                     {
                         ship = ship with { ShipCommand = null };

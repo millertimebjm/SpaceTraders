@@ -135,6 +135,15 @@
         @* <li><a href="/marketplaces/@waypoint.Symbol">Marketplace</a></li> *@
         <li>@await Html.PartialAsync("/Views/Marketplaces/_Marketplace.cshtml", waypoint.Marketplace)</li>
     }
+    @if (waypoint.Type == WaypointTypesEnum.GAS_GIANT.ToString())
+    {
+        if (currentShip is not null
+            && currentShip.Registration.Role == ShipRegistrationRolesEnum.EXCAVATOR.ToString()
+            && currentShip.Nav.Status == NavStatusEnum.IN_ORBIT.ToString())
+        {
+            <li><a href="/ships/siphon">Siphon</a></li>
+        }
+    }
 </ul>
 
 @if (waypoint.Shipyard is not null)

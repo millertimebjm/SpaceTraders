@@ -1,17 +1,18 @@
 using Microsoft.Extensions.DependencyInjection;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
+using SpaceTraders.Services.ShipCommands;
 using SpaceTraders.Services.ShipJobs.Interfaces;
 
 namespace SpaceTraders.Services.ShipJobs;
 
 public class ShipJobsFactory(IServiceProvider _serviceProvider) : IShipJobsFactory
 {
-    public IShipJobService? Get(ShipRegistrationRolesEnum shipRegistrationRole)
+    public IShipJobService? Get(Ship ship)
     {
-        return shipRegistrationRole switch
+        return Enum.Parse<ShipRegistrationRolesEnum>(ship.Registration.Role) switch
         {
-            ShipRegistrationRolesEnum.EXCAVATOR => _serviceProvider.GetRequiredService<MiningShipJobService>(),
+            ShipRegistrationRolesEnum.EXCAVATOR => ExcavatorServices(ship),
             ShipRegistrationRolesEnum.HAULER => _serviceProvider.GetRequiredService<HaulerShipJobService>(),
             ShipRegistrationRolesEnum.COMMAND => _serviceProvider.GetRequiredService<CommandShipJobService>(),
             ShipRegistrationRolesEnum.SURVEYOR => _serviceProvider.GetRequiredService<SurveyorShipJobService>(),
@@ -20,9 +21,12 @@ public class ShipJobsFactory(IServiceProvider _serviceProvider) : IShipJobsFacto
             _ => null
         };
     }
-    
-    public IShipJobService? Get(Ship ship)
+
+    public IShipJobService ExcavatorServices(Ship ship)
     {
-        return Get((ShipRegistrationRolesEnum)Enum.Parse(typeof(ShipRegistrationRolesEnum), ship.Registration.Role));
+        if (ship.Mounts.Any(m => m.Symbol.Contains("MINING"))) {
+            return _serviceProvider.GetRequiredService<MiningShipJobService>();
+        }
+        return _serviceProvider.GetRequiredService<SiphonShipJobService>();
     }
 }

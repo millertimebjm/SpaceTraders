@@ -15,4 +15,5 @@ public enum ShipLogEnum
     Survey,
     FlightMode,
     FulfillContract,
+    Siphon,
 }
