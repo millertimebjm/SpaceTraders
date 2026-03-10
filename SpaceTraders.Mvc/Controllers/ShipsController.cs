@@ -311,4 +311,32 @@ public class ShipsController(
             action = "Index",
         });
     }
+
+    [Route("/ships/{shipSymbol}/scrap")]
+    public async Task<IActionResult> Scrap(string shipSymbol)
+    {
+        var ships = await _shipsService.GetAsync();
+        var shipStatuses = await _shipStatusesCacheService.GetAsync();
+        foreach (var ship in ships)
+        {
+            var shipStatus = shipStatuses.SingleOrDefault(ss => ss.Ship.Symbol == ship.Symbol);
+            if (shipStatus is not null)
+            {
+                shipStatus = shipStatus with { Ship = ship };
+            }
+            else
+            {
+                shipStatus = new ShipStatus(ship, "New ship", DateTime.UtcNow);
+            }
+            await _shipStatusesCacheService.SetAsync(shipStatus);
+
+            SessionHelper.Unset(HttpContext, SessionEnum.CurrentWaypointSymbol);
+        }
+        
+        return RedirectToRoute(new
+        {
+            controller = "Ships",
+            action = "Index",
+        });
+    }
 }

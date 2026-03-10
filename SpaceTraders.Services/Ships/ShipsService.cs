@@ -654,6 +654,32 @@ public class ShipsService(
         // return data.Datum;
     }
 
+    public async Task<ScanSystemsResult> ScrapAsync(string shipSymbol)
+    {
+        var urlBuilder = new UriBuilder(ApiUrl)
+        {
+            Path = $"/my/ships/{shipSymbol}/scrap"
+        };
+        var url = urlBuilder.ToString();
+        _httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", Token);
+        var data = await HttpHelperService.HttpPostHelper<DataSingle<ScanSystemsResult>>(
+            url,
+            _httpClient,
+            null,
+            _logger);
+        if (data.Datum is null) throw new HttpRequestException("Scrap not retrieved");
+        return data.Datum;
+
+        // var request = new HttpRequestMessage(HttpMethod.Post, url);
+        // request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+        // var response = await _dispatcher.SendAsync(request);
+        // //var response = await _httpClient.SendAsync(request);
+        // if (!response.IsSuccessStatusCode) throw new HttpRequestException("Scan not retrieved");
+        // var data = await response.Content.ReadFromJsonAsync<DataSingle<ScanSystemsResult>>();
+        // return data.Datum;
+    }
+
     public async Task SwitchShipFlightMode(Ship ship, NavFlightModeEnum flightMode)
     {
         if (ship.Nav.FlightMode == flightMode.ToString())
