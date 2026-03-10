@@ -29,7 +29,8 @@ public class ShipLoopsService(
     IServerStatusService _serverStatusService,
     IMongoCollectionFactory _collectionFactory,
     IAccountService _accountService,
-    IConfiguration _configuration
+    IConfiguration _configuration,
+    IShipCommandsHelperService _shipCommandHelperService
 ) : IShipLoopsService
 {
     public async Task Run()
@@ -43,7 +44,7 @@ public class ShipLoopsService(
         if (serverStatus.ServerResets.Next.AddHours(-1) < DateTime.UtcNow)
         {
             _logger.LogInformation("Waiting for next reset.");
-            //await Task.Delay(DateTime.UtcNow - serverStatus.ServerResets.Next);
+            await Task.Delay(DateTime.UtcNow - serverStatus.ServerResets.Next);
             await _collectionFactory.DeleteDatabaseAsync();
             await _accountService.RegisterAsync();
         }
@@ -61,6 +62,7 @@ public class ShipLoopsService(
         while (true)
         {
             await UpdateSystemWaypoints(ships);
+            await BuyNewShipIfPossible(ships);
 
             var shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
             shipStatuses = shipStatuses
@@ -142,6 +144,15 @@ public class ShipLoopsService(
                 var waitInMilliseconds = (int)(serverStatus.ServerResets.Next - now).TotalMilliseconds;
                 await Task.Delay(waitInMilliseconds);
             }
+        }
+    }
+
+    private async Task BuyNewShipIfPossible(IEnumerable<Ship> ships)
+    {
+        var shipToBuy = await _shipCommandHelperService.ShipToBuy(ships);
+        if (shipToBuy.Item1 is not null && shipToBuy.Item2 is not null)
+        {
+            await _shipCommandHelperService.CheckRemotePurchaseShip(ships, shipToBuy.Item1, shipToBuy.Item2.Value);
         }
     }
 

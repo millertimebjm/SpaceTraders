@@ -7,6 +7,6 @@
 <ul>
     <li><b>Ship Type:</b> @Model.ShipType</li>
     <li><b>Price: </b> @Model.Price</li>
-    <li><b>Timestamp:</b> @ViewHelperService.MinimalHumanReadableTimeSpan(Model.Timestamp - DateTime.UtcNow)</li>
+    <li><b>Timestamp:</b> @ViewHelperService.HumanReadableTimeSpan(DateTime.UtcNow - Model.Timestamp)</li>
 </ul>
 

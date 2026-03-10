@@ -21,14 +21,6 @@ using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.ShipCommands;
 
-// MiningToSell,
-// MiningToConstruction,
-// MiningToStorage,
-// CarryToConstruction,
-// BuyToSell,
-// BuyToConstruction,
-// BuyToStorage,
-
 public class ShipCommandsHelperService(
     IShipsService _shipsService,
     IMarketplacesService _marketplacesService,
@@ -1186,11 +1178,27 @@ public class ShipCommandsHelperService(
 
     public async Task<(string?, ShipTypesEnum?)> ShipToBuy(IEnumerable<Ship> ships)
     {
+        const long INITIAL_SURVEYOR_SHIP_CREDITS_THRESHOLD = 50_000;
+        const long PURCHASE_SHIP_CREDITS_THRESHOLD = 800_000;
+
         var agent = await _agentsService.GetAsync();
         var systems = await _systemsService.GetAsync();
         var headquartersSystemSymbol = WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters);
         var headquartersSystem = systems.Single(s => s.Symbol == headquartersSystemSymbol);
         var reachableSystems = SystemsService.Traverse(systems, headquartersSystemSymbol);
+
+        if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.SURVEYOR.ToString()) < 1
+            && headquartersSystem.Waypoints.Any(w => w.JumpGate is not null && w.IsUnderConstruction)
+            && agent.Credits > INITIAL_SURVEYOR_SHIP_CREDITS_THRESHOLD)
+        {
+            var shipyard = headquartersSystem.Waypoints.Single(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_SURVEYOR.ToString()) == true);
+            return (shipyard.Symbol, ShipTypesEnum.SHIP_SURVEYOR);
+        }
+
+        if (agent.Credits < PURCHASE_SHIP_CREDITS_THRESHOLD)
+        {
+            return (null, null);
+        }
 
         if (headquartersSystem.Waypoints.Any(w => w.JumpGate is not null && w.IsUnderConstruction))
         {
@@ -1198,12 +1206,6 @@ public class ShipCommandsHelperService(
             {
                 var shipyard = headquartersSystem.Waypoints.Single(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_LIGHT_HAULER.ToString()) == true);
                 return (shipyard.Symbol, ShipTypesEnum.SHIP_LIGHT_HAULER);
-            }
-
-            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.SURVEYOR.ToString()) < 1)
-            {
-                var shipyard = headquartersSystem.Waypoints.Single(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_SURVEYOR.ToString()) == true);
-                return (shipyard.Symbol, ShipTypesEnum.SHIP_SURVEYOR);
             }
 
             if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.EXCAVATOR.ToString()
@@ -1397,5 +1399,17 @@ public class ShipCommandsHelperService(
             agent = contractAcceptResult.Agent;
         }
         return (contract, cargo, agent);
+    }
+
+    public async Task<bool> CheckRemotePurchaseShip(IEnumerable<Ship> ships, string shipyardWaypoint, ShipTypesEnum shipType)
+    {
+        if (ships.Any(s => s.Nav.WaypointSymbol == shipyardWaypoint && s.Nav.Status == NavStatusEnum.DOCKED.ToString()))
+        {
+            var purchaseShipResponse = await _shipyardsService.PurchaseShipAsync(shipyardWaypoint, shipType.ToString());
+            await _shipStatusesCacheService.SetAsync(new ShipStatus(purchaseShipResponse.Ship, $"Newly purchase ship.", DateTime.UtcNow));
+            await _agentsService.SetAsync(purchaseShipResponse.Agent);            
+            return true;
+        }
+        return false;
     }
 }

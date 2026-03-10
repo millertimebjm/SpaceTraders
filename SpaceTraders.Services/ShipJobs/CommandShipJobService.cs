@@ -17,9 +17,6 @@ public class CommandShipJobService(
     IShipStatusesCacheService _shipStatusesCacheService
 ) : IShipJobService
 {
-    private const long INITIAL_SURVEYOR_SHIP_CREDITS_THRESHOLD = 50_000;
-    private const long PURCHASE_SHIP_CREDITS_THRESHOLD = 800_000;
-
     public async Task<ShipCommand?> Get(
         IEnumerable<Ship> ships,
         Ship ship)
@@ -29,31 +26,20 @@ public class CommandShipJobService(
         var traversableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol);
         var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
     
-        if ((ships.Count() == 2 && agent.Credits > INITIAL_SURVEYOR_SHIP_CREDITS_THRESHOLD)
-            || (agent.Credits > PURCHASE_SHIP_CREDITS_THRESHOLD))
+        var (shipyardWaypoint, shipType) = await _shipCommandHelperService.ShipToBuy(ships);
+        if (shipType is not null && shipyardWaypoint is not null)
         {
-            var (shipyardWaypoint, shipType) = await _shipCommandHelperService.ShipToBuy(ships);
-            if (shipType is not null && shipyardWaypoint is not null)
+            if(!await _shipCommandHelperService.CheckRemotePurchaseShip(ships, shipyardWaypoint, shipType.Value))
             {
-                if(!await CheckRemotePurchaseShip(ships, shipyardWaypoint, shipType.Value))
-                {
-                    return new ShipCommand(ship.Symbol, ShipCommandEnum.PurchaseShip);
-                }
+                return new ShipCommand(ship.Symbol, ShipCommandEnum.PurchaseShip);
             }
         }
 
-        return new ShipCommand(ship.Symbol, ShipCommandEnum.BuyToSell);
-    }
-
-    private async Task<bool> CheckRemotePurchaseShip(IEnumerable<Ship> ships, string shipyardWaypoint, ShipTypesEnum shipType)
-    {
-        if (ships.Any(s => s.Nav.WaypointSymbol == shipyardWaypoint && s.Nav.Status == NavStatusEnum.DOCKED.ToString()))
+        if (ships.Count() == 2)
         {
-            var purchaseShipResponse = await _shipyardsService.PurchaseShipAsync(shipyardWaypoint, shipType.ToString());
-            await _shipStatusesCacheService.SetAsync(new ShipStatus(purchaseShipResponse.Ship, $"Newly purchase ship.", DateTime.UtcNow));
-            await _agentsService.SetAsync(purchaseShipResponse.Agent);            
-            return true;
+            return new ShipCommand(ship.Symbol, ShipCommandEnum.FulfillContract);
         }
-        return false;
+        
+        return new ShipCommand(ship.Symbol, ShipCommandEnum.BuyToSell);
     }
 }

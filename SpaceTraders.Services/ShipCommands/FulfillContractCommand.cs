@@ -135,6 +135,11 @@ public class FulfillContractCommand(
                 await AddFulfillShipLog(ship.Symbol, contract);
                 contract = newContract;
                 ship = ship with { Cargo = cargo, Goal = contract.ContractId };
+                if (ship.Registration.Role == ShipRegistrationRolesEnum.COMMAND.ToString())
+                {
+                    ship = ship with { ShipCommand = null };
+                    return new ShipStatus(ship, "Completed contract, reseting.", DateTime.UtcNow);
+                }
                 continue;
             }
 

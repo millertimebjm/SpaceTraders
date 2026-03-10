@@ -16,10 +16,6 @@ public class HaulerShipJobService(
         IEnumerable<Ship> ships,
         Ship ship)
     {
-        if (await IsSupplyConstruction(ships, ship))
-        {
-            return new ShipCommand(ship.Symbol, ShipCommandEnum.SupplyConstruction);
-        }
         if (!ships.Any(s => s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.FulfillContract))
         {
             var inventory = ship.Cargo.Inventory;
@@ -37,6 +33,10 @@ public class HaulerShipJobService(
                 return new ShipCommand(ship.Symbol, ShipCommandEnum.FulfillContract);
             }
         }
+        if (await IsSupplyConstruction(ships, ship))
+        {
+            return new ShipCommand(ship.Symbol, ShipCommandEnum.SupplyConstruction);
+        }
         return new ShipCommand(ship.Symbol, ShipCommandEnum.BuyToSell);
     }
 
@@ -45,27 +45,17 @@ public class HaulerShipJobService(
         var agent = await _agentsService.GetAsync();
         var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
         var unfinishedJumpGateWaypoint = system.Waypoints.SingleOrDefault(w => w.JumpGate is not null && w.IsUnderConstruction);
-        var firstHauler = ships
-            .Where(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString())
-            .OrderBy(s => {
-                var parts = s.Symbol.Split('-');
-                return Convert.ToInt32(parts[1], 16); // Parse as hex
-            })
-            .FirstOrDefault();
-        if (unfinishedJumpGateWaypoint is not null
-            && unfinishedJumpGateWaypoint.IsUnderConstruction
-            && ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()) >= 5
-            && ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.EXCAVATOR.ToString()) >= 9
-            && !ships.Where(s => s.Symbol != ship.Symbol).Any(s => s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.SupplyConstruction)
-            && ship.Symbol == firstHauler?.Symbol
-            && (agent.Credits > 800_000
-            || (ship.Cargo.Units > 0 && ship.Cargo.Inventory.All(i => unfinishedJumpGateWaypoint.Construction.Materials.Any(m => i.Symbol == m.TradeSymbol)))))
+        
+        if (!ships.Any(s => s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.SupplyConstruction)
+            && agent.Credits > 800_000)
         {
-            if (!ship.Cargo.Inventory.Any())
+            var inventory = ship.Cargo.Inventory;
+            if (inventory.Count == 0)
             {
                 return true;
             }
-            if (ship.Cargo.Inventory.All(i => unfinishedJumpGateWaypoint.Construction.Materials.Any(m => i.Symbol == m.TradeSymbol)))
+
+            if (ship.Cargo.Inventory.All(i => unfinishedJumpGateWaypoint.Construction.Materials.Where(m => m.Fulfilled < m.Required).Any(m => i.Symbol == m.TradeSymbol)))
             {
                 return true;
             }

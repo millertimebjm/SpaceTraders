@@ -72,20 +72,9 @@ public class BuyAndSellCommand(
             var sellCargoResponse = await _shipCommandsHelperService.Sell(ship, currentWaypoint);
             if (sellCargoResponse is not null)
             {
-                ship = ship with { Cargo = sellCargoResponse.Cargo };
+                ship = ship with { Cargo = sellCargoResponse.Cargo, ShipCommand = null };
                 await _agentsService.SetAsync(sellCargoResponse.Agent);
-                var firstHauler = shipsDictionary
-                    .Where(s => s.Value.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString())
-                    .OrderBy(s => s.Key)
-                    .FirstOrDefault();
-                if (sellCargoResponse.Cargo.Units == 0
-                    && (ship.Registration.Role == ShipRegistrationRolesEnum.COMMAND.ToString()
-                        || ship.Symbol == firstHauler.Key))
-                {
-                    ship = ship with { ShipCommand = null };
-                    return new ShipStatus(ship, $"Resetting Job.", DateTime.UtcNow);
-                }
-                continue;
+                return new ShipStatus(ship, $"Completed BuyToSell, Resetting Job.", DateTime.UtcNow);
             }
 
             (nav, var fuel, var cooldown) = await _shipCommandsHelperService.NavigateToMarketplaceImport(ship, currentWaypoint);
