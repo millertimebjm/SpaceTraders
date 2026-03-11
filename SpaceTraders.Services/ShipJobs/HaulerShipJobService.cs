@@ -37,6 +37,11 @@ public class HaulerShipJobService(
         {
             return new ShipCommand(ship.Symbol, ShipCommandEnum.SupplyConstruction);
         }
+        if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()) > 3
+            && ships.Count(s => s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.HaulingAssistToSellAnywhere) < 3)
+        {
+            return new ShipCommand(ship.Symbol, ShipCommandEnum.HaulingAssistToSellAnywhere);
+        }
         return new ShipCommand(ship.Symbol, ShipCommandEnum.BuyToSell);
     }
 

@@ -77,14 +77,10 @@ public class ShipLoopsService(
                 .ToList();
             for (int i = 0; i < shipStatuses.Count(); i++)
             {
-                var ship = shipStatuses[i].Ship;
-                var shipStatus = shipStatuses[i];
+                var shipStatus = await _shipStatusesCacheService.GetAsync(shipStatuses[i].Ship.Symbol); // Transfer cargo changes another ship's cargo
+                shipStatuses[i] = shipStatus;
+                var ship = shipStatus.Ship;
                 if (ShipsService.GetShipCooldown(ship) is not null) continue;
-                if (ship.Symbol == "SPATIAL19-E"
-                    || ship.Symbol == "SPATIAL19-10")
-                {
-                    int j = 0;
-                }
 
                 if (ship.ShipCommand is null)
                 {

@@ -18,4 +18,5 @@ public enum ShipCommandEnum
     FulfillContract,
     MarketWatch,
     SiphonToSellAnywhere,
+    HaulingAssistToSellAnywhere,
 }

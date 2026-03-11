@@ -25,9 +25,8 @@ public class HaulingAssistToSellAnywhereCommand(
         {
             if (ShipsService.GetShipCooldown(ship) is not null) return shipStatus;
 
-            if (ship.Cargo.Capacity == ship.Cargo.Units
-                && (currentWaypoint.Type.Contains(WaypointTypesEnum.ENGINEERED_ASTEROID.ToString())
-                || currentWaypoint.Type.Contains(WaypointTypesEnum.ENGINEERED_ASTEROID.ToString())))
+            if (ship.Cargo.Units < ship.Cargo.Capacity
+                && currentWaypoint.Type.Contains(WaypointTypesEnum.ENGINEERED_ASTEROID.ToString()))
             {
                 ship = ship with { Cooldown = new Cooldown(ship.Symbol, 60, 60, DateTime.UtcNow.AddSeconds(60)) };
                 shipStatus = shipStatus with { Ship = ship, DateTimeOfLastInstruction = DateTime.UtcNow, LastMessage = "Waiting for full cargo." };
@@ -70,7 +69,7 @@ public class HaulingAssistToSellAnywhereCommand(
             {
                 ship = ship with { Cargo = sellCargoResponse.Cargo };
                 await _agentsService.SetAsync(sellCargoResponse.Agent);
-                if (sellCargoResponse.Cargo.Units == 0 && ship.Registration.Role == ShipRegistrationRolesEnum.COMMAND.ToString())
+                if (sellCargoResponse.Cargo.Units == 0)
                 {
                     ship = ship with { ShipCommand = null, Error = null  };
                     return new ShipStatus(ship, $"Resetting Job.", DateTime.UtcNow);

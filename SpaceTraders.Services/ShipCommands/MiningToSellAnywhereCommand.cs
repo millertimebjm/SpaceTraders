@@ -58,7 +58,7 @@ public class MiningToSellAnywhereCommand(
                 return new ShipStatus(ship, $"Navigate To Start Waypoint {nav.WaypointSymbol}", DateTime.UtcNow);
             }
 
-            cargo = await _shipCommandsHelperService.TransferCargo(ship, shipsDictionary.Values.ToList());
+            cargo = await _shipCommandsHelperService.TransferCargo(ship, currentWaypoint);
             if (cargo is not null)
             {
                 ship = ship with { Cargo = cargo };

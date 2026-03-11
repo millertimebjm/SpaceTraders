@@ -573,7 +573,6 @@ public class ShipCommandsHelperService(
     {
         if (ship.Nav.Status != NavStatusEnum.IN_ORBIT.ToString()
             || ship.Cargo.Units != 0
-            || currentWaypoint.Type == WaypointTypesEnum.ASTEROID.ToString()
             || currentWaypoint.Type == WaypointTypesEnum.ENGINEERED_ASTEROID.ToString())
         {
             return (null, null);
@@ -581,9 +580,7 @@ public class ShipCommandsHelperService(
 
         var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
         var paths = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
-        var asteroidWaypoints = system.Waypoints.Where(w =>
-            w.Type == WaypointTypesEnum.ASTEROID.ToString()
-            || w.Type == WaypointTypesEnum.ENGINEERED_ASTEROID.ToString()).ToList();
+        var asteroidWaypoints = system.Waypoints.Where(w => w.Type == WaypointTypesEnum.ENGINEERED_ASTEROID.ToString()).ToList();
         var asteroidPaths = paths.Where(p => asteroidWaypoints.Select(w => w.Symbol).Contains(p.Key.Symbol));
         var closestAsteroidPath = asteroidPaths.OrderBy(p => p.Value.Item1.Count()).FirstOrDefault();
         return await _shipsService.NavigateAsync(closestAsteroidPath.Value.Item1[1].Symbol, ship);
@@ -885,8 +882,8 @@ public class ShipCommandsHelperService(
 
         var constructionInventoryNeeded = constructionWaypoint.Construction.Materials.Where(c => c.Fulfilled < c.Required);
         var constructionInventoryNeededSymbols = constructionInventoryNeeded.Select(cin => cin.TradeSymbol);
-        var paths = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
-        var pathSymbols = paths.Select(p => p.Key.Symbol);
+        //var paths = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
+        //var pathSymbols = paths.Select(p => p.Key.Symbol);
         var inventoryWaypoints = system.Waypoints.Where(w =>
             w.Marketplace is not null
             && w.Marketplace.Exports.Any(e => constructionInventoryNeededSymbols.Contains(e.Symbol))
@@ -901,7 +898,6 @@ public class ShipCommandsHelperService(
             })
             .OrderByDescending(x => x.HighestSupply)
             .ThenBy(w => w.Waypoint.Symbol)
-            .ThenBy(x => paths.Single(p => p.Key.Symbol == x.Waypoint.Symbol).Value.Item1.Count())
             .FirstOrDefault()?.Waypoint;
         return highestSupplyWaypoint;
     }
@@ -947,14 +943,20 @@ public class ShipCommandsHelperService(
     public async Task<(Nav?, Fuel?)> NavigateToMarketplaceExport(Ship ship, Waypoint currentWaypoint, Waypoint constructionWaypoint)
     {
         var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
-        var pathDictionary = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
-
         var marketplaceWaypoint = GetConstructionInventoryWaypoint(
                 ship,
                 currentWaypoint,
                 constructionWaypoint,
                 system);
-        var shortestPath = pathDictionary.Single(p => p.Key.Symbol == marketplaceWaypoint.Symbol);
+
+        var pathDictionary = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
+        var shortestPath = pathDictionary.SingleOrDefault(p => p.Key.Symbol == marketplaceWaypoint.Symbol);
+
+        if (shortestPath.Key is null)
+        {
+            pathDictionary = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, 10000, 10000);
+            shortestPath = pathDictionary.SingleOrDefault(p => p.Key.Symbol == marketplaceWaypoint.Symbol);
+        }
 
         var (nav, fuel) = await _shipsService.NavigateAsync(shortestPath.Value.Item1[1].Symbol, ship);
         return (nav, fuel);
@@ -1390,10 +1392,22 @@ public class ShipCommandsHelperService(
         return false;
     }
 
-    public async Task<Cargo?> TransferCargo(Ship ship, List<Ship> ships)
+    public async Task<Cargo?> TransferCargo(Ship ship, Waypoint currentWaypoint)
     {
+        if (currentWaypoint.Type != WaypointTypesEnum.ENGINEERED_ASTEROID.ToString()
+            || ship.Cargo.Units != ship.Cargo.Capacity)
+        {
+            return null;
+        }
+
+        var shipStatuses = await _shipStatusesCacheService.GetAsync();
+        var ships = shipStatuses.Select(s => s.Ship).ToList();
         var hauler = ships
-            .Where(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString() && s.Cargo.Units < s.Cargo.Capacity)
+            .Where(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString() 
+                && s.Cargo.Units < s.Cargo.Capacity
+                && s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.HaulingAssistToSellAnywhere
+                && s.Nav.WaypointSymbol == ship.Nav.WaypointSymbol
+                && s.Nav.Status == NavStatusEnum.IN_ORBIT.ToString())
             .OrderByDescending(s => s.Cargo.Units)
             .FirstOrDefault();
         if (hauler is null)
@@ -1407,12 +1421,13 @@ public class ShipCommandsHelperService(
             var inventory = ship.Cargo.Inventory.OrderByDescending(i => i.Units).First();
             var inventoryAmount = Math.Min(inventory.Units, hauler.Cargo.Capacity - hauler.Cargo.Units);
             var transferCargoResult = await _shipsService.TransferCargo(ship.Symbol, hauler.Symbol, inventory.Symbol, inventoryAmount);
-            ship = ship with {Cargo = transferCargoResult.Cargo };
+            ship = ship with { Cargo = transferCargoResult.Cargo };
             hauler = hauler with { Cargo = transferCargoResult.TargetCargo };
         }
 
         var shipStatus = await _shipStatusesCacheService.GetAsync(hauler.Symbol);
         shipStatus = shipStatus with { Ship = hauler };
+        await _shipStatusesCacheService.SetAsync(shipStatus);
 
         return ship.Cargo;
     }
