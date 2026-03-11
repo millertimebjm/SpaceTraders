@@ -7,6 +7,8 @@ namespace SpaceTraders.Services.HttpHelpers;
 
 public static class HttpHelperService
 {
+    private const int DELAY_IN_MILLISECONDS = 410;
+
     public async static Task<T> HttpGetHelper<T>(
         string url,
         HttpClient httpClient,
@@ -16,7 +18,7 @@ public static class HttpHelperService
         var response = await httpClient.GetAsync(url);
         var responseString = await response.Content.ReadAsStringAsync();
         logger.LogInformation("{responseString}", responseString);
-        await Task.Delay(400);
+        await Task.Delay(DELAY_IN_MILLISECONDS);
         try
         {
             response.EnsureSuccessStatusCode();
@@ -45,7 +47,7 @@ public static class HttpHelperService
         logger.LogInformation("{url}", url);
         var response = await httpClient.GetAsync(url);
         logger.LogInformation("{responseString}", await response.Content.ReadAsStringAsync());
-        await Task.Delay(400);
+        await Task.Delay(DELAY_IN_MILLISECONDS);
         try
         {
             response.EnsureSuccessStatusCode();
@@ -72,7 +74,7 @@ public static class HttpHelperService
         logger.LogInformation("{url}", url);
         var response = await httpClient.PostAsync(url, content);
         logger.LogInformation("{responseString}", await response.Content.ReadAsStringAsync());
-        await Task.Delay(400);
+        await Task.Delay(DELAY_IN_MILLISECONDS);
         try
         {
             response.EnsureSuccessStatusCode();
@@ -102,7 +104,7 @@ public static class HttpHelperService
         logger.LogInformation("{url}", url);
         var response = await httpClient.PatchAsync(url, content);
         logger.LogInformation("{responseString}", await response.Content.ReadAsStringAsync());
-        await Task.Delay(400);
+        await Task.Delay(DELAY_IN_MILLISECONDS);
         try
         {
             response.EnsureSuccessStatusCode();

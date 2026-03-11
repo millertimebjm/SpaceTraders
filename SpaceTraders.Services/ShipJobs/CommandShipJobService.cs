@@ -35,7 +35,7 @@ public class CommandShipJobService(
             }
         }
 
-        if (ships.Count() == 2)
+        if (!ships.Any(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()))
         {
             return new ShipCommand(ship.Symbol, ShipCommandEnum.FulfillContract);
         }

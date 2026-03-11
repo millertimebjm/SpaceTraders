@@ -2,6 +2,7 @@ using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
+using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Transactions.Interfaces;
 using SpaceTraders.Services.Waypoints.Interfaces;
@@ -12,22 +13,37 @@ public class HaulingAssistToSellAnywhereCommand(
     IShipCommandsHelperService _shipCommandsHelperService,
     IWaypointsService _waypointsService,
     IAgentsService _agentsService,
-    ITransactionsCacheService _transactionsService
+    ITransactionsCacheService _transactionsService,
+    IShipsService _shipsService
 ) : IShipCommandsService
 {
+    private const int MAX_LOOP_COUNT = 20;
     public async Task<ShipStatus> Run(
         ShipStatus shipStatus,
         Dictionary<string, Ship> shipsDictionary)
     {
+        var loop = 0;
         var ship = shipStatus.Ship;
         var currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol);
         while (true)
         {
+            loop++;
+            if (loop > MAX_LOOP_COUNT)
+            {
+                shipStatus = shipStatus with { Ship = ship, DateTimeOfLastInstruction = DateTime.UtcNow, LastMessage = "Stuck in a loop." };
+                return shipStatus;
+            }
+
             if (ShipsService.GetShipCooldown(ship) is not null) return shipStatus;
 
             if (ship.Cargo.Units < ship.Cargo.Capacity
                 && currentWaypoint.Type.Contains(WaypointTypesEnum.ENGINEERED_ASTEROID.ToString()))
             {
+                if (ship.Nav.Status == NavStatusEnum.IN_TRANSIT.ToString())
+                {
+                    ship = await _shipsService.GetAsync(ship.Symbol);
+                }
+
                 ship = ship with { Cooldown = new Cooldown(ship.Symbol, 60, 60, DateTime.UtcNow.AddSeconds(60)) };
                 shipStatus = shipStatus with { Ship = ship, DateTimeOfLastInstruction = DateTime.UtcNow, LastMessage = "Waiting for full cargo." };
                 return shipStatus;

@@ -154,16 +154,7 @@ public class FulfillContractCommand(
                 ship, 
                 currentWaypoint,
                 contract.Terms.Deliver[0].TradeSymbol);
-            if (noWork)
-            {
-                var timeSpan = TimeSpan.FromMinutes(10);
-                ship = ship with {
-                    Goal = null,
-                    Cooldown = new Cooldown(ship.Symbol, (int)timeSpan.TotalSeconds, (int)timeSpan.TotalSeconds, DateTime.UtcNow.Add(timeSpan)),
-                };
-                return new ShipStatus(ship, $"No Valid Exports found", DateTime.UtcNow);
-            }
-            else if (nav is not null && fuel is not null)
+            if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown, Goal = goal};
                 return new ShipStatus(ship, $"Navigate To Marketplace Export for Contract {nav.Route.Destination.Symbol}", DateTime.UtcNow);
