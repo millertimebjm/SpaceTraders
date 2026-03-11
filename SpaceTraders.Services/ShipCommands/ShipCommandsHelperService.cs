@@ -1389,4 +1389,31 @@ public class ShipCommandsHelperService(
         }
         return false;
     }
+
+    public async Task<Cargo?> TransferCargo(Ship ship, List<Ship> ships)
+    {
+        var hauler = ships
+            .Where(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString() && s.Cargo.Units < s.Cargo.Capacity)
+            .OrderByDescending(s => s.Cargo.Units)
+            .FirstOrDefault();
+        if (hauler is null)
+        {
+            return null;
+        }
+
+        while (hauler.Cargo.Units < hauler.Cargo.Capacity
+            && ship.Cargo.Units > 0)
+        {
+            var inventory = ship.Cargo.Inventory.OrderByDescending(i => i.Units).First();
+            var inventoryAmount = Math.Min(inventory.Units, hauler.Cargo.Capacity - hauler.Cargo.Units);
+            var transferCargoResult = await _shipsService.TransferCargo(ship.Symbol, hauler.Symbol, inventory.Symbol, inventoryAmount);
+            ship = ship with {Cargo = transferCargoResult.Cargo };
+            hauler = hauler with { Cargo = transferCargoResult.TargetCargo };
+        }
+
+        var shipStatus = await _shipStatusesCacheService.GetAsync(hauler.Symbol);
+        shipStatus = shipStatus with { Ship = hauler };
+
+        return ship.Cargo;
+    }
 }

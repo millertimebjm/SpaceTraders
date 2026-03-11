@@ -701,4 +701,23 @@ public class ShipsService(
     //         return Convert.ToInt32(parts[1], 16); // Parse as hex
     //     });
     // }
+
+    public async Task<TransferCargoResult> TransferCargo(string shipSymbol, string targetShipSymbol, string inventorySymbol, int inventoryAmount)
+    {
+        var urlBuilder = new UriBuilder(ApiUrl)
+        {
+            Path = $"/my/ships/{shipSymbol}/transfer"
+        };
+        var url = urlBuilder.ToString();
+        _httpClient.DefaultRequestHeaders.Authorization =
+            new AuthenticationHeaderValue("Bearer", Token);
+        var content = JsonContent.Create(new { tradeSymbol = inventorySymbol, units = inventoryAmount, shipSymbol = targetShipSymbol });
+        var data = await HttpHelperService.HttpPostHelper<DataSingle<TransferCargoResult>>(
+            url,
+            _httpClient,
+            content,
+            _logger);
+        if (data.Datum is null) throw new HttpRequestException("Scrap not retrieved");
+        return data.Datum;
+    }
 }

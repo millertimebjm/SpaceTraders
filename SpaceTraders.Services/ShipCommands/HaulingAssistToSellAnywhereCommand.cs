@@ -8,7 +8,7 @@ using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.ShipCommands;
 
-public class MiningToSellAnywhereCommand(
+public class HaulingAssistToSellAnywhereCommand(
     IShipCommandsHelperService _shipCommandsHelperService,
     IWaypointsService _waypointsService,
     IAgentsService _agentsService,
@@ -25,13 +25,13 @@ public class MiningToSellAnywhereCommand(
         {
             if (ShipsService.GetShipCooldown(ship) is not null) return shipStatus;
 
-            //await Task.Delay(1000);
-
-            var cargo = await _shipCommandsHelperService.Jettison(ship);
-            if (cargo is not null) 
+            if (ship.Cargo.Capacity == ship.Cargo.Units
+                && (currentWaypoint.Type.Contains(WaypointTypesEnum.ENGINEERED_ASTEROID.ToString())
+                || currentWaypoint.Type.Contains(WaypointTypesEnum.ENGINEERED_ASTEROID.ToString())))
             {
-                ship = ship with { Cargo = cargo };
-                shipStatus = shipStatus with { Ship = ship};
+                ship = ship with { Cooldown = new Cooldown(ship.Symbol, 60, 60, DateTime.UtcNow.AddSeconds(60)) };
+                shipStatus = shipStatus with { Ship = ship, DateTimeOfLastInstruction = DateTime.UtcNow, LastMessage = "Waiting for full cargo." };
+                return shipStatus;
             }
 
             var refuelResponse = await _shipCommandsHelperService.Refuel(ship, currentWaypoint);
@@ -58,20 +58,7 @@ public class MiningToSellAnywhereCommand(
                 return new ShipStatus(ship, $"Navigate To Start Waypoint {nav.WaypointSymbol}", DateTime.UtcNow);
             }
 
-            cargo = await _shipCommandsHelperService.TransferCargo(ship, shipsDictionary.Values.ToList());
-            if (cargo is not null)
-            {
-                ship = ship with { Cargo = cargo };
-            }
-
-            (cargo, var cooldown) = await _shipCommandsHelperService.Extract(ship, currentWaypoint);
-            if (cargo is not null && cooldown is not null)
-            {
-                ship = ship with { Cargo = cargo, Cooldown = cooldown, Error = null  };
-                return new ShipStatus(ship, $"Extract {ship.Nav.WaypointSymbol}", DateTime.UtcNow);
-            }
-
-            (nav, fuel, cooldown) = await _shipCommandsHelperService.NavigateToMarketplaceImport(ship, currentWaypoint);
+            (nav, fuel, var cooldown) = await _shipCommandsHelperService.NavigateToMarketplaceImport(ship, currentWaypoint);
             if (nav is not null && fuel is not null)
             {
                 ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown };

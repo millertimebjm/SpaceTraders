@@ -23,4 +23,5 @@ public interface IShipsService
     Task<ChartWaypointResult> ChartAsync(string waypointSymbol);
     Task<ScanSystemsResult> ScanSystemsAsync(string shipSymbol);
     Task SwitchShipFlightMode(Ship ship, NavFlightModeEnum flightMode);
+    Task<TransferCargoResult> TransferCargo(string shipSymbol, string targetShipSymbol, string inventorySymbol, int inventoryAmount);
 }

@@ -55,4 +55,5 @@ public interface IShipCommandsHelperService
     Task<(STContract?, Cargo?, Agent?)> FulfillContract(Ship ship, STContract contract);
     Task<(string?, ShipTypesEnum?)> ShipToBuy(IEnumerable<Ship> ships);
     Task<bool> CheckRemotePurchaseShip(IEnumerable<Ship> ships, string shipyardWaypoint, ShipTypesEnum shipType);
+    Task<Cargo?> TransferCargo(Ship ship, List<Ship> ships);
 }
