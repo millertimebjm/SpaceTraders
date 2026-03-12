@@ -44,13 +44,13 @@ public class ViewHelperService
         if (timeSpan == TimeSpan.Zero)
             return "0s";
 
-        if (timeSpan.TotalDays > 0)
-            return $"{timeSpan.TotalDays}d";
-        if (timeSpan.TotalHours > 0)
-            return $"{timeSpan.TotalHours}h";
-        if (timeSpan.TotalMinutes > 0)
-            return $"{timeSpan.TotalMinutes}m";
-        return $"{timeSpan.TotalSeconds}s";
+        if ((int)timeSpan.TotalDays > 0)
+            return $"{(int)timeSpan.TotalDays}d";
+        if ((int)timeSpan.TotalHours > 0)
+            return $"{(int)timeSpan.TotalHours}h";
+        if ((int)timeSpan.TotalMinutes > 0)
+            return $"{(int)timeSpan.TotalMinutes}m";
+        return $"{(int)timeSpan.TotalSeconds}s";
     }
 
     public static string HumanReadableTimeSpan(TimeSpan t)

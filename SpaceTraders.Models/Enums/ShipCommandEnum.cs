@@ -13,7 +13,6 @@ public enum ShipCommandEnum
     PurchaseShip,
     // BuyToConstruction,
     // BuyToStorage,
-
     Exploration,
     FulfillContract,
     MarketWatch,
