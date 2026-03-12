@@ -24,12 +24,7 @@ public class HaulerShipJobService(
         {
             return new ShipCommand(ship.Symbol, ShipCommandEnum.SupplyConstruction);
         }
-<<<<<<< HEAD
-        if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()) > 3
-            && ships.Count(s => s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.HaulingAssistToSellAnywhere) < 3)
-=======
         if (await IsHaulingAssist(ships, ship))
->>>>>>> 69fb560 (Add Hauling Assist to active command usage)
         {
             return new ShipCommand(ship.Symbol, ShipCommandEnum.HaulingAssistToSellAnywhere);
         }
