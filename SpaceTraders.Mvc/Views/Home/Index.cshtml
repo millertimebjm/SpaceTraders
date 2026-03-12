@@ -83,6 +83,20 @@
 <section class="text-center container">
     <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
         @foreach (var shipStatus in Model
+            .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.TRANSPORT.ToString())
+            .OrderBy(s => s.Ship.Nav.WaypointSymbol))
+        {
+            await Html.RenderPartialAsync("_ShipStatusBox", shipStatus);
+        }
+    </div>
+</section>
+
+<br/>
+<br/>
+
+<section class="text-center container">
+    <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
+        @foreach (var shipStatus in Model
             .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.SATELLITE.ToString())
             .OrderBy(s => s.Ship.Nav.WaypointSymbol))
         {

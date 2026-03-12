@@ -75,6 +75,7 @@ public class HaulerShipJobService(
         var agent = await _agentsService.GetAsync();
         var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
         var unfinishedJumpGateWaypoint = system.Waypoints.SingleOrDefault(w => w.JumpGate is not null && w.IsUnderConstruction);
+        if (unfinishedJumpGateWaypoint is null) return false;
         
         if (ship.Cargo.Inventory.Any() && ship.Cargo.Inventory.All(i => unfinishedJumpGateWaypoint.Construction.Materials.Where(m => m.Fulfilled < m.Required).Any(m => i.Symbol == m.TradeSymbol)))
         {

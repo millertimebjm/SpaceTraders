@@ -153,8 +153,7 @@ public class ShipLoopsService(
         var shipToBuy = await _shipCommandHelperService.ShipToBuy(ships);
         if (shipToBuy.Item1 is not null && shipToBuy.Item2 is not null)
         {
-            await _shipCommandHelperService.CheckRemotePurchaseShip(ships, shipToBuy.Item1, shipToBuy.Item2.Value);
-            return true;
+            return await _shipCommandHelperService.CheckRemotePurchaseShip(ships, shipToBuy.Item1, shipToBuy.Item2.Value);
         }
         return false;
     }

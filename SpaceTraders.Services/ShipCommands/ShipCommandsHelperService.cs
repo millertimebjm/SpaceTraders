@@ -1224,6 +1224,15 @@ public class ShipCommandsHelperService(
             }
         }
 
+        if (headquartersSystem.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction))
+        {
+            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.TRANSPORT.ToString()) < 5)
+            {
+                var shipyard = headquartersSystem.Waypoints.Single(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_LIGHT_SHUTTLE.ToString()) == true);
+                return (shipyard.Symbol, ShipTypesEnum.SHIP_LIGHT_SHUTTLE);
+            }
+        }
+
         foreach (var system in reachableSystems)
         {
             var markets = system.Waypoints.Where(w => w.Marketplace is not null).ToList();
@@ -1250,15 +1259,6 @@ public class ShipCommandsHelperService(
             {
                 var shipyard = headquartersSystem.Waypoints.Single(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_LIGHT_HAULER.ToString()) == true);
                 return (shipyard.Symbol, ShipTypesEnum.SHIP_LIGHT_HAULER);
-            }
-        }
-
-        if (headquartersSystem.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction))
-        {
-            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.TRANSPORT.ToString()) < 5)
-            {
-                var shipyard = headquartersSystem.Waypoints.Single(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_LIGHT_SHUTTLE.ToString()) == true);
-                return (shipyard.Symbol, ShipTypesEnum.SHIP_LIGHT_SHUTTLE);
             }
         }
 
