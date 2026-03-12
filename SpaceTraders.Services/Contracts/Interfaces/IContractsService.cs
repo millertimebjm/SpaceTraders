@@ -15,4 +15,5 @@ public interface IContractsService
         string tradeSymbol,
         int units);
     Task<ContractNegotiateResult> NegotiateAsync(string shipSymbol);
+    Task SetAsync(STContract contract);
 }

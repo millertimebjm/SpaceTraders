@@ -129,11 +129,19 @@ public class FulfillContractCommand(
             }
 
             (STContract? newContract, Cargo? cargo, Agent? agent) = await _shipCommandsHelperService.FulfillContract(ship, contract);
-            if (contract is not null && cargo is not null && agent is not null)
+            if (newContract is not null && cargo is not null && agent is null)
+            {
+                contract = newContract;
+                await _contractsService.SetAsync(contract);
+                ship = ship with { Cargo = cargo };
+                continue;
+            }
+            if (newContract is not null && cargo is not null && agent is not null)
             {
                 await _agentsService.SetAsync(agent);
                 await AddFulfillShipLog(ship.Symbol, contract);
                 contract = newContract;
+                await _contractsService.SetAsync(contract);
                 ship = ship with { Cargo = cargo, Goal = contract.ContractId };
                 if (ship.Registration.Role == ShipRegistrationRolesEnum.COMMAND.ToString())
                 {
@@ -160,7 +168,7 @@ public class FulfillContractCommand(
                 return new ShipStatus(ship, $"Navigate To Marketplace Export for Contract {nav.Route.Destination.Symbol}", DateTime.UtcNow);
             }
 
-            var purchaseCargoResult = await _shipCommandsHelperService.PurchaseCargoForContract(ship, currentWaypoint, contract.Terms.Deliver[0].TradeSymbol, contract.Terms.Deliver[0].UnitsRequired);
+            var purchaseCargoResult = await _shipCommandsHelperService.PurchaseCargoForContract(ship, currentWaypoint, contract.Terms.Deliver[0].TradeSymbol, contract.Terms.Deliver[0].UnitsRequired - contract.Terms.Deliver[0].UnitsFulfilled);
             if (purchaseCargoResult is not null)
             {
                 ship = ship with { Cargo = purchaseCargoResult.Cargo };

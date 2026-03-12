@@ -22,6 +22,11 @@ public class ContractsService(
         return contracts;
     }
 
+    public async Task SetAsync(STContract contract)
+    {
+        await _contractsCacheService.SetAsync(contract);
+    }
+
     public async Task<STContract?> GetActiveAsync(bool refresh = false)
     {
         if (!refresh)

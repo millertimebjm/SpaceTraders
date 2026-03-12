@@ -140,14 +140,14 @@ public class ShipCommandsHelperService(
         {
             do
             {
-                var amountToBuy = Math.Min(inventoryAmount - ship.Cargo.Units, contractTradeModelTradeVolume.Value);
+                var amountToBuy = Math.Min(Math.Min(inventoryAmount - ship.Cargo.Units, contractTradeModelTradeVolume.Value), ship.Cargo.Capacity - ship.Cargo.Units);
                 purchaseCargoResult = await _marketplacesService.PurchaseAsync(ship.Symbol, contractTradeSymbol, amountToBuy);
                 //await Task.Delay(500);
                 agent = purchaseCargoResult.Agent;
                 ship = ship with { Cargo = purchaseCargoResult.Cargo };
                 await _transactionsService.SetAsync(purchaseCargoResult.Transaction);
                 //await Task.Delay(500);
-            }  while (ship.Cargo.Units != inventoryAmount);
+            }  while (ship.Cargo.Units != inventoryAmount && ship.Cargo.Units < ship.Cargo.Capacity);
         }
 
         return purchaseCargoResult;
@@ -1368,12 +1368,17 @@ public class ShipCommandsHelperService(
         Agent? agent = await _agentsService.GetAsync();
         if (ship.Cargo.Inventory.Count > 0
             && contract.Terms.Deliver[0].TradeSymbol == ship.Cargo.Inventory[0].Symbol
-            && contract.Terms.Deliver[0].UnitsRequired == ship.Cargo.Inventory[0].Units
+            && contract.Terms.Deliver[0].UnitsRequired >= ship.Cargo.Inventory[0].Units
             && ship.Nav.WaypointSymbol == contract.Terms.Deliver[0].DestinationSymbol)
         {
             var contractDeliverResult = await _contractsService.DeliverAsync(contract.ContractId, ship.Symbol, ship.Cargo.Inventory[0].Symbol, ship.Cargo.Inventory[0].Units);
             contract = STContractApi.MapToSTContract(contractDeliverResult.Contract);
             cargo = contractDeliverResult.Cargo;
+            if (!cargo.Inventory.Any() && 
+                contract.Terms.Deliver[0].UnitsFulfilled < contract.Terms.Deliver[0].UnitsRequired)
+            {
+                return (contract, cargo, null);
+            }
 
             var contractFulfillResult = await _contractsService.FulfillAsync(contract.ContractId);
             contract = STContractApi.MapToSTContract(contractFulfillResult.Contract);
