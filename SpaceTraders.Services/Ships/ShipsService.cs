@@ -466,7 +466,7 @@ public class ShipsService(
         {
             return ship.Nav.Route.Arrival - DateTime.UtcNow;
         }
-        if (ship.Cooldown.Expiration > DateTime.UtcNow)
+        if (ship.Cooldown?.Expiration > DateTime.UtcNow)
         {
             return ship.Cooldown.Expiration - DateTime.UtcNow;
         }

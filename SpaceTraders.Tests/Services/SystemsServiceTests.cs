@@ -16,7 +16,7 @@ public class SystemsServiceTests
         const string jumpGateWaypoint = "A1-BC1-DE1";
         var waypoints = new List<Waypoint>()
         {
-            new(jumpGateWaypoint, systemSymbol, "", 0, 0, null, null, null, null, null, null, false, null),
+            new(jumpGateWaypoint, systemSymbol, "", 0, 0, null, null, null, null, null, null, false, null, null),
         };
         var systems = new List<STSystem>()
         {
@@ -35,7 +35,7 @@ public class SystemsServiceTests
         const string jumpGateWaypoint = "A1-BC1-DE1";
         var waypoints = new List<Waypoint>()
         {
-            new(jumpGateWaypoint, systemSymbol, "", 0, 0, null, null, null, null, null, new JumpGate("jumpgate", ["connection"]), true, null),
+            new(jumpGateWaypoint, systemSymbol, "", 0, 0, null, null, null, null, null, new JumpGate("jumpgate", ["connection"]), true, null, null),
         };
         var systems = new List<STSystem>()
         {
@@ -57,13 +57,13 @@ public class SystemsServiceTests
         
         var waypoints = new List<Waypoint>()
         {
-            new(jumpGateWaypoint, systemSymbol, "", 0, 0, null, null, null, null, null, new JumpGate(jumpGateWaypoint, [secondJumpGateWaypoint]), false, null),
+            new(jumpGateWaypoint, systemSymbol, "", 0, 0, null, null, null, null, null, new JumpGate(jumpGateWaypoint, [secondJumpGateWaypoint]), false, null, null),
         };
 
         
         var secondSystemWaypoints = new List<Waypoint>()
         {
-            new(secondJumpGateWaypoint, secondSystemSymbol, "", 0, 0, null, null, null, null, null, new JumpGate(secondJumpGateWaypoint, [jumpGateWaypoint]), true, null)
+            new(secondJumpGateWaypoint, secondSystemSymbol, "", 0, 0, null, null, null, null, null, new JumpGate(secondJumpGateWaypoint, [jumpGateWaypoint]), true, null, null)
         };
 
         var systems = new List<STSystem>()
@@ -87,12 +87,12 @@ public class SystemsServiceTests
         
         var waypoints = new List<Waypoint>()
         {
-            new(jumpGateWaypoint, systemSymbol, "", 0, 0, null, null, null, null, null, new JumpGate(jumpGateWaypoint, [secondJumpGateWaypoint]), false, null),
+            new(jumpGateWaypoint, systemSymbol, "", 0, 0, null, null, null, null, null, new JumpGate(jumpGateWaypoint, [secondJumpGateWaypoint]), false, null, null),
         };
         
         var secondSystemWaypoints = new List<Waypoint>()
         {
-            new(secondJumpGateWaypoint, secondSystemSymbol, "", 0, 0, null, null, null, null, null, new JumpGate(secondJumpGateWaypoint, [jumpGateWaypoint]), false, null)
+            new(secondJumpGateWaypoint, secondSystemSymbol, "", 0, 0, null, null, null, null, null, new JumpGate(secondJumpGateWaypoint, [jumpGateWaypoint]), false, null, null)
         };
 
         var systems = new List<STSystem>()
@@ -119,17 +119,17 @@ public class SystemsServiceTests
 
         var waypoints = new List<Waypoint>()
         {
-            new(jumpGateWaypoint, systemSymbol, "", 0, 0, null, null, null, null, null, new JumpGate(jumpGateWaypoint, [secondJumpGateWaypoint]), false, null),
+            new(jumpGateWaypoint, systemSymbol, "", 0, 0, null, null, null, null, null, new JumpGate(jumpGateWaypoint, [secondJumpGateWaypoint]), false, null, null),
         };
         
         var secondSystemWaypoints = new List<Waypoint>()
         {
-            new(secondJumpGateWaypoint, secondSystemSymbol, "", 0, 0, null, null, null, null, null, new JumpGate(secondJumpGateWaypoint, [jumpGateWaypoint, thirdJumpGateWaypoint]), false, null)
+            new(secondJumpGateWaypoint, secondSystemSymbol, "", 0, 0, null, null, null, null, null, new JumpGate(secondJumpGateWaypoint, [jumpGateWaypoint, thirdJumpGateWaypoint]), false, null, null)
         };
 
         var thirdSystemWaypoints = new List<Waypoint>()
         {
-            new(thirdJumpGateWaypoint, thirdSystemSymbol, "", 0, 0, null, null, null, null, null, new JumpGate(thirdJumpGateWaypoint, [secondJumpGateWaypoint]), false, null)
+            new(thirdJumpGateWaypoint, thirdSystemSymbol, "", 0, 0, null, null, null, null, null, new JumpGate(thirdJumpGateWaypoint, [secondJumpGateWaypoint]), false, null, null)
         };
 
         var systems = new List<STSystem>()

@@ -203,7 +203,7 @@ public class TradesService(
                 var score =
                     (profitWeight * profit) +
                     (marginWeight * marginPercent * 100); // scale percentage for balance
-
+                
                 return score * SupplyFactor(t.ExportSupplyEnum, t.ImportSupplyEnum);
             })
             .ThenBy(t => t.ExportWaypointSymbol)

@@ -1265,7 +1265,7 @@ public class ShipCommandsHelperService(
         return (null, null);
     }
 
-    public async Task<(Nav? nav, Fuel? fuel, Cooldown? cooldown, string? goal)> NavigateToExplore(
+    public async Task<(Nav? nav, Fuel? fuel, Cooldown cooldown, string? goal)> NavigateToExplore(
         Ship ship, 
         Waypoint currentWaypoint,
         List<string> otherShipGoals)
@@ -1286,7 +1286,7 @@ public class ShipCommandsHelperService(
                 .OrderBy(p => WaypointsService.CalculateDistance(currentWaypoint.X, currentWaypoint.X, p.Y, p.Y))
                 .First();
             var (refuelNav, refuelFuel) = await _shipsService.NavigateAsync(shortestFuelPath.Symbol, ship);
-            return (refuelNav, refuelFuel, null, ship.Goal);
+            return (refuelNav, refuelFuel, ship.Cooldown, ship.Goal);
         }
 
         if (ship.Nav.WaypointSymbol == ship.Goal)
@@ -1331,7 +1331,7 @@ public class ShipCommandsHelperService(
             unmappedPaths = pathDictionary.Where(p => unmappedWaypoints.Contains(p.Key)).ToList();
             if (unmappedPaths.Count == 0)
             {
-                return (null, null, null, null);
+                return (null, null, ship.Cooldown, null);
             }
         }
         // else

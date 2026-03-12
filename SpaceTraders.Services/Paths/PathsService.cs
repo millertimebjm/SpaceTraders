@@ -1,4 +1,5 @@
 using SpaceTraders.Models;
+using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Paths.Interfaces;
 using SpaceTraders.Services.Systems;
 using SpaceTraders.Services.Systems.Interfaces;
@@ -266,5 +267,107 @@ public class PathsService(
         var result = await BuildSystemPathWithCost(originWaypoint, fuelMax, startingFuel);
         SystemPathMemo.Add((originWaypoint, fuelMax, startingFuel), result);
         return result;
+    }
+
+    public async Task<List<PathModel>> BuildSystemPathWithCost2(
+        string originWaypoint, 
+        int maxFuel, 
+        int startingFuel)
+    {
+        var systems = await _systemsService.GetAsync();
+        var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(originWaypoint));
+        var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
+        return BuildSystemPathWithCost2(waypoints, originWaypoint, maxFuel, startingFuel);
+    }
+
+    public static List<PathModel> BuildSystemPathWithCost2(
+        List<Waypoint> waypoints,
+        string originWaypoint, 
+        int maxFuel, 
+        int startingFuel)
+    {
+        const int COST_OF_JUMP = 1000;
+        var waypointsReviewed = new List<string>();
+        var waypointsCost = new List<PathModel>
+        {
+            new(originWaypoint, [originWaypoint], 0, startingFuel),
+        };
+
+        while (waypointsReviewed.Count < waypoints.Count)
+        {
+            var pathModelToReview = waypointsCost.Where(w => !waypointsReviewed.Contains(w.WaypointSymbol)).OrderBy(w => w.TimeCost).First();
+            var currentFuel = pathModelToReview.ResultFuel;
+            var waypointToReview = waypoints.Single(w => w.Symbol == pathModelToReview.WaypointSymbol);
+            var waypointsWithinSystemNotReviewed = waypoints
+                .Where(w => WaypointsService.ExtractSystemFromWaypoint(w.Symbol) == WaypointsService.ExtractSystemFromWaypoint(waypointToReview.Symbol)
+                    && !waypointsReviewed.Contains(w.Symbol)
+                    && w.Symbol != pathModelToReview.WaypointSymbol)
+                .ToList();
+            foreach (var waypointWithinSystem in waypointsWithinSystemNotReviewed)
+            {
+                var cost = CalculateCost(waypointToReview, waypointWithinSystem, currentFuel);
+                if (Refuel(waypointWithinSystem)) 
+                {
+                    currentFuel = maxFuel;
+                }
+                else
+                {
+                    if (cost < currentFuel) currentFuel -= cost;
+                    else currentFuel--;
+                }
+                ReplaceIfLowerCostOrAdd(waypointsCost, pathModelToReview, waypointWithinSystem, cost, currentFuel);
+            }
+            if (waypointToReview.JumpGate is not null && !waypointToReview.IsUnderConstruction)
+            {
+                foreach (var jumpGateWaypoint in waypointToReview.JumpGate.Connections)
+                {
+                    var jumpGateConnectionWaypoint = waypoints.Single(w => w.Symbol == pathModelToReview.WaypointSymbol);
+                    if (Refuel(jumpGateConnectionWaypoint)) currentFuel = maxFuel;
+                    ReplaceIfLowerCostOrAdd(waypointsCost, pathModelToReview, jumpGateConnectionWaypoint, COST_OF_JUMP, currentFuel);
+                }
+            }
+            waypointsReviewed.Add(pathModelToReview.WaypointSymbol);
+        }
+
+        return waypointsCost;
+    }
+
+    private static void ReplaceIfLowerCostOrAdd(List<PathModel> waypointsCost, PathModel origin, Waypoint destination, int cost, int currentFuel)
+    {
+        var originPathModel = waypointsCost.Single(wc => wc.WaypointSymbol == origin.WaypointSymbol);
+        var destinationPathModel = waypointsCost.SingleOrDefault(wc => wc.WaypointSymbol == destination.Symbol);
+        if (destinationPathModel is null)
+        {
+            var clonedPath = new List<string>();
+            clonedPath.AddRange(originPathModel.PathWaypointSymbols);
+            clonedPath.AddRange(destination.Symbol);
+            waypointsCost.Add(new PathModel(destination.Symbol, clonedPath, originPathModel.TimeCost + cost, currentFuel));
+            return;
+        }
+        
+        var newCost = originPathModel.TimeCost + cost;
+        if (newCost < destinationPathModel.TimeCost)
+        {
+            var clonedPath = new List<string>();
+            clonedPath.AddRange(originPathModel.PathWaypointSymbols);
+            clonedPath.AddRange(destination.Symbol);
+            waypointsCost.Remove(destinationPathModel);
+            waypointsCost.Add(new PathModel(destination.Symbol, clonedPath, newCost, currentFuel));
+        }
+    }
+
+    public static int CalculateCost(Waypoint origin, Waypoint destination, int currentFuel)
+    {
+        var distance = WaypointsService.CalculateDistance(origin.X, origin.Y, destination.X, destination.Y);
+        if (distance > currentFuel)
+        {
+            return (int)Math.Ceiling(distance * 10);
+        }
+        return (int)Math.Ceiling(distance);
+    }
+
+    public static bool Refuel(Waypoint waypoint)
+    {
+        return waypoint.Marketplace?.Exchange.Any(e => e.Symbol == TradeSymbolsEnum.FUEL.ToString()) == true;
     }
 }

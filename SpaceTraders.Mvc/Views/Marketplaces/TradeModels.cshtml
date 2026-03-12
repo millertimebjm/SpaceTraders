@@ -26,6 +26,7 @@
             <th>Sell</th>
             <th style="text-align: center;">Supply</th>
             <th style="text-align: center;">Volume</th>
+            <th style="text-align: center;">Nav</th>
         </tr>
     </thead>
     <tbody>
@@ -41,6 +42,7 @@
                 <td style="text-align: right;">@tradeModel.First().ImportSellPrice</td>
                 <td style="text-align: center;">@tradeModel.First().ImportSupplyEnum</td>
                 <td style="text-align: right;">@tradeModel.First().ImportTradeVolume</td>
+                <td style="text-align: right;">@tradeModel.First().NavigationFactor</td>
             </tr>
         }
     </tbody>
