@@ -94,11 +94,10 @@ public class BuyAndSellCommand(
             if (noWork)
             {
                 var timeSpan = TimeSpan.FromMinutes(10);
+                
                 ship = ship with {
                     Goal = null,
-                    //Cooldown = new Cooldown(ship.Symbol, (int)timeSpan.TotalSeconds, (int)timeSpan.TotalSeconds, DateTime.UtcNow.Add(timeSpan)),
-                    //ShipCommand = null,
-                    ShipCommand = new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration)
+                    ShipCommand = new ShipCommand(ship.Symbol, ShipCommandEnum.HaulingAssistToSellAnywhere)
                 };
                 return new ShipStatus(ship, $"No Valid Exports found", DateTime.UtcNow);
             }
