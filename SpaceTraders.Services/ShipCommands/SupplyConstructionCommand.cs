@@ -32,7 +32,7 @@ public class SupplyConstructionCommand(
             loopCount++;
             if (loopCount > 20) return new ShipStatus(ship, $"Ship in loop.", DateTime.UtcNow);
             if (ShipsService.GetShipCooldown(ship) is not null) return shipStatus;
-            var paths = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
+            var paths = PathsService.BuildSystemPathWithCost(system.Waypoints.ToList(), currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
 
             //await Task.Delay(1000);
 

@@ -1,4 +1,5 @@
-﻿using NSubstitute;
+﻿using System.Diagnostics;
+using NSubstitute;
 using SpaceTraders.Models;
 using SpaceTraders.Services.Paths;
 using SpaceTraders.Services.Paths.Interfaces;
@@ -28,7 +29,7 @@ public class PathsServices2Tests
         //     .GetAsync()
         //     .Returns([system]);
         // var pathsService = new PathsService(systemsServiceSub, pathsCacheService);
-        var paths = PathsService.BuildSystemPathWithCost2(waypoints, waypoints.First().Symbol, 1, 1);
+        var paths = PathsService.BuildSystemPathWithCost(waypoints, waypoints.First().Symbol, 1, 1);
         var path = paths.Single(p => 
             p.WaypointSymbol == waypoints.Last().Symbol 
             && waypoints.Last().Symbol == destinationSymbol
@@ -52,7 +53,7 @@ public class PathsServices2Tests
         //     .GetAsync()
         //     .Returns([system]);
         // var pathsService = new PathsService(systemsServiceSub, pathsCacheService);
-        var paths = PathsService.BuildSystemPathWithCost2(waypoints, waypoints.First().Symbol, 2, 2);
+        var paths = PathsService.BuildSystemPathWithCost(waypoints, waypoints.First().Symbol, 2, 2);
         var path = paths.Single(p => p.WaypointSymbol == waypoints.Last().Symbol);
         Assert.Equal(path.PathWaypointSymbols.First(), waypoints.First().Symbol);
         Assert.Equal(path.PathWaypointSymbols.Last(), waypoints.Last().Symbol);
@@ -75,7 +76,8 @@ public class PathsServices2Tests
         //     .GetAsync()
         //     .Returns([system]);
         // var pathsService = new PathsService(systemsServiceSub, pathsCacheService);
-        var paths = PathsService.BuildSystemPathWithCost2(waypoints, waypoints.First().Symbol, 105, 105);
+        var firstWaypointSymbol = waypoints.First().Symbol;
+        var paths = PathsService.BuildSystemPathWithCost(waypoints, firstWaypointSymbol, 105, 105);
         var path = paths.Single(p => p.WaypointSymbol == "X1-X1-destination");
         Assert.Equal(waypoints[0].Symbol, path.PathWaypointSymbols[0]);
         Assert.Equal(waypoints[1].Symbol, path.PathWaypointSymbols[1]);
@@ -102,7 +104,7 @@ public class PathsServices2Tests
         //     .GetAsync()
         //     .Returns([system]);
         // var pathsService = new PathsService(systemsServiceSub, pathsCacheService);
-        var paths = PathsService.BuildSystemPathWithCost2(waypoints, waypoints.First().Symbol, 90, 90);
+        var paths = PathsService.BuildSystemPathWithCost(waypoints, waypoints.First().Symbol, 90, 90);
         var path = paths.Single(p => p.WaypointSymbol == "X1-X1-destination");
         Assert.Equal(waypoints[0].Symbol, path.PathWaypointSymbols[0]);
         Assert.Equal(waypoints[1].Symbol, path.PathWaypointSymbols[1]);

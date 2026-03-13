@@ -4,6 +4,7 @@ using MongoDB.Driver;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
+using SpaceTraders.Services.Paths;
 using SpaceTraders.Services.Paths.Interfaces;
 using SpaceTraders.Services.Systems;
 using SpaceTraders.Services.Systems.Interfaces;
@@ -169,9 +170,9 @@ public class TradesService(
 
         try
         {
-            var paths = await _pathsService.BuildSystemPathWithCost(waypoints.ToList(), exportWaypoint, fuelMax, fuelCurrent);
-            var path = paths.Single(p => p.Key == importSymbol);
-            var navigationFactor = NavigationFactor(path.Value.Item2);
+            var paths = PathsService.BuildSystemPathWithCost(waypoints.ToList(), exportWaypoint.Symbol, fuelMax, fuelCurrent);
+            var path = paths.Single(p => p.WaypointSymbol == importSymbol);
+            var navigationFactor = NavigationFactor(path.TimeCost);
             await _pathsCacheService.SetNavigationFactor(exportWaypoint.Symbol, importSymbol, fuelMax, fuelCurrent, navigationFactor);
             return navigationFactor;
         }
@@ -180,9 +181,9 @@ public class TradesService(
             _logger.LogError("Paths were not updated because a new system became available.");
             await _pathsCacheService.ClearAllCachedSystemPaths();
 
-            var paths = await _pathsService.BuildSystemPathWithCost(waypoints.ToList(), exportWaypoint, fuelMax, fuelCurrent);
-            var path = paths.Single(p => p.Key == importSymbol);
-            var navigationFactor = NavigationFactor(path.Value.Item2);
+            var paths = PathsService.BuildSystemPathWithCost(waypoints.ToList(), exportWaypoint.Symbol, fuelMax, fuelCurrent);
+            var path = paths.Single(p => p.WaypointSymbol == importSymbol);
+            var navigationFactor = NavigationFactor(path.TimeCost);
             await _pathsCacheService.SetNavigationFactor(exportWaypoint.Symbol, importSymbol, fuelMax, fuelCurrent, navigationFactor);
             return navigationFactor;
         }

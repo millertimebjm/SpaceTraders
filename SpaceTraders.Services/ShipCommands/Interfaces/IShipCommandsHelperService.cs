@@ -20,7 +20,7 @@ public interface IShipCommandsHelperService
     Task<(Cargo?, Cooldown?)> Extract(Ship ship, Waypoint currentWaypoint);
     Task<(Cargo?, Cooldown?)> Siphon(Ship ship, Waypoint currentWaypoint);
     Task<Cargo?> Jettison(Ship ship);
-    Task<(Nav?, Fuel?, Cooldown?)> NavigateToMarketplaceImport(Ship ship, Waypoint currentWaypoint);
+    Task<(Nav?, Fuel?, Cooldown)> NavigateToMarketplaceImport(Ship ship, Waypoint currentWaypoint);
     Task<(Nav?, Fuel?)> NavigateToConstructionWaypoint(Ship ship, Waypoint currentWaypoint);
     Task<Waypoint?> GetClosestSellingWaypoint(Ship ship, Waypoint currentWaypoint);
     Task<(Nav?, Fuel?)> NavigateToMarketplaceExport(Ship ship, Waypoint currentWaypoint, Waypoint constructionWaypoint);
