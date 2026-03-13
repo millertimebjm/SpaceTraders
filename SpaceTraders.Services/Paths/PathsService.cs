@@ -319,9 +319,11 @@ public class PathsService(
             }
             if (waypointToReview.JumpGate is not null && !waypointToReview.IsUnderConstruction)
             {
-                foreach (var jumpGateWaypoint in waypointToReview.JumpGate.Connections)
+                var jumpGateConnectionsNotReviewed = waypointToReview.JumpGate.Connections.Where(c => !waypointsReviewed.Contains(c)).ToList();
+                foreach (var jumpGateWaypoint in jumpGateConnectionsNotReviewed)
                 {
-                    var jumpGateConnectionWaypoint = waypoints.Single(w => w.Symbol == pathModelToReview.WaypointSymbol);
+                    var jumpGateConnectionWaypoint = waypoints.SingleOrDefault(w => w.Symbol == jumpGateWaypoint);
+                    if (jumpGateConnectionWaypoint is null) continue;
                     if (Refuel(jumpGateConnectionWaypoint)) currentFuel = maxFuel;
                     ReplaceIfLowerCostOrAdd(waypointsCost, pathModelToReview, jumpGateConnectionWaypoint, COST_OF_JUMP, currentFuel);
                 }

@@ -76,7 +76,8 @@ namespace SpaceTraders.Models;
  Cooldown Cooldown,
  ShipCommand? ShipCommand,
  string? Error,
- string? Goal = null
+ string? Goal = null,
+ GoalModel? GoalModel = null
     );
 
     public record Route(
@@ -86,3 +87,4 @@ namespace SpaceTraders.Models;
  DateTime Arrival
     );
 
+public record GoalModel(string? TradeSymbol, string? BuyWaypointSymbol, string? SellWaypointSymbol);

@@ -39,19 +39,20 @@
     }
     @if (currentShip is not null && currentWaypoint is not null)
     {
-        var path = PathsService.BuildWaypointPath(
-            system.Waypoints, 
-            currentWaypoint,
+        var path = PathsService.BuildSystemPathWithCost(
+            system.Waypoints.ToList(), 
+            currentWaypoint.Symbol,
             currentShip.Fuel.Capacity,
             currentShip.Fuel.Current);
-        if (path.Any(p => p.Key.Symbol == waypoint.Symbol) || currentShip.Nav.FlightMode == NavFlightModeEnum.DRIFT.ToString())
+        if (path.Any(p => p.WaypointSymbol == waypoint.Symbol) || currentShip.Nav.FlightMode == NavFlightModeEnum.DRIFT.ToString())
         {
-            var waypointPath = path.SingleOrDefault(p => p.Key.Symbol == waypoint.Symbol).Value;
-            if (waypointPath.Item1?.Count() == 1)
+            var pathModel = path.SingleOrDefault(p => p.WaypointSymbol == waypoint.Symbol);
+            var waypointPath = pathModel.PathWaypointSymbols;
+            if (waypointPath.Count() == 1)
             {
                 <li>Current waypoint.</li>
             }
-            else if (waypointPath.Item1?.Count() == 2 || currentShip.Nav.FlightMode == NavFlightModeEnum.DRIFT.ToString())
+            else if (waypointPath.Count() == 2 || currentShip.Nav.FlightMode == NavFlightModeEnum.DRIFT.ToString())
             {
                 <li>Path has direct route.</li>
                 @if (currentShip.Nav.Status == NavStatusEnum.IN_ORBIT.ToString())
@@ -65,12 +66,13 @@
             }
             else
             {
-                var nextHop = waypointPath.Item1[1];
+                var nextHopSymbol = waypointPath[1];
+                var nextHop = system.Waypoints.Single(w => w.Symbol == nextHopSymbol);
                 var nextHopFuel = @Math.Ceiling(WaypointsService.CalculateDistance(nextHop.X, nextHop.Y, currentWaypoint.X, currentWaypoint.Y));
-                <li>Path has @(waypointPath.Item1.Count()-1) navigates</li>
+                <li>Path has @(waypointPath.Count()-1) navigates</li>
                 @if (currentShip.Nav.Status == NavStatusEnum.IN_ORBIT.ToString())
                 {
-                    <li><a href="/waypoints/@waypointPath.Item1[1].Symbol/navigate">Navigate To (@nextHopFuel/@currentShip.Fuel.Current) (@waypointPath.Item3)</a></li>
+                    <li><a href="/waypoints/@waypointPath[1]/navigate">Navigate To (@nextHopFuel/@currentShip.Fuel.Current) (@waypointPath)</a></li>
                 }
                 else
                 {

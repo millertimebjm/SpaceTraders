@@ -48,8 +48,6 @@ public class BuyAndSellCommand(
             var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
             var inventorySymbols = ship.Cargo.Inventory.Select(i => i.Symbol).ToHashSet();
 
-            //await Task.Delay(500);
-
             var refuelResponse = await _shipCommandsHelperService.Refuel(ship, currentWaypoint);
             if (refuelResponse is not null)
             {
@@ -58,6 +56,8 @@ public class BuyAndSellCommand(
                 await _transactionsService.SetAsync(refuelResponse.Transaction);
                 continue;
             }
+
+            GoalModel? goalModel = ship.GoalModel;
 
             var (nav, goal) = await _shipCommandsHelperService.DockForBuyAndSell(ship, currentWaypoint);
             if (nav is not null)
@@ -70,7 +70,7 @@ public class BuyAndSellCommand(
             var sellCargoResponse = await _shipCommandsHelperService.Sell(ship, currentWaypoint);
             if (sellCargoResponse is not null)
             {
-                ship = ship with { Cargo = sellCargoResponse.Cargo, ShipCommand = null };
+                ship = ship with { Cargo = sellCargoResponse.Cargo, ShipCommand = null, GoalModel = null };
                 await _agentsService.SetAsync(sellCargoResponse.Agent);
                 return new ShipStatus(ship, $"Completed BuyToSell, Resetting Job.", DateTime.UtcNow);
             }
@@ -84,26 +84,26 @@ public class BuyAndSellCommand(
 
             var otherShipGoalSymbols = shipsDictionary
                 .Values
-                .Where(s => s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.BuyToSell && s.Goal is not null)
-                .Select(s => s.Goal ?? "")
+                .Where(s => s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.BuyToSell && s.GoalModel is not null)
+                .Select(s => s.GoalModel?.TradeSymbol ?? "")
                 .ToList();
-            (nav, fuel, cooldown, var noWork, goal) = await _shipCommandsHelperService.NavigateToMarketplaceRandomExport(
+            (nav, fuel, cooldown, var noWork, goalModel) = await _shipCommandsHelperService.NavigateToMarketplaceRandomExport(
                 ship, 
                 currentWaypoint,
                 otherShipGoalSymbols);
             if (noWork)
             {
                 var timeSpan = TimeSpan.FromMinutes(10);
-                
                 ship = ship with {
                     Goal = null,
+                    GoalModel = null,
                     ShipCommand = new ShipCommand(ship.Symbol, ShipCommandEnum.HaulingAssistToSellAnywhere)
                 };
                 return new ShipStatus(ship, $"No Valid Exports found", DateTime.UtcNow);
             }
             else if (nav is not null && fuel is not null)
             {
-                ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown, Goal = goal};
+                ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown, GoalModel = goalModel};
                 return new ShipStatus(ship, $"Navigate To Marketplace Random Export {nav.Route.Destination.Symbol}", DateTime.UtcNow);
             }
 

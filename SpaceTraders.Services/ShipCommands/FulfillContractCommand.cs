@@ -52,6 +52,16 @@ public class FulfillContractCommand(
             {
                 contract = await _contractsService.GetActiveAsync(refresh: true);
             }
+            if (contract is null)
+            {
+                var contracts = await _contractsService.GetAsync();
+                contract = contracts.OrderByDescending(c => c.DeadlineToAccept).FirstOrDefault();
+                if (contract is not null)
+                {
+                    var acceptResult = await _contractsService.AcceptAsync(contract.ContractId);
+                    contract = STContractApi.MapToSTContract(acceptResult.Contract);
+                }
+            }
 
             if (contract is null)
             {
@@ -61,8 +71,8 @@ public class FulfillContractCommand(
                     ship = ship with { Nav = dockResult };
                 }
                 var negotiateResult = await _contractsService.NegotiateAsync(ship.Symbol);
-                var acceptResult = await _contractsService.AcceptAsync(negotiateResult.Contract.Id);
-                contract = STContractApi.MapToSTContract(acceptResult.Contract);
+                contract = STContractApi.MapToSTContract(negotiateResult.Contract);
+                var acceptResult = await _contractsService.AcceptAsync(contract.ContractId);
             }
             if (contract is not null)
             {

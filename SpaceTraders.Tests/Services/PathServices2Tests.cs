@@ -115,33 +115,33 @@ public class PathsServices2Tests
         Assert.Equal(path.PathWaypointSymbols.Last(), waypoints.Last().Symbol);
     }
 
-    // [Fact]
-    // public async Task SystemPath_EasyPath()
-    // {
-    //     var firstWaypointSymbol = "A1-AB1-ABC1";
-    //     var secondWaypointSymbol = "Z1-ZY1-ZYX1";
-    //     var secondWaypoint = new Waypoint(secondWaypointSymbol, WaypointsService.ExtractSystemFromWaypoint(secondWaypointSymbol), "", 0, 0, null, "", null, null, null, JumpGate: new JumpGate(secondWaypointSymbol, [firstWaypointSymbol]), IsUnderConstruction: false, null, null);
-    //     var secondSystem = new STSystem("", WaypointsService.ExtractSystemFromWaypoint(secondWaypointSymbol), "", "", 0, 0, new List<Waypoint> { secondWaypoint }, null, null);
+    [Fact]
+    public async Task SystemPath_EasyPath()
+    {
+        var firstWaypointSymbol = "A1-AB1-ABC1";
+        var secondWaypointSymbol = "Z1-ZY1-ZYX1";
+        var secondWaypoint = new Waypoint(secondWaypointSymbol, WaypointsService.ExtractSystemFromWaypoint(secondWaypointSymbol), "", 0, 0, null, "", null, null, null, JumpGate: new JumpGate(secondWaypointSymbol, [firstWaypointSymbol]), IsUnderConstruction: false, null, null);
+        var secondSystem = new STSystem("", WaypointsService.ExtractSystemFromWaypoint(secondWaypointSymbol), "", "", 0, 0, new List<Waypoint> { secondWaypoint }, null, null);
 
-    //     var firstWaypointCompletedJumpGate = new Waypoint(firstWaypointSymbol, WaypointsService.ExtractSystemFromWaypoint(firstWaypointSymbol), "", 0, 0, null, "", null, null, null, new JumpGate(firstWaypointSymbol, [secondWaypointSymbol]), IsUnderConstruction: false, null, null);
-    //     var firstSystem = new STSystem("Constellation", "A1-AB1", "A1", "", 0, 0, new List<Waypoint> { firstWaypointCompletedJumpGate }, null, "");
+        var firstWaypointCompletedJumpGate = new Waypoint(firstWaypointSymbol, WaypointsService.ExtractSystemFromWaypoint(firstWaypointSymbol), "", 0, 0, null, "", null, null, null, new JumpGate(firstWaypointSymbol, [secondWaypointSymbol]), IsUnderConstruction: false, null, null);
+        var firstSystem = new STSystem("Constellation", "A1-AB1", "A1", "", 0, 0, new List<Waypoint> { firstWaypointCompletedJumpGate }, null, "");
 
-    //     IPathsCacheService pathsCacheService = Substitute.For<IPathsCacheService>();
-    //     ISystemsService systemsServiceSub = Substitute.For<ISystemsService>();
-    //     systemsServiceSub
-    //         .GetAsync()
-    //         .Returns(new List<STSystem> { firstSystem, secondSystem });
+        IPathsCacheService pathsCacheService = Substitute.For<IPathsCacheService>();
+        ISystemsService systemsServiceSub = Substitute.For<ISystemsService>();
+        systemsServiceSub
+            .GetAsync()
+            .Returns(new List<STSystem> { firstSystem, secondSystem });
 
-    //     var ship = new Ship("", null, null, null, null, null, null, null, null, null, new Fuel(10, 10, null), null, null, null);
+        var ship = new Ship("", null, null, null, null, null, null, null, null, null, new Fuel(10, 10, null), null, null, null);
 
-    //     IPathsService pathsService = new PathsService(systemsServiceSub, pathsCacheService);
-    //     var systemPath = await pathsService.BuildSystemPath(
-    //         firstWaypointSymbol,
-    //         ship.Fuel.Capacity, ship.Fuel.Current);
-    //     Assert.Equal(2, systemPath.Single(p => p.Key == secondWaypointSymbol).Value.Item1.Count());
-    //     Assert.Equal(firstWaypointSymbol, systemPath.Single(p => p.Key == secondWaypointSymbol).Value.Item1[0]);
-    //     Assert.Equal(secondWaypointSymbol, systemPath.Single(p => p.Key == secondWaypointSymbol).Value.Item1[1]);
-    // }
+        IPathsService pathsService = new PathsService(systemsServiceSub, pathsCacheService);
+        var systemPath = await pathsService.BuildSystemPathWithCost(
+            firstWaypointSymbol,
+            ship.Fuel.Capacity, ship.Fuel.Current);
+        Assert.Equal(2, systemPath.Single(p => p.WaypointSymbol == secondWaypointSymbol).PathWaypointSymbols.Count());
+        Assert.Equal(firstWaypointSymbol, systemPath.Single(p => p.WaypointSymbol == secondWaypointSymbol).PathWaypointSymbols[0]);
+        Assert.Equal(secondWaypointSymbol, systemPath.Single(p => p.WaypointSymbol == secondWaypointSymbol).PathWaypointSymbols[1]);
+    }
 
     // [Fact]
     // public async Task SystemPath_NoPath()
