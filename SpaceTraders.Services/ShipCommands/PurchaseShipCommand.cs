@@ -60,10 +60,10 @@ public class PurchaseShipCommand(
                 continue;
             }
 
-            (nav, var fuel) = await _shipCommandsHelperService.NavigateToShipyard(ship, currentWaypoint);
+            (nav, var fuel, var cooldown) = await _shipCommandsHelperService.NavigateToShipyard(ship, currentWaypoint);
             if (nav is not null && fuel is not null)
             {
-                ship = ship with { Nav = nav, Fuel = fuel };
+                ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown };
                 return new ShipStatus(ship, $"NavigateToShipyardWaypoint {ship.Nav.WaypointSymbol}", DateTime.UtcNow);
             }
 

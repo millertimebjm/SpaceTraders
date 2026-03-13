@@ -33,6 +33,9 @@ public class HaulerShipJobService(
 
     public async Task<bool> IsHaulingAssist(IEnumerable<Ship> ships, Ship ship)
     {
+        var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
+        if (system.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction)) return false;
+        
         if (ships.Any(s => s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.BuyToSell)
             && ships.Count(s => s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.HaulingAssistToSellAnywhere) < 3)
         {

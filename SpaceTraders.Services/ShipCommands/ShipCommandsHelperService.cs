@@ -579,9 +579,16 @@ public class ShipCommandsHelperService(
         }
 
         var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
-        var paths = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
         var asteroidWaypoints = system.Waypoints.Where(w => w.Type == WaypointTypesEnum.ENGINEERED_ASTEROID.ToString()).ToList();
-        var asteroidPaths = paths.Where(p => asteroidWaypoints.Select(w => w.Symbol).Contains(p.Key.Symbol));
+        var paths = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
+        var asteroidPaths = paths.Where(p => asteroidWaypoints.Select(w => w.Symbol).Contains(p.Key.Symbol)).ToList();
+
+        if (!paths.Any())
+        {
+            paths = PathsService.BuildWaypointPath(system.Waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
+            asteroidPaths = paths.Where(p => asteroidWaypoints.Select(w => w.Symbol).Contains(p.Key.Symbol)).ToList();
+        }
+        
         var closestAsteroidPath = asteroidPaths.OrderBy(p => p.Value.Item1.Count()).FirstOrDefault();
         return await _shipsService.NavigateAsync(closestAsteroidPath.Value.Item1[1].Symbol, ship);
     }
@@ -1130,14 +1137,14 @@ public class ShipCommandsHelperService(
         return surveyResult.Cooldown;
     }
 
-    public async Task<(Nav? nav, Fuel? fuel)> NavigateToShipyard(Ship ship, Waypoint currentWaypoint)
+    public async Task<(Nav? nav, Fuel? fuel, Cooldown cooldown)> NavigateToShipyard(Ship ship, Waypoint currentWaypoint)
     {
         var shipStatuses = await _shipStatusesCacheService.GetAsync();
         var ships = shipStatuses.Select(ss => ss.Ship);
         // var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
 
         var (shipyardWaypointSymbol, shipToBuy) = await ShipToBuy(ships);
-        if (shipToBuy is null) return (null, null);
+        if (shipToBuy is null) return (null, null, ship.Cooldown);
 
         var paths = await _pathsService.BuildSystemPath(currentWaypoint.Symbol, 600, 600);
         var shortestPath = paths.SingleOrDefault(p => p.Key == shipyardWaypointSymbol);
@@ -1145,15 +1152,15 @@ public class ShipCommandsHelperService(
         if (WaypointsService.ExtractSystemFromWaypoint(shortestPath.Value.Item1[1]) != ship.Nav.SystemSymbol)
         {
             var (navJump, cooldownJump) = await _shipsService.JumpAsync(shortestPath.Value.Item1[1], ship.Symbol);
-            return (navJump, ship.Fuel);
+            return (navJump, ship.Fuel, cooldownJump);
         }
         if (shortestPath.Value.Item1.Count() == 1)
         {
             await _waypointsService.GetAsync(shortestPath.Key, refresh: true);
-            return (null, null);
+            return (null, null, ship.Cooldown);
         }
         var (nav, fuel) = await _shipsService.NavigateAsync(shortestPath.Value.Item1[1], ship);
-        return (nav, fuel);
+        return (nav, fuel, ship.Cooldown);
     }
 
     public async Task<PurchaseShipResponse?> PurchaseShip(Ship ship, Waypoint currentWaypoint)

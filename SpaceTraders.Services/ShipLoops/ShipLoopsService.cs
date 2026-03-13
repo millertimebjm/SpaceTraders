@@ -35,6 +35,14 @@ public class ShipLoopsService(
 {
     public async Task Run()
     {
+        var cts = new CancellationTokenSource();
+        Console.CancelKeyPress += (s, e) =>
+        {
+            Console.WriteLine("\nShutting down gracefully...");
+            e.Cancel = true; // Prevent the process from terminating immediately
+            cts.Cancel();    // Trigger the token
+        };
+
         if (!await _collectionFactory.DatabaseExists())
         {
             await _accountService.RegisterAsync();
@@ -59,7 +67,7 @@ public class ShipLoopsService(
             await _shipStatusesCacheService.SetAsync(shipStatus);
         }
 
-        while (true)
+        while (!cts.IsCancellationRequested)
         {
             var shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
 

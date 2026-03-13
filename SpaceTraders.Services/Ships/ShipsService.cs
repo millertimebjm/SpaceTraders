@@ -245,13 +245,13 @@ public class ShipsService(
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", Token);
         var content = JsonContent.Create(new { waypointSymbol });
-        var data = await HttpHelperService.HttpPostHelper<DataSingle<Ship>>(
+        var data = await HttpHelperService.HttpPostHelper<DataSingle<JumpResponse>>(
             url,
             _httpClient,
             content,
             _logger);
         if (data.Datum is null) throw new HttpRequestException("Jump Nav not retrieved");
-        await AddJumpLog(shipSymbol, data.Datum.Nav, data.Datum.Cooldown);
+        await AddJumpLog(shipSymbol, data.Datum.Nav, data.Datum.Cooldown, data.Datum.Transaction);
         return (data.Datum.Nav, data.Datum.Cooldown);
 
         // var request = new HttpRequestMessage(HttpMethod.Post, url);
@@ -265,7 +265,7 @@ public class ShipsService(
         // return (data.Datum.Nav, data.Datum.Cooldown);
     }
 
-    private async Task AddJumpLog(string shipSymbol, Nav nav, Cooldown cooldown)
+    private async Task AddJumpLog(string shipSymbol, Nav nav, Cooldown cooldown, MarketTransaction transaction)
     {
         var shipLog = new ShipLog(
             shipSymbol,
@@ -274,6 +274,10 @@ public class ShipsService(
             {
                 OriginWaypointSymbol = nav.Route.Origin.Symbol,
                 DestinationWaypointSymbol = nav.Route.Destination.Symbol,
+                InventorySymbol = transaction.TradeSymbol,
+                InventoryUnits = transaction.Units,
+                CreditsPerUnit = transaction.PricePerUnit,
+                TotalCredits = transaction.TotalPrice,
             }),
             nav.Route.DepartureTime,
             cooldown.Expiration
