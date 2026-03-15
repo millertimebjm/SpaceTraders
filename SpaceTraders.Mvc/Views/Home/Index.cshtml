@@ -8,33 +8,45 @@
     ViewData["Title"] = "Fleet Status";
 }
 
-<section class="text-center container">
-    <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
-        @foreach (var shipStatus in Model
-            .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.COMMAND.ToString())
-            .OrderBy(s => s.Ship.ShipCommand?.ShipCommandEnum.ToString()))
-        {
-            await Html.RenderPartialAsync("_ShipStatusBox", shipStatus);
-        }
-    </div>
-</section>
+@{
+    var commandShips = Model
+        .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.COMMAND.ToString())
+        .OrderBy(s => s.Ship.ShipCommand?.ShipCommandEnum.ToString());
+}
+@if (commandShips.Any())
+{
+    <section class="text-center container">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
+            @foreach (var shipStatus in commandShips)
+            {
+                await Html.RenderPartialAsync("_ShipStatusBox", shipStatus);
+            }
+        </div>
+    </section>
 
-<br/>
-<br/>
+    <br/>
+    <br/>
+}
 
-<section class="text-center container">
-    <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
-        @foreach (var shipStatus in Model
-            .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString())
-            .OrderBy(s => s.Ship.ShipCommand?.ShipCommandEnum.ToString()))
-        {
-            await Html.RenderPartialAsync("_ShipStatusBox", shipStatus);
-        }
-    </div>
-</section>
+@{
+    var haulerShips = Model
+        .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString())
+        .OrderBy(s => s.Ship.ShipCommand?.ShipCommandEnum.ToString());
+}
+@if (haulerShips.Any())
+{
+    <section class="text-center container">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
+            @foreach (var shipStatus in haulerShips)
+            {
+                await Html.RenderPartialAsync("_ShipStatusBox", shipStatus);
+            }
+        </div>
+    </section>
 
-<br/>
-<br/>
+    <br/>
+    <br/>
+}
 
 <section class="text-center container">
     <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
@@ -51,56 +63,81 @@
 <br/>
 <br/>
 
-<section class="text-center container">
-    <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
-        @foreach (var shipStatus in Model
-            .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.EXCAVATOR.ToString()
-                && s.Ship.Mounts.Any(m => m.Symbol.Contains("GAS_SIPHON")))
-            .OrderBy(s => s.Ship.ShipCommand?.ShipCommandEnum.ToString()))
-        {
-            await Html.RenderPartialAsync("_ShipStatusBox", shipStatus);
-        }
-    </div>
-</section>
+@{
+    var gasExcavators = Model
+        .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.EXCAVATOR.ToString()
+            && s.Ship.Mounts.Any(m => m.Symbol.Contains("GAS_SIPHON")))
+        .OrderBy(s => s.Ship.ShipCommand?.ShipCommandEnum.ToString());
+}
+@if (gasExcavators.Any()) {
+    <section class="text-center container">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
+            @foreach (var shipStatus in gasExcavators)
+            {
+                await Html.RenderPartialAsync("_ShipStatusBox", shipStatus);
+            }
+        </div>
+    </section>
 
-<br/>
-<br/>
+    <br/>
+    <br/>
+}
 
-<section class="text-center container">
-    <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
-        @foreach (var shipStatus in Model
-            .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.SURVEYOR.ToString())
-            .OrderBy(s => s.Ship.ShipCommand?.ShipCommandEnum.ToString()))
-        {
-            await Html.RenderPartialAsync("_ShipStatusBox", shipStatus);
-        }
-    </div>
-</section>
+@{
+    var surveyorShips = Model
+        .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.SURVEYOR.ToString())
+        .OrderBy(s => s.Ship.ShipCommand?.ShipCommandEnum.ToString());
+}
+@if (surveyorShips.Any())
+{
+    <section class="text-center container">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
+            @foreach (var shipStatus in surveyorShips)
+            {
+                await Html.RenderPartialAsync("_ShipStatusBox", shipStatus);
+            }
+        </div>
+    </section>
 
-<br/>
-<br/>
+    <br/>
+    <br/>
+}
 
-<section class="text-center container">
-    <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
-        @foreach (var shipStatus in Model
-            .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.TRANSPORT.ToString())
-            .OrderBy(s => s.Ship.Nav.WaypointSymbol))
-        {
-            await Html.RenderPartialAsync("_ShipStatusBox", shipStatus);
-        }
-    </div>
-</section>
+@{
+    var transportShips = Model
+        .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.TRANSPORT.ToString())
+        .OrderBy(s => s.Ship.Nav.WaypointSymbol);
+}
 
-<br/>
-<br/>
+@if (transportShips.Any())
+{
+    <section class="text-center container">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
+            @foreach (var shipStatus in transportShips)
+            {
+                await Html.RenderPartialAsync("_ShipStatusBox", shipStatus);
+            }
+        </div>
+    </section>
 
-<section class="text-center container">
-    <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
-        @foreach (var shipStatus in Model
-            .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.SATELLITE.ToString())
-            .OrderBy(s => s.Ship.Nav.WaypointSymbol))
-        {
-            await Html.RenderPartialAsync("_ShipStatusBox", shipStatus);
-        }
-    </div>
-</section>
+    <br/>
+    <br/>
+}
+
+@{
+    var satelliteShips = Model
+        .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.SATELLITE.ToString())
+        .OrderBy(s => s.Ship.Nav.WaypointSymbol);
+}
+@if (satelliteShips.Any())
+{
+    <section class="text-center container">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
+            @foreach (var shipStatus in satelliteShips)
+            {
+                await Html.RenderPartialAsync("_ShipStatusBox", shipStatus);
+            }
+        </div>
+    </section>
+}
+
