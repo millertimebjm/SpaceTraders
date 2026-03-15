@@ -48,20 +48,26 @@
     <br/>
 }
 
-<section class="text-center container">
-    <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
-        @foreach (var shipStatus in Model
+@{
+    var miningExcavators = Model
             .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.EXCAVATOR.ToString()
                 && s.Ship.Mounts.Any(m => m.Symbol.Contains("MINING_LASER")))
-            .OrderBy(s => s.Ship.ShipCommand?.ShipCommandEnum.ToString()))
-        {
-            await Html.RenderPartialAsync("_ShipStatusBox", shipStatus);
-        }
-    </div>
-</section>
+            .OrderBy(s => s.Ship.ShipCommand?.ShipCommandEnum.ToString());
+}
+@if (miningExcavators.Any())
+{
+    <section class="text-center container">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
+            @foreach (var shipStatus in miningExcavators)
+            {
+                await Html.RenderPartialAsync("_ShipStatusBox", shipStatus);
+            }
+        </div>
+    </section>
 
-<br/>
-<br/>
+    <br/>
+    <br/>
+}
 
 @{
     var gasExcavators = Model
