@@ -16,6 +16,7 @@ public interface IShipCommandsHelperService
     Task<(Nav?, Fuel?)> NavigateToStartWaypoint(Ship ship, Waypoint currentWaypoint, Waypoint startWaypoint);
     Task<SellCargoResponse?> Sell(Ship ship, Waypoint currentWaypoint);
     Task<PurchaseCargoResult?> PurchaseCargo(Ship ship, Waypoint currentWaypoint);
+    Task<PurchaseCargoResult?> PurchaseCargo(Ship ship, Waypoint currentWaypoint, string tradeSymbol);
     Task<SupplyResult?> SupplyConstructionSite(Ship ship, Waypoint currentWaypoint);
     Task<(Cargo?, Cooldown?)> Extract(Ship ship, Waypoint currentWaypoint);
     Task<(Cargo?, Cooldown?)> Siphon(Ship ship, Waypoint currentWaypoint);

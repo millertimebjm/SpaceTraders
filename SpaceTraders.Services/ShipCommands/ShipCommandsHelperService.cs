@@ -66,14 +66,45 @@ public class ShipCommandsHelperService(
                 amountToBuy = 1;
             }
             purchaseCargoResult = await _marketplacesService.PurchaseAsync(ship.Symbol, inventoryToBuy.Symbol, amountToBuy);
-            //await Task.Delay(500);
             agent = purchaseCargoResult.Agent;
             ship = ship with { Cargo = purchaseCargoResult.Cargo };
             await _transactionsService.SetAsync(purchaseCargoResult.Transaction);
 
             currentWaypoint = await _waypointsService.GetAsync(currentWaypoint.Symbol, refresh: true);
-            //await Task.Delay(500);
         } while ((int)Enum.Parse<SupplyEnum>(currentWaypoint.Marketplace.TradeGoods.Single(tg => tg.Symbol == ship.Goal).Supply) > (int)SupplyEnum.MODERATE
+            && ship.Cargo.Capacity - ship.Cargo.Units > 0);
+
+        return purchaseCargoResult;
+    }
+
+    public async Task<PurchaseCargoResult?> PurchaseCargo(Ship ship, Waypoint currentWaypoint, string tradeSymbol)
+    {
+        if (ship.Cargo.Inventory.Count > 0
+            || ship.Nav.Status == NavStatusEnum.IN_ORBIT.ToString()
+            || currentWaypoint.Marketplace is null
+            || !(currentWaypoint.Marketplace.Exports.Any() || currentWaypoint.Marketplace.Exchange.Any()))
+        {
+            return null;
+        }
+        var agent = await _agentsService.GetAsync();
+        var tradeGood = currentWaypoint.Marketplace.TradeGoods.Single(tg => tg.Symbol == tradeSymbol);
+
+        PurchaseCargoResult? purchaseCargoResult = null;
+        do
+        {
+            var amountToBuy = Math.Min(tradeGood.TradeVolume, ship.Cargo.Capacity - ship.Cargo.Units);
+            if (amountToBuy * tradeGood.PurchasePrice > agent.Credits)
+            {
+                if (ship.Cargo.Units > 0) break;
+                amountToBuy = 1;
+            }
+            purchaseCargoResult = await _marketplacesService.PurchaseAsync(ship.Symbol, tradeGood.Symbol, amountToBuy);
+            agent = purchaseCargoResult.Agent;
+            ship = ship with { Cargo = purchaseCargoResult.Cargo };
+            await _transactionsService.SetAsync(purchaseCargoResult.Transaction);
+
+            currentWaypoint = await _waypointsService.GetAsync(currentWaypoint.Symbol, refresh: true);
+        } while ((int)Enum.Parse<SupplyEnum>(currentWaypoint.Marketplace.TradeGoods.Single(tg => tg.Symbol == tradeGood.Symbol).Supply) > (int)SupplyEnum.MODERATE
             && ship.Cargo.Capacity - ship.Cargo.Units > 0);
 
         return purchaseCargoResult;

@@ -8,7 +8,7 @@ public interface ITradesService
     TradeModel? GetAnyBestTrade(IReadOnlyList<TradeModel> trades);
     SellModel? GetBestSellModel(IReadOnlyList<SellModel> sellModels);
     IReadOnlyList<SellModel> BuildSellModel(
-        IReadOnlyList<Waypoint> waypoints);
+        IReadOnlyList<Waypoint> waypoints, string? originWaypoint = null, int? fuelMax = null, int? fuelCurrent = null);
     // Task SaveTradeModelsAsync(IReadOnlyList<Waypoint> waypoints, int fuelMax, int fuelCurrent);
     // Task<IReadOnlyList<TradeModel>> GetTradeModelsAsync();
     //IReadOnlyList<TradeModel> GetBestOrderedTrades(IReadOnlyList<TradeModel> trades);
@@ -19,6 +19,7 @@ public interface ITradesService
         int fuelMax,
         int fuelCurrent);
     Task<IReadOnlyList<TradeModel>> GetTradeModelsAsync(string waypointSymbol, int maxFuel, int currentFuel);
+    Task<IReadOnlyList<TradeModel>> GetTradeModelsAsync(List<Waypoint> waypoints, string originWaypoint, int maxFuel, int currentFuel);
     Task<IReadOnlyList<TradeModel>> GetTradeModelsAsync();
     Task<IReadOnlyList<TradeModel>> GetBestOrderedTradesWithTravelCost();
     Task BuildTradeModel();

@@ -33,6 +33,11 @@ public class TradesService(
         await BuildTradeModel();
     }
 
+    public async Task<IReadOnlyList<TradeModel>> GetTradeModelsAsync(List<Waypoint> waypoints, string originWaypoint, int maxFuel, int currentFuel)
+    {
+        return await BuildTradeModel(waypoints, maxFuel, currentFuel, originWaypoint);
+    }
+
     public async Task<IReadOnlyList<TradeModel>> GetTradeModelsAsync()
     {
         var tradeModels = await _tradesCacheService.GetTradeModelsAsync();
@@ -77,14 +82,22 @@ public class TradesService(
     private async Task<IReadOnlyList<TradeModel>> BuildTradeModel(
         IReadOnlyList<Waypoint> waypoints,
         int fuelMax,
-        int fuelCurrent)
+        int fuelCurrent,
+        string? originWaypoint = null)
     {
         var marketplaceWaypoints = waypoints.Where(w => w.Marketplace is not null && w.Marketplace.TradeGoods is not null).ToList();
         ConcurrentBag<TradeModel> tradeModels = new();
         var marketplaceWaypointExports = marketplaceWaypoints.Where(w => w.Marketplace.Exports.Any() || w.Marketplace.Exchange.Any()).ToList();
+        List<PathModel> pathModels = [];
+        if (originWaypoint is not null)
+        {
+            pathModels = PathsService.BuildSystemPathWithCost(waypoints.ToList(), originWaypoint, fuelMax, fuelCurrent);
+        }
+
         await Parallel.ForEachAsync(marketplaceWaypointExports, async (marketplaceWaypointExport, CancellationToken) =>
         //foreach (var marketplaceWaypointExport in marketplaceWaypointExports)
         {
+            var exportTimeCost = pathModels.SingleOrDefault(p => p.WaypointSymbol == marketplaceWaypointExport.Symbol)?.TimeCost;
             var exports = marketplaceWaypointExport.Marketplace.TradeGoods.Where(tg => tg.Type == TradeGoodTypeEnum.EXPORT.ToString()).ToList();
             foreach (var export in exports)
             {
@@ -106,7 +119,7 @@ public class TradesService(
                             Enum.Parse<SupplyEnum>(import.Supply),
                             import.TradeVolume,
                             navigationFactor,
-                            timeCost
+                            timeCost + exportTimeCost
                         ));
                     }
                 }
@@ -128,7 +141,7 @@ public class TradesService(
                             Enum.Parse<SupplyEnum>(import.Supply),
                             import.TradeVolume,
                             navigationFactor,
-                            timeCost
+                            timeCost + exportTimeCost
                         ));
                     }
                 }
@@ -154,7 +167,7 @@ public class TradesService(
                             Enum.Parse<SupplyEnum>(import.Supply),
                             import.TradeVolume,
                             navigationFactor,
-                            timeCost
+                            timeCost + exportTimeCost
                         ));
                     }
                 }
@@ -176,7 +189,7 @@ public class TradesService(
                             Enum.Parse<SupplyEnum>(otherExchange.Supply),
                             otherExchange.TradeVolume,
                             navigationFactor,
-                            timeCost
+                            timeCost + exportTimeCost
                         ));
                     }
                 }
@@ -330,12 +343,18 @@ public class TradesService(
     }
 
     public IReadOnlyList<SellModel> BuildSellModel(
-        IReadOnlyList<Waypoint> waypoints)
+        IReadOnlyList<Waypoint> waypoints, string originWaypoint = null, int? fuelMax = 0, int? fuelCurrent = 0)
     {
         var marketplaceWaypoints = waypoints.Where(w => w.Marketplace is not null && w.Marketplace.TradeGoods is not null).ToList();
         List<SellModel> sellModels = new();
+        List<PathModel> pathModels = [];
+        if (originWaypoint is not null)
+        {
+            pathModels = PathsService.BuildSystemPathWithCost(waypoints.ToList(), originWaypoint, fuelMax.Value, fuelCurrent.Value);
+        }
         foreach (var marketplaceWaypoint in marketplaceWaypoints)
         {
+            var marketplacePathTimeCost = pathModels.SingleOrDefault(p => p.WaypointSymbol == marketplaceWaypoint.Symbol)?.TimeCost;
             foreach (var tradeGood in marketplaceWaypoint.Marketplace.TradeGoods)
             {
                 sellModels.Add(new SellModel(
@@ -343,7 +362,9 @@ public class TradesService(
                     marketplaceWaypoint.Symbol,
                     tradeGood.SellPrice,
                     Enum.Parse<SupplyEnum>(tradeGood.Supply),
-                    tradeGood.TradeVolume
+                    tradeGood.TradeVolume,
+                    null,
+                    marketplacePathTimeCost ?? 0
                 ));
             }
         }
@@ -378,5 +399,7 @@ public record SellModel(
     string WaypointSymbol,
     int SellPrice,
     SupplyEnum SupplyEnum,
-    int TradeVolume
+    int TradeVolume,
+    decimal? NavigationFactor,
+    int? TimeCost = null
 );
