@@ -25,8 +25,6 @@ public class SiphonToSellAnywhereCommand(
         {
             if (ShipsService.GetShipCooldown(ship) is not null) return shipStatus;
 
-            //await Task.Delay(1000);
-
             var cargo = await _shipCommandsHelperService.Jettison(ship);
             if (cargo is not null) 
             {
@@ -92,7 +90,11 @@ public class SiphonToSellAnywhereCommand(
                 continue;
             }
 
-            throw new Exception($"Infinite loop, no work planned. {ship.Symbol}, {currentWaypoint.Symbol}, {string.Join(":", ship.Cargo.Inventory.Select(i => $"{i.Name}/{i.Units}"))}, {ship.Fuel.Current}/{ship.Fuel.Capacity}");
+            //ship = ship with {ShipCommand = new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration) };
+            ship = ship with {ShipCommand = null, Cooldown = new Cooldown(ship.Symbol, 60, 60, DateTime.UtcNow.AddMinutes(1)) };
+
+            return new ShipStatus(ship, "No Gas Giant found, retting...", DateTime.UtcNow);
+            //throw new Exception($"Infinite loop, no work planned. {ship.Symbol}, {currentWaypoint.Symbol}, {string.Join(":", ship.Cargo.Inventory.Select(i => $"{i.Name}/{i.Units}"))}, {ship.Fuel.Current}/{ship.Fuel.Capacity}");
         }
     }
 }

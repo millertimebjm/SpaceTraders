@@ -576,7 +576,7 @@ public class ShipCommandsHelperService(
 
     public async Task<(Nav?, Fuel?)> NavigateToSiphonWaypoint(Ship ship, Waypoint currentWaypoint)
     {
-        if (ship.Nav.Status != NavStatusEnum.IN_ORBIT.ToString()
+        if (ship.Nav.Status == NavStatusEnum.DOCKED.ToString()
             || ship.Cargo.Units != 0
             || currentWaypoint.Type == WaypointTypesEnum.GAS_GIANT.ToString())
         {
@@ -958,7 +958,10 @@ public class ShipCommandsHelperService(
         IEnumerable<string> otherShipGoalSymbols)
     {
         if (ship.Nav.Status == NavStatusEnum.DOCKED.ToString()
-            || ship.Cargo.Inventory.Count > 0) return (null, null, null, noWork: false, goalModel: null);
+            || ship.Cargo.Inventory.Count > 0) 
+        {
+            return (null, null, null, noWork: false, goalModel: null);
+        }
 
         var paths = await _pathsService.BuildSystemPathWithCost(currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
 
@@ -968,6 +971,10 @@ public class ShipCommandsHelperService(
 
         if (goalModel is not null)
         {
+            if (goalModel.BuyWaypointSymbol == currentWaypoint.Symbol)
+            {
+                return (null, null, null, noWork: false, goalModel: goalModel);
+            }
             var goalPath = paths.Single(p => p.WaypointSymbol == goalModel.BuyWaypointSymbol);
             if (WaypointsService.ExtractSystemFromWaypoint(goalPath.PathWaypointSymbols[1]) != ship.Nav.SystemSymbol)
             {
@@ -1174,14 +1181,14 @@ public class ShipCommandsHelperService(
             }
 
             if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.EXCAVATOR.ToString()
-                && s.Mounts.Any(m => m.Symbol.Contains("MINING_LASER"))) < 9)
+                && s.Mounts.Any(m => m.Symbol.Contains("MINING_LASER"))) < 8)
             {
                 var shipyard = headquartersSystem.Waypoints.Single(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_MINING_DRONE.ToString()) == true);
                 return (shipyard.Symbol, ShipTypesEnum.SHIP_MINING_DRONE);
             }
 
             if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.EXCAVATOR.ToString()
-                && s.Mounts.Any(m => m.Symbol.Contains("GAS_SIPHON"))) < 9)
+                && s.Mounts.Any(m => m.Symbol.Contains("GAS_SIPHON"))) < 8)
             {
                 var shipyard = headquartersSystem.Waypoints.Single(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_SIPHON_DRONE.ToString()) == true);
                 return (shipyard.Symbol, ShipTypesEnum.SHIP_SIPHON_DRONE);

@@ -53,7 +53,7 @@ public class PathsCacheMongoService(IMongoCollectionFactory _collectionFactory) 
         await collection.DeleteManyAsync(filter);
     }
 
-    public async Task<decimal?> GetNavigationFactor(string exportSymbol, string importSymbol, int fuelMax, int fuelCurrent)
+    public async Task<(decimal? NavigationFactor, int? TimeCost)> GetNavigationFactor(string exportSymbol, string importSymbol, int fuelMax, int fuelCurrent)
     {
         var key = $"{exportSymbol}-{importSymbol}-{fuelMax}-{fuelCurrent}";
         var filter = Builders<NavigationFactorModel>
@@ -67,13 +67,13 @@ public class PathsCacheMongoService(IMongoCollectionFactory _collectionFactory) 
             .Find(filter)
             .Project<NavigationFactorModel>(projection)
             .FirstOrDefaultAsync();
-        return navigationFactorModel?.NavigationFactor;
+        return (navigationFactorModel?.NavigationFactor, navigationFactorModel?.TimeCost);
     }
 
-    public async Task SetNavigationFactor(string exportSymbol, string importSymbol, int fuelMax, int fuelCurrent, decimal navigationFactor)
+    public async Task SetNavigationFactor(string exportSymbol, string importSymbol, int fuelMax, int fuelCurrent, decimal navigationFactor, int timeCost)
     {
         var key = $"{exportSymbol}-{importSymbol}-{fuelMax}-{fuelCurrent}";
-        var navigationFactorModel = new NavigationFactorModel(key, navigationFactor);
+        var navigationFactorModel = new NavigationFactorModel(key, navigationFactor, timeCost);
         var collection = _collectionFactory.GetCollection<NavigationFactorModel>();
         await collection.InsertOneAsync(navigationFactorModel);
     }
@@ -81,4 +81,4 @@ public class PathsCacheMongoService(IMongoCollectionFactory _collectionFactory) 
 
 public record SystemPathCacheModel(string Key, string DestinationWaypoint, List<string> Waypoints, int FuelCost) {}
 
-public record NavigationFactorModel(string Key, decimal NavigationFactor);
+public record NavigationFactorModel(string Key, decimal NavigationFactor, int TimeCost);

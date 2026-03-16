@@ -19,7 +19,7 @@ public interface IPathsCacheService
 
     Task ClearAllCachedSystemPaths();
 
-    public Task<decimal?> GetNavigationFactor(string exportSymbol, string importSymbol, int fuelMax, int fuelCurrent);
+    public Task<(decimal? NavigationFactor, int? TimeCost)> GetNavigationFactor(string exportSymbol, string importSymbol, int fuelMax, int fuelCurrent);
 
-    public Task SetNavigationFactor(string exportSymbol, string importSymbol, int fuelMax, int fuelCurrent, decimal factor);
+    public Task SetNavigationFactor(string exportSymbol, string importSymbol, int fuelMax, int fuelCurrent, decimal factor, int timeCost);
 }

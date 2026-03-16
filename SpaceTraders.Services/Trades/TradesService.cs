@@ -44,6 +44,25 @@ public class TradesService(
         return tradeModels;
     }
 
+    public async Task<IReadOnlyList<TradeModel>> GetTradeModelsAsync(string originWaypoint, int maxFuel, int startingFuel)
+    {
+        var tradeModels = await _tradesCacheService.GetTradeModelsAsync();
+        if (tradeModels.Count == 0)
+        {
+            await BuildTradeModel();
+        }
+        tradeModels = await _tradesCacheService.GetTradeModelsAsync();
+        List<TradeModel> tradeModelsFromOrigin = new();
+        var paths = await _pathsService.BuildSystemPathWithCost(originWaypoint, maxFuel, startingFuel);
+        foreach (var tradeModel in tradeModels)
+        {
+            var path = paths.Single(p => p.WaypointSymbol == tradeModel.ExportWaypointSymbol);
+            var tradeModelFromOrigin = tradeModel with { TimeCost = tradeModel.TimeCost + path.TimeCost, NavigationFactor = NavigationFactor(tradeModel.TimeCost + path.TimeCost ?? 0) };
+            tradeModelsFromOrigin.Add(tradeModelFromOrigin);
+        }
+        return tradeModelsFromOrigin;
+    }
+
     public async Task BuildTradeModel()
     {
         var agent = await _agentsService.GetAsync();
@@ -72,7 +91,7 @@ public class TradesService(
                 var imports = marketplaceWaypoints.Where(w => marketplaceWaypointExport.Symbol != w.Symbol && w.Marketplace.Imports.Any(i => i.Symbol == export.Symbol)).ToList();
                 foreach (var marketplaceWaypointImport in imports)
                 {
-                    var navigationFactor = await GetNavigationFactor(waypoints, marketplaceWaypointExport, marketplaceWaypointImport.Symbol, fuelMax, fuelCurrent);
+                    var (navigationFactor, timeCost) = await GetNavigationFactor(waypoints, marketplaceWaypointExport, marketplaceWaypointImport.Symbol, fuelMax, fuelCurrent);
                     var marketplaceWaypointImports = marketplaceWaypointImport.Marketplace.TradeGoods.Where(tg => tg.Type == TradeGoodTypeEnum.IMPORT.ToString() && tg.Symbol == export.Symbol).ToList();
                     foreach (var import in marketplaceWaypointImports)
                     {
@@ -86,14 +105,15 @@ public class TradesService(
                             import.SellPrice,
                             Enum.Parse<SupplyEnum>(import.Supply),
                             import.TradeVolume,
-                            navigationFactor
+                            navigationFactor,
+                            timeCost
                         ));
                     }
                 }
                 var exchangeMarketplaceWaypoints = marketplaceWaypoints.Where(w => marketplaceWaypointExport.Symbol != w.Symbol && w.Marketplace.Exchange.Any(i => i.Symbol == export.Symbol)).ToList();
                 foreach (var marketplaceWaypointExchange in exchangeMarketplaceWaypoints)
                 {
-                    var navigationFactor = await GetNavigationFactor(waypoints, marketplaceWaypointExport, marketplaceWaypointExchange.Symbol, fuelMax, fuelCurrent);
+                    var (navigationFactor, timeCost) = await GetNavigationFactor(waypoints, marketplaceWaypointExport, marketplaceWaypointExchange.Symbol, fuelMax, fuelCurrent);
                     var tradeGoodImports = marketplaceWaypointExchange.Marketplace.TradeGoods.Where(tg => tg.Type == TradeGoodTypeEnum.EXCHANGE.ToString() && tg.Symbol == export.Symbol);
                     foreach (var import in tradeGoodImports)
                     {
@@ -107,7 +127,8 @@ public class TradesService(
                             import.SellPrice,
                             Enum.Parse<SupplyEnum>(import.Supply),
                             import.TradeVolume,
-                            navigationFactor
+                            navigationFactor,
+                            timeCost
                         ));
                     }
                 }
@@ -118,7 +139,7 @@ public class TradesService(
                 var imports = marketplaceWaypoints.Where(w => marketplaceWaypointExport.Symbol != w.Symbol && w.Marketplace.Imports.Any(i => i.Symbol == exchange.Symbol)).ToList();
                 foreach (var marketplaceWaypointImport in imports)
                 {
-                    var navigationFactor = await GetNavigationFactor(waypoints, marketplaceWaypointExport, marketplaceWaypointImport.Symbol, fuelMax, fuelCurrent);
+                    var (navigationFactor, timeCost) = await GetNavigationFactor(waypoints, marketplaceWaypointExport, marketplaceWaypointImport.Symbol, fuelMax, fuelCurrent);
                     var marketplaceWaypointImports = marketplaceWaypointImport.Marketplace.TradeGoods.Where(tg => tg.Type == TradeGoodTypeEnum.IMPORT.ToString() && tg.Symbol == exchange.Symbol).ToList();
                     foreach (var import in marketplaceWaypointImports)
                     {
@@ -132,14 +153,15 @@ public class TradesService(
                             import.SellPrice,
                             Enum.Parse<SupplyEnum>(import.Supply),
                             import.TradeVolume,
-                            navigationFactor
+                            navigationFactor,
+                            timeCost
                         ));
                     }
                 }
                 var otherExchangeMarketplaceWaypoints = marketplaceWaypoints.Where(w => marketplaceWaypointExport.Symbol != w.Symbol && w.Marketplace.Exchange.Any(i => i.Symbol == exchange.Symbol)).ToList();
                 foreach (var otherMarketplaceWaypointExchange in otherExchangeMarketplaceWaypoints)
                 {
-                    var navigationFactor = await GetNavigationFactor(waypoints, marketplaceWaypointExport, otherMarketplaceWaypointExchange.Symbol, fuelMax, fuelCurrent);
+                    var (navigationFactor, timeCost) = await GetNavigationFactor(waypoints, marketplaceWaypointExport, otherMarketplaceWaypointExchange.Symbol, fuelMax, fuelCurrent);
                     var tradeGoodImports = otherMarketplaceWaypointExchange.Marketplace.TradeGoods.Where(tg => tg.Type == TradeGoodTypeEnum.EXCHANGE.ToString() && tg.Symbol == exchange.Symbol);
                     foreach (var otherExchange in tradeGoodImports)
                     {
@@ -153,7 +175,8 @@ public class TradesService(
                             otherExchange.SellPrice,
                             Enum.Parse<SupplyEnum>(otherExchange.Supply),
                             otherExchange.TradeVolume,
-                            navigationFactor
+                            navigationFactor,
+                            timeCost
                         ));
                     }
                 }
@@ -163,18 +186,18 @@ public class TradesService(
         return tradeModels.ToList();
     }
 
-    public async Task<decimal> GetNavigationFactor(IReadOnlyList<Waypoint> waypoints, Waypoint exportWaypoint, string importSymbol, int fuelMax, int fuelCurrent)
+    public async Task<(decimal navigationFactor, int timeCost)> GetNavigationFactor(IReadOnlyList<Waypoint> waypoints, Waypoint exportWaypoint, string importSymbol, int fuelMax, int fuelCurrent)
     {
-        var navigationFactorCache = await _pathsCacheService.GetNavigationFactor(exportWaypoint.Symbol, importSymbol, fuelMax, fuelCurrent);
-        if (navigationFactorCache is not null) return navigationFactorCache.Value; 
+        var (navigationFactor, timeCost) = await _pathsCacheService.GetNavigationFactor(exportWaypoint.Symbol, importSymbol, fuelMax, fuelCurrent);
+        if (navigationFactor is not null) return (navigationFactor.Value, timeCost ?? 0); 
 
         try
         {
             var paths = PathsService.BuildSystemPathWithCost(waypoints.ToList(), exportWaypoint.Symbol, fuelMax, fuelCurrent);
             var path = paths.Single(p => p.WaypointSymbol == importSymbol);
-            var navigationFactor = NavigationFactor(path.TimeCost);
-            await _pathsCacheService.SetNavigationFactor(exportWaypoint.Symbol, importSymbol, fuelMax, fuelCurrent, navigationFactor);
-            return navigationFactor;
+            navigationFactor = NavigationFactor(path.TimeCost);
+            await _pathsCacheService.SetNavigationFactor(exportWaypoint.Symbol, importSymbol, fuelMax, fuelCurrent, navigationFactor.Value, path.TimeCost);
+            return (navigationFactor.Value, path.TimeCost);
         }
         catch(Exception ex)
         {
@@ -183,37 +206,37 @@ public class TradesService(
 
             var paths = PathsService.BuildSystemPathWithCost(waypoints.ToList(), exportWaypoint.Symbol, fuelMax, fuelCurrent);
             var path = paths.Single(p => p.WaypointSymbol == importSymbol);
-            var navigationFactor = NavigationFactor(path.TimeCost);
-            await _pathsCacheService.SetNavigationFactor(exportWaypoint.Symbol, importSymbol, fuelMax, fuelCurrent, navigationFactor);
-            return navigationFactor;
+            navigationFactor = NavigationFactor(path.TimeCost);
+            await _pathsCacheService.SetNavigationFactor(exportWaypoint.Symbol, importSymbol, fuelMax, fuelCurrent, navigationFactor.Value, path.TimeCost);
+            return (navigationFactor.Value, path.TimeCost);
         }
     }
 
-    public IReadOnlyList<TradeModel> GetBestOrderedTrades(IReadOnlyList<TradeModel> trades)
-    {
-        const decimal profitWeight = 0.5m;
-        const decimal marginWeight = 0.5m;
+    // public IReadOnlyList<TradeModel> GetBestOrderedTrades(IReadOnlyList<TradeModel> trades)
+    // {
+    //     const decimal profitWeight = 0.5m;
+    //     const decimal marginWeight = 0.5m;
 
-        var orderedTrades = trades
-            .Where(t => t.ImportSellPrice > t.ExportBuyPrice && t.ExportSupplyEnum > SupplyEnum.MODERATE)
-            .OrderByDescending(t =>
-            {
-                var profit = t.ImportSellPrice - t.ExportBuyPrice;
-                var marginPercent = (decimal)profit / t.ExportBuyPrice;
+    //     var orderedTrades = trades
+    //         .Where(t => t.ImportSellPrice > t.ExportBuyPrice && t.ExportSupplyEnum > SupplyEnum.MODERATE)
+    //         .OrderByDescending(t =>
+    //         {
+    //             var profit = t.ImportSellPrice - t.ExportBuyPrice;
+    //             var marginPercent = (decimal)profit / t.ExportBuyPrice;
 
-                var score =
-                    (profitWeight * profit) +
-                    (marginWeight * marginPercent * 100); // scale percentage for balance
+    //             var score =
+    //                 (profitWeight * profit) +
+    //                 (marginWeight * marginPercent * 100); // scale percentage for balance
                 
-                return score * SupplyFactor(t.ExportSupplyEnum, t.ImportSupplyEnum);
-            })
-            .ThenBy(t => t.ExportWaypointSymbol)
-            .ThenBy(t => t.ImportWaypointSymbol)
-            .ToList();
-        return orderedTrades;
-    }
+    //             return score * SupplyFactor(t.ExportSupplyEnum, t.ImportSupplyEnum);
+    //         })
+    //         .ThenBy(t => t.ExportWaypointSymbol)
+    //         .ThenBy(t => t.ImportWaypointSymbol)
+    //         .ToList();
+    //     return orderedTrades;
+    // }
 
-    public static IReadOnlyList<TradeModel> GetBestOrderedTradesWithTravelCost(
+    public IReadOnlyList<TradeModel> GetBestOrderedTradesWithTravelCost(
         IReadOnlyList<TradeModel> trades)
     {
         const decimal profitWeight = 0.5m;
@@ -238,9 +261,25 @@ public class TradesService(
         return orderedTrades;
     }
 
+    public async Task<IReadOnlyList<TradeModel>> GetBestOrderedTradesWithTravelCost(
+        string originWaypoint,
+        int fuelMax,
+        int fuelCurrent)
+    {
+        var tradeModels = await GetTradeModelsAsync(originWaypoint, fuelMax, fuelCurrent);
+        return GetBestOrderedTradesWithTravelCost(tradeModels);
+    }
+
+    public async Task<IReadOnlyList<TradeModel>> GetBestOrderedTradesWithTravelCost()
+    {
+        var tradeModels = await GetTradeModelsAsync();
+        return GetBestOrderedTradesWithTravelCost(tradeModels);
+    }
+
     public TradeModel? GetBestTrade(IReadOnlyList<TradeModel> trades)
     {
-        var orderedTrades = GetBestOrderedTrades(trades);
+        //var orderedTrades = GetBestOrderedTrades(trades);
+        var orderedTrades = GetBestOrderedTradesWithTravelCost(trades);
         return orderedTrades.FirstOrDefault();
     }
 
@@ -282,12 +321,12 @@ public class TradesService(
 
     private static decimal NavigationFactor(int cost)
     {
-        if (cost <= 400) return 1;
-        if (cost <= 800) return .85m;
-        if (cost <= 1600) return .7m;
-        if (cost <= 3200) return .55m;
-        if (cost <= 6400) return .4m;
-        return .25m;
+        if (cost <= 500) return 1;
+        if (cost <= 1000) return .9m;
+        if (cost <= 2000) return .7m;
+        if (cost <= 5000) return .5m;
+        if (cost <= 10000) return .25m;
+        return .1m;
     }
 
     public IReadOnlyList<SellModel> BuildSellModel(
@@ -330,7 +369,8 @@ public record TradeModel(
     int ImportSellPrice,
     SupplyEnum ImportSupplyEnum,
     int ImportTradeVolume,
-    decimal NavigationFactor
+    decimal NavigationFactor,
+    int? TimeCost = null
 );
 
 public record SellModel(

@@ -6,6 +6,7 @@ using SpaceTraders.Models.Enums;
 using SpaceTraders.Mvc.Models;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Marketplaces.Interfaces;
+using SpaceTraders.Services.Paths.Interfaces;
 using SpaceTraders.Services.ShipLogs.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.ShipStatuses.Interfaces;
@@ -23,7 +24,8 @@ public class MarketplacesController(
     IShipStatusesCacheService _shipstatusesCacheService,
     ISystemsService _systemsService,
     IShipLogsService _shipLogsService,
-    IShipsService _shipsService
+    IShipsService _shipsService,
+    IPathsService _pathsService
 ) : BaseController(_agentsService, _shipstatusesCacheService, _systemsService)
 {
     [Route("/marketplaces/{marketplaceWaypointSymbol}")]
@@ -34,11 +36,30 @@ public class MarketplacesController(
     }
 
     [Route("/marketplaces/trademodels")]
-    public async Task<IActionResult> TradeModels()
+    public async Task<IActionResult> TradeModels(string? waypointSymbol)
     {
-        var modelTrades = await _tradesCacheService.GetTradeModelsAsync();
-        var orderedModelTrades = _tradesService.GetBestOrderedTrades(modelTrades.ToList());
-        return View(orderedModelTrades);
+        var agent = await _agentsService.GetAsync();
+        var pathWaypointSymbol = waypointSymbol;
+        if (waypointSymbol is null)
+        {
+            pathWaypointSymbol = agent.Headquarters;
+        }
+        var model = new TradeModelsViewModel(
+            Task.Run(async () => {
+                IReadOnlyList<TradeModel> orderedModelTrades;
+                if (string.IsNullOrWhiteSpace(waypointSymbol))
+                {
+                    orderedModelTrades = await _tradesService.GetBestOrderedTradesWithTravelCost();
+                }
+                else
+                {
+                    orderedModelTrades = await _tradesService.GetBestOrderedTradesWithTravelCost(waypointSymbol, 600, 600);
+                }
+                return orderedModelTrades;
+            }),
+            _pathsService.BuildSystemPathWithCost(pathWaypointSymbol!, 600, 600),
+            waypointSymbol ?? "");
+        return View(model);
     }
 
     [Route("/marketplaces/trademodels/reset")]

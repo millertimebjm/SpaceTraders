@@ -2,18 +2,35 @@
 @using SpaceTraders.Mvc.Services
 @using SpaceTraders.Services.Marketplaces
 @using SpaceTraders.Services.Trades
-@model IReadOnlyList<TradeModel>
+@model TradeModelsViewModel
 @{
     ViewData["Title"] = "Trade Models";
-    IReadOnlyList<TradeModel> tradeModels = Model;
+    IReadOnlyList<TradeModel> tradeModelsOrdered = await Model.OrderedModelTradesTask;
+    List<PathModel> pathModels = await Model.PathModelsTask;
 }
 
 <h3>Best Trade Models <small>(<a href="/marketplaces/trademodels/reset">reset</a>)</small></h3>
 
 @{
-    var tradeModelsOrdered = TradesService.GetBestOrderedTradesWithTravelCost(tradeModels);
     var tradeModelsGrouped = tradeModelsOrdered.GroupBy(tm => tm.TradeSymbol);
 }
+
+<div class="row">
+    <div class="col-sm-2">
+        <form method="GET" action="/marketplaces/trademodels" autocomplete="off" id="waypointSymbolForm">        
+            <input class="form-control" list="waypoints" name="waypointSymbol" id="waypointSymbol" value="@Model.WaypointSymbol" autocomplete="off">
+            <button type="submit" class="btn-success" value="submit">Submit</button>
+            <input type="button" class="btn-warning" onclick="clearWaypointSymbol()" value="Clear">
+        </form>
+    </div>
+</div>
+<datalist id="waypoints">
+    @foreach (var waypointSymbol in pathModels.Select(pm => pm.WaypointSymbol))
+    {
+        <option value="@waypointSymbol">@waypointSymbol</option>
+    }
+</datalist>
+
 <table class="table">
     <thead>
         <tr>
@@ -27,6 +44,7 @@
             <th style="text-align: center;">Supply</th>
             <th style="text-align: center;">Volume</th>
             <th style="text-align: center;">Nav</th>
+            <th style="text-align: center;">Time</th>
         </tr>
     </thead>
     <tbody>
@@ -43,6 +61,7 @@
                 <td style="text-align: center;">@tradeModel.First().ImportSupplyEnum</td>
                 <td style="text-align: right;">@tradeModel.First().ImportTradeVolume</td>
                 <td style="text-align: right;">@tradeModel.First().NavigationFactor</td>
+                <td style="text-align: right;">@(tradeModel.First().TimeCost)</td>
             </tr>
         }
     </tbody>
@@ -62,10 +81,12 @@
             <th>Sell</th>
             <th style="text-align: center;">Supply</th>
             <th style="text-align: center;">Volume</th>
+            <th style="text-align: center;">Nav</th>
+            <th style="text-align: center;">Time</th>
         </tr>
     </thead>
     <tbody>
-        @foreach (var tradeModel in tradeModels)
+        @foreach (var tradeModel in tradeModelsOrdered)
         {
             <tr>
                 <td>@tradeModel.TradeSymbol</td>
@@ -77,7 +98,16 @@
                 <td style="text-align: right;">@tradeModel.ImportSellPrice</td>
                 <td style="text-align: center;">@tradeModel.ImportSupplyEnum</td>
                 <td style="text-align: right;">@tradeModel.ImportTradeVolume</td>
+                <td style="text-align: right;">@(tradeModel.NavigationFactor)</td>
+                <td style="text-align: right;">@(tradeModel.TimeCost)</td>
             </tr>
         }
     </tbody>
 </table>
+
+<script type="text/javascript">
+    function clearWaypointSymbol() {
+        document.querySelector("#waypointSymbol").value = "";
+        document.querySelector("#waypointSymbolForm").submit();
+    }
+</script>
