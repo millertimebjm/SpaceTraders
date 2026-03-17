@@ -53,7 +53,7 @@ public class JumpGatesServices(
         // if (waypointsData.Datum is null) throw new HttpRequestException("System not retrieved");
         // return waypointsData.Datum;
 
-        var request = new HttpRequestMessage(HttpMethod.Post, ApiUrl);
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
         // var response = await _dispatcher.SendAsync(request);
         //var response = await _httpClient.SendAsync(request);
