@@ -31,24 +31,24 @@ public class AccountApiService(
     {
         var faction = "COSMIC";
         var symbol = "SPATIAL" + DateTime.Today.ToString("yyMMdd");
-        _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", Token);
-        var content = JsonContent.Create(new { symbol, faction });
-        var data = await HttpHelperService.HttpPostHelper<DataSingle<AccountRegistrationResult>>(
-            _apiUrl,
-            _httpClient,
-            content,
-            _logger);
-        if (data.Datum is null) throw new HttpRequestException("Account not registered");
-        return data.Datum;
-
-        // var request = new HttpRequestMessage(HttpMethod.Post, _apiUrl);
-        // request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
-        // request.Content = JsonContent.Create(new { symbol, faction });
-        // var response = await _dispatcher.SendAsync(request);
-        // //var response = await _httpClient.SendAsync(request);
-        // if (!response.IsSuccessStatusCode) throw new HttpRequestException("Account not retrieved");
-        // var data = await response.Content.ReadFromJsonAsync<DataSingle<AccountRegistrationResult>>();
+        // _httpClient.DefaultRequestHeaders.Authorization =
+        //     new AuthenticationHeaderValue("Bearer", Token);
+        // var content = JsonContent.Create(new { symbol, faction });
+        // var data = await HttpHelperService.HttpPostHelper<DataSingle<AccountRegistrationResult>>(
+        //     _apiUrl,
+        //     _httpClient,
+        //     content,
+        //     _logger);
+        // if (data.Datum is null) throw new HttpRequestException("Account not registered");
         // return data.Datum;
+
+        var request = new HttpRequestMessage(HttpMethod.Post, _apiUrl);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+        request.Content = JsonContent.Create(new { symbol, faction });
+        //var response = await _dispatcher.SendAsync(request);
+        var response = await HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        if (!response.IsSuccessStatusCode) throw new HttpRequestException("Account not retrieved");
+        var data = await response.Content.ReadFromJsonAsync<DataSingle<AccountRegistrationResult>>();
+        return data.Datum;
     }
 }

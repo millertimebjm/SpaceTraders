@@ -61,20 +61,20 @@ public class AgentsService(
             Path = DIRECTORY_PATH
         };
         var url = urlBuilder.ToString();
-        _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", Token);
-        var agentsData = await HttpHelperService.HttpGetHelper<DataSingle<Agent>>(url, _httpClient, _logger);
-        if (agentsData is null) throw new HttpRequestException("Agent Data not retrieved.");
-        if (agentsData.Datum is null) throw new HttpRequestException("Agent not retrieved");
-        return agentsData.Datum;
+        // _httpClient.DefaultRequestHeaders.Authorization =
+        //     new AuthenticationHeaderValue("Bearer", Token);
+        // var agentsData = await HttpHelperService.HttpGetHelper<DataSingle<Agent>>(url, _httpClient, _logger);
+        // if (agentsData is null) throw new HttpRequestException("Agent Data not retrieved.");
+        // if (agentsData.Datum is null) throw new HttpRequestException("Agent not retrieved");
+        // return agentsData.Datum;
 
-        // var request = new HttpRequestMessage(HttpMethod.Get, url);
-        // request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
-        // var response = await _dispatcher.SendAsync(request);
-        // //var response = await _httpClient.SendAsync(request);
-        // if (!response.IsSuccessStatusCode) throw new HttpRequestException("Agent not retrieved");
-        // var data = await response.Content.ReadFromJsonAsync<DataSingle<Agent>>();
-        // return data.Datum;
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+        //var response = await _dispatcher.SendAsync(request);
+        var response = await HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        if (!response.IsSuccessStatusCode) throw new HttpRequestException("Agent not retrieved");
+        var data = await response.Content.ReadFromJsonAsync<DataSingle<Agent>>();
+        return data.Datum;
     }
 
     private async Task<Agent?> GetFromCacheAsync()

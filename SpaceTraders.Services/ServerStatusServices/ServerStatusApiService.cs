@@ -32,19 +32,20 @@ public class ServerStatusApiService(
     {
         var urlBuilder = new UriBuilder(_apiUrl);
         var url = urlBuilder.ToString();
-        _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", Token);
-        var data = await HttpHelperService.HttpGetHelper<ServerStatus>(
-            url,
-            _httpClient,
-            _logger) ?? throw new HttpRequestException("Server Status error");
-        return data;
+        // _httpClient.DefaultRequestHeaders.Authorization =
+        //     new AuthenticationHeaderValue("Bearer", Token);
+        // var data = await HttpHelperService.HttpGetHelper<ServerStatus>(
+        //     url,
+        //     _httpClient,
+        //     _logger) ?? throw new HttpRequestException("Server Status error");
+        // return data;
 
-        // var request = new HttpRequestMessage(HttpMethod.Get, url);
-        // request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
-        // var response = await _dispatcher.SendAsync(request);
-        // //var response = await _httpClient.SendAsync(request);
-        // if (!response.IsSuccessStatusCode) throw new HttpRequestException("Server Status not retrieved");
-        // return await response.Content.ReadFromJsonAsync<ServerStatus>();
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+        //var response = await _dispatcher.SendAsync(request);
+        //var response = await _httpClient.SendAsync(request);
+        var response = await HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        if (!response.IsSuccessStatusCode) throw new HttpRequestException("Server Status not retrieved");
+        return await response.Content.ReadFromJsonAsync<ServerStatus>();
     }
 }

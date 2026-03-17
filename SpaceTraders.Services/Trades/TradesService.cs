@@ -10,6 +10,7 @@ using SpaceTraders.Services.Systems;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Trades.Interfaces;
 using SpaceTraders.Services.Waypoints;
+using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.Trades;
 
@@ -19,7 +20,8 @@ public class TradesService(
     IPathsCacheService _pathsCacheService,
     ITradesCacheService _tradesCacheService,
     ISystemsService _systemsService,
-    IAgentsService _agentsService
+    IAgentsService _agentsService,
+    IWaypointsService _waypointsService
 ) : ITradesService
 {
     public async Task UpdateTradeModelAsync(string waypointSymbol, IReadOnlyList<TradeGood> tradeGoods)
@@ -342,15 +344,23 @@ public class TradesService(
         return .1m;
     }
 
-    public IReadOnlyList<SellModel> BuildSellModel(
-        IReadOnlyList<Waypoint> waypoints, string originWaypoint = null, int? fuelMax = 0, int? fuelCurrent = 0)
+    public SellModel? GetBestSellModel(IReadOnlyList<SellModel> sellModels)
+    {
+        var orderedTrades = sellModels
+            .OrderByDescending(m => m.SellPrice)
+            .ThenBy(m => m.WaypointSymbol) // Tiebreaker
+            .ToList();
+        return orderedTrades.FirstOrDefault();
+    }
+
+    public IReadOnlyList<SellModel> BuildSellModel(IReadOnlyList<Waypoint> waypoints, Waypoint? originWaypoint = null, int? fuelMax = null, int? fuelCurrent = null)
     {
         var marketplaceWaypoints = waypoints.Where(w => w.Marketplace is not null && w.Marketplace.TradeGoods is not null).ToList();
         List<SellModel> sellModels = new();
         List<PathModel> pathModels = [];
         if (originWaypoint is not null)
         {
-            pathModels = PathsService.BuildSystemPathWithCost(waypoints.ToList(), originWaypoint, fuelMax.Value, fuelCurrent.Value);
+            pathModels = PathsService.BuildSystemPathWithCost(waypoints.ToList(), originWaypoint.Symbol, fuelMax.Value, fuelCurrent.Value);
         }
         foreach (var marketplaceWaypoint in marketplaceWaypoints)
         {
@@ -363,20 +373,12 @@ public class TradesService(
                     tradeGood.SellPrice,
                     Enum.Parse<SupplyEnum>(tradeGood.Supply),
                     tradeGood.TradeVolume,
-                    null,
+                    NavigationFactor(marketplacePathTimeCost ?? 0),
                     marketplacePathTimeCost ?? 0
                 ));
             }
         }
         return sellModels;
-    }
-    public SellModel? GetBestSellModel(IReadOnlyList<SellModel> sellModels)
-    {
-        var orderedTrades = sellModels
-            .OrderByDescending(m => m.SellPrice)
-            .ThenBy(m => m.WaypointSymbol) // Tiebreaker
-            .ToList();
-        return orderedTrades.FirstOrDefault();
     }
 }
 

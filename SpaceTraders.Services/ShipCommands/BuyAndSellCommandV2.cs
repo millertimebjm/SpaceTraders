@@ -44,7 +44,7 @@ public class BuyAndSellCommandV2(
         var goalModel = ship.GoalModel;
         if (goalModel is null)
         {
-            goalModel = await GetGoalModelAsync(ship);
+            goalModel = await GetGoalModelAsync(ship, currentWaypoint);
         }
         if (goalModel is null)
         {
@@ -243,7 +243,7 @@ public class BuyAndSellCommandV2(
         return (nav, fuel, cooldown);
     }
 
-    private async Task<GoalModel?> GetGoalModelAsync(Ship ship)
+    private async Task<GoalModel?> GetGoalModelAsync(Ship ship, Waypoint currentWaypoint)
     {
         var systems = await _systemsService.GetAsync();
         var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(ship.Nav.WaypointSymbol));
@@ -251,7 +251,8 @@ public class BuyAndSellCommandV2(
         if (ship.Cargo.Units > 0)
         {
             //BuildSellModel(IReadOnlyList<Waypoint> waypoints, string originWaypoint = null, int? fuelMax = 0, int? fuelCurrent = 0)
-            var sellModels = _tradesService.BuildSellModel(waypoints, ship.Nav.WaypointSymbol, ship.Fuel.Capacity, ship.Fuel.Current);
+
+            var sellModels = _tradesService.BuildSellModel(waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
             var inventory = ship.Cargo.Inventory.OrderByDescending(i => i.Units).FirstOrDefault();
             var validSellModels = sellModels.Where(sm => sm.TradeSymbol == inventory.Symbol).ToList();
             var bestSellModel = _tradesService.GetBestSellModel(validSellModels);

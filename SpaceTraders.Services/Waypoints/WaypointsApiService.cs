@@ -51,9 +51,12 @@ public class WaypointsApiService(
         {
             Path = $"v2/systems/{WaypointsService.ExtractSystemFromWaypoint(waypointSymbol)}/waypoints/{waypointSymbol}"
         };
-        _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", Token);
-        var waypointsData = await HttpHelperService.HttpGetHelper<DataSingle<Waypoint>>(url.ToString(), _httpClient, _logger);
+        // _httpClient.DefaultRequestHeaders.Authorization =
+        //     new AuthenticationHeaderValue("Bearer", Token);
+        //var waypointsData = await HttpHelperService.HttpGetHelper<DataSingle<Waypoint>>(url.ToString(), _httpClient, _logger);
+        var request = new HttpRequestMessage(HttpMethod.Get, url.ToString());
+        var response = await HttpHelpers.HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        var waypointsData = await response.Content.ReadFromJsonAsync<DataSingle<Waypoint>>();
         if (waypointsData is null) throw new HttpRequestException("System Data not retrieved.");
         if (waypointsData.Datum is null) throw new HttpRequestException("System not retrieved");
         var waypoint = waypointsData.Datum;
@@ -100,18 +103,19 @@ public class WaypointsApiService(
             Query = $"type={type}"
         };
         var url = urlBuilder.ToString();
-        _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", Token);
-        var data = await HttpHelperService.HttpGetHelper<Data<Waypoint>>(url.ToString(), _httpClient, _logger);
-        return data.DataList;
-
-        // var request = new HttpRequestMessage(HttpMethod.Get, url);
-        // request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
-        // var response = await _dispatcher.SendAsync(request);
-        // //var response = await _httpClient.SendAsync(request);
-        // if (!response.IsSuccessStatusCode) throw new HttpRequestException("System not retrieved");
-        // var data = await response.Content.ReadFromJsonAsync<Data<Waypoint>>();
+        // _httpClient.DefaultRequestHeaders.Authorization =
+        //     new AuthenticationHeaderValue("Bearer", Token);
+        // var data = await HttpHelperService.HttpGetHelper<Data<Waypoint>>(url.ToString(), _httpClient, _logger);
         // return data.DataList;
+
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+        //var response = await _dispatcher.SendAsync(request);
+        //var response = await _httpClient.SendAsync(request);
+        var response = await HttpHelpers.HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        if (!response.IsSuccessStatusCode) throw new HttpRequestException("System not retrieved");
+        var data = await response.Content.ReadFromJsonAsync<Data<Waypoint>>();
+        return data.DataList;
     }
 
     public async Task<IEnumerable<Waypoint>> GetByTraitAsync(string systemSymbol, string trait)
@@ -122,17 +126,18 @@ public class WaypointsApiService(
             Query = $"traits={trait}"
         };
         var url = urlBuilder.ToString();
-        _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", Token);
-        var data = await HttpHelperService.HttpGetHelper<Data<Waypoint>>(url, _httpClient, _logger);
-        return data.DataList;
-
-        // var request = new HttpRequestMessage(HttpMethod.Get, url);
-        // request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
-        // var response = await _dispatcher.SendAsync(request);
-        // //var response = await _httpClient.SendAsync(request);
-        // if (!response.IsSuccessStatusCode) throw new HttpRequestException("System not retrieved");
-        // var data = await response.Content.ReadFromJsonAsync<Data<Waypoint>>();
+        // _httpClient.DefaultRequestHeaders.Authorization =
+        //     new AuthenticationHeaderValue("Bearer", Token);
+        // var data = await HttpHelperService.HttpGetHelper<Data<Waypoint>>(url, _httpClient, _logger);
         // return data.DataList;
+
+        var request = new HttpRequestMessage(HttpMethod.Get, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+        //var response = await _dispatcher.SendAsync(request);
+        //var response = await _httpClient.SendAsync(request);
+        var response = await HttpHelpers.HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        if (!response.IsSuccessStatusCode) throw new HttpRequestException("System not retrieved");
+        var data = await response.Content.ReadFromJsonAsync<Data<Waypoint>>();
+        return data.DataList;
     }
 }

@@ -75,27 +75,27 @@ public class ConstructionsService(
             Path = $"/v2/systems/{WaypointsService.ExtractSystemFromWaypoint(waypointSymbol)}/waypoints/{waypointSymbol}/construction/supply"
         };
         var url = urlBuilder.ToString();
-        _httpClient.DefaultRequestHeaders.Authorization =
-            new AuthenticationHeaderValue("Bearer", Token);
-        var content = JsonContent.Create(new { shipSymbol, tradeSymbol = inventory, units });
-        var data = await HttpHelperService.HttpPostHelper<DataSingle<SupplyResult>>(
-            url,
-            _httpClient,
-            content,
-            _logger);
-        if (data.Datum is null) throw new HttpRequestException("Supply not retrieved");
-        await AddSupplyShipLog(shipSymbol, waypointSymbol, inventory, units);
-        return data.Datum;
-
-        // var request = new HttpRequestMessage(HttpMethod.Post, url);
-        // request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
-        // request.Content = JsonContent.Create(new { shipSymbol, tradeSymbol = inventory, units });
-        // var response = await _dispatcher.SendAsync(request);
-        // //var response = await _httpClient.SendAsync(request);
-        // if (!response.IsSuccessStatusCode) throw new HttpRequestException("Construction not retrieved");
-        // var data = await response.Content.ReadFromJsonAsync<DataSingle<SupplyResult>>();
+        // _httpClient.DefaultRequestHeaders.Authorization =
+        //     new AuthenticationHeaderValue("Bearer", Token);
+        // var content = JsonContent.Create(new { shipSymbol, tradeSymbol = inventory, units });
+        // var data = await HttpHelperService.HttpPostHelper<DataSingle<SupplyResult>>(
+        //     url,
+        //     _httpClient,
+        //     content,
+        //     _logger);
+        // if (data.Datum is null) throw new HttpRequestException("Supply not retrieved");
         // await AddSupplyShipLog(shipSymbol, waypointSymbol, inventory, units);
         // return data.Datum;
+
+        var request = new HttpRequestMessage(HttpMethod.Post, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+        request.Content = JsonContent.Create(new { shipSymbol, tradeSymbol = inventory, units });
+        //var response = await _dispatcher.SendAsync(request);
+        var response = await HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        if (!response.IsSuccessStatusCode) throw new HttpRequestException("Construction not retrieved");
+        var data = await response.Content.ReadFromJsonAsync<DataSingle<SupplyResult>>();
+        await AddSupplyShipLog(shipSymbol, waypointSymbol, inventory, units);
+        return data.Datum;
     }
 
     private async Task AddSupplyShipLog(string shipSymbol, string waypointSymbol, string inventory, int units)
