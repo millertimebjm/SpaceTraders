@@ -306,7 +306,7 @@ public class PathsService(
             foreach (var waypointWithinSystem in waypointsWithinSystemNotReviewed)
             {
                 var cost = CalculateCost(waypointToReview, waypointWithinSystem, currentFuel);
-                if (Refuel(waypointWithinSystem)) 
+                if (HasRefuel(waypointWithinSystem)) 
                 {
                     currentFuel = maxFuel;
                 }
@@ -324,7 +324,7 @@ public class PathsService(
                 {
                     var jumpGateConnectionWaypoint = waypoints.SingleOrDefault(w => w.Symbol == jumpGateWaypoint);
                     if (jumpGateConnectionWaypoint is null) continue;
-                    if (Refuel(jumpGateConnectionWaypoint)) currentFuel = maxFuel;
+                    if (HasRefuel(jumpGateConnectionWaypoint)) currentFuel = maxFuel;
                     ReplaceIfLowerCostOrAdd(waypointsCost, pathModelToReview, jumpGateConnectionWaypoint, COST_OF_JUMP, currentFuel);
                 }
             }
@@ -368,8 +368,86 @@ public class PathsService(
         return (int)Math.Ceiling(distance);
     }
 
-    public static bool Refuel(Waypoint waypoint)
+    public static bool HasRefuel(Waypoint waypoint)
     {
         return waypoint.Marketplace?.Exchange.Any(e => e.Symbol == TradeSymbolsEnum.FUEL.ToString()) == true;
     }
+
+    // public static List<PathModel> BuildSystemPathWithCostWithBurn(
+    //     List<Waypoint> waypoints,
+    //     string originWaypoint, 
+    //     int maxFuel, 
+    //     int startingFuel)
+    // {
+    //     const int COST_OF_JUMP = 1000;
+    //     var waypointsReviewed = new List<string>();
+    //     var waypointsCost = new List<PathModel>
+    //     {
+    //         new(originWaypoint, [originWaypoint], 0, startingFuel),
+    //     };
+
+    //     while (waypointsReviewed.Count < waypoints.Count)
+    //     {
+    //         var pathModelToReview = waypointsCost.Where(w => !waypointsReviewed.Contains(w.WaypointSymbol)).OrderBy(w => w.TimeCost).First();
+    //         var currentFuel = pathModelToReview.ResultFuel;
+    //         var waypointToReview = waypoints.Single(w => w.Symbol == pathModelToReview.WaypointSymbol);
+    //         var waypointsWithinSystemNotReviewed = waypoints
+    //             .Where(w => WaypointsService.ExtractSystemFromWaypoint(w.Symbol) == WaypointsService.ExtractSystemFromWaypoint(waypointToReview.Symbol)
+    //                 && !waypointsReviewed.Contains(w.Symbol)
+    //                 && w.Symbol != pathModelToReview.WaypointSymbol)
+    //             .ToList();
+    //         foreach (var waypointWithinSystem in waypointsWithinSystemNotReviewed)
+    //         {
+    //             var cost = CalculateCost(waypointToReview, waypointWithinSystem, currentFuel);
+    //             if (HasRefuel(waypointWithinSystem)) 
+    //             {
+    //                 currentFuel = maxFuel;
+    //             }
+    //             else
+    //             {
+    //                 if (cost < currentFuel) currentFuel -= cost;
+    //                 else currentFuel--;
+    //             }
+    //             ReplaceIfLowerCostOrAdd(waypointsCost, pathModelToReview, waypointWithinSystem, cost, currentFuel);
+    //         }
+    //         if (waypointToReview.JumpGate is not null && !waypointToReview.IsUnderConstruction)
+    //         {
+    //             var jumpGateConnectionsNotReviewed = waypointToReview.JumpGate.Connections.Where(c => !waypointsReviewed.Contains(c)).ToList();
+    //             foreach (var jumpGateWaypoint in jumpGateConnectionsNotReviewed)
+    //             {
+    //                 var jumpGateConnectionWaypoint = waypoints.SingleOrDefault(w => w.Symbol == jumpGateWaypoint);
+    //                 if (jumpGateConnectionWaypoint is null) continue;
+    //                 if (HasRefuel(jumpGateConnectionWaypoint)) currentFuel = maxFuel;
+    //                 ReplaceIfLowerCostOrAdd(waypointsCost, pathModelToReview, jumpGateConnectionWaypoint, COST_OF_JUMP, currentFuel);
+    //             }
+    //         }
+    //         waypointsReviewed.Add(pathModelToReview.WaypointSymbol);
+    //     }
+
+    //     return waypointsCost;
+    // }
+
+    //     private static void ReplaceIfLowerCostOrAddWithBurn(List<PathModelWithBurn> waypointsCost, PathModelWithBurn origin, Waypoint destination, int cost, int currentFuel)
+    // {
+    //     var originPathModel = waypointsCost.Single(wc => wc.WaypointSymbol == origin.WaypointSymbol);
+    //     var destinationPathModel = waypointsCost.SingleOrDefault(wc => wc.WaypointSymbol == destination.Symbol);
+    //     if (destinationPathModel is null)
+    //     {
+    //         var clonedPath = new List<PathWaypointWithBurn>();
+    //         clonedPath.AddRange(originPathModel.PathWaypoints);
+    //         clonedPath.AddRange(destination.Symbol);
+    //         waypointsCost.Add(new PathModelWithBurn(destination.Symbol, clonedPath, originPathModel.TimeCost + cost, currentFuel));
+    //         return;
+    //     }
+        
+    //     var newCost = originPathModel.TimeCost + cost;
+    //     if (newCost < destinationPathModel.TimeCost)
+    //     {
+    //         var clonedPath = new List<string>();
+    //         clonedPath.AddRange(originPathModel.PathWaypointSymbols);
+    //         clonedPath.AddRange(destination.Symbol);
+    //         waypointsCost.Remove(destinationPathModel);
+    //         waypointsCost.Add(new PathModel(destination.Symbol, clonedPath, newCost, currentFuel));
+    //     }
+    // }
 }

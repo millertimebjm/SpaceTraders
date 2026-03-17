@@ -77,7 +77,7 @@ public class ShipCommandsHelperService(
         return purchaseCargoResult;
     }
 
-    public async Task<PurchaseCargoResult?> PurchaseCargo(Ship ship, Waypoint currentWaypoint, string tradeSymbol)
+    public async Task<PurchaseCargoResult?> PurchaseCargo(Ship ship, Waypoint currentWaypoint, string tradeSymbol, int maxQuantity = int.MaxValue)
     {
         if (ship.Cargo.Inventory.Count > 0
             || ship.Nav.Status == NavStatusEnum.IN_ORBIT.ToString()
@@ -92,7 +92,7 @@ public class ShipCommandsHelperService(
         PurchaseCargoResult? purchaseCargoResult = null;
         do
         {
-            var amountToBuy = Math.Min(tradeGood.TradeVolume, ship.Cargo.Capacity - ship.Cargo.Units);
+            var amountToBuy = Math.Min(Math.Min(tradeGood.TradeVolume, ship.Cargo.Capacity - ship.Cargo.Units), maxQuantity - ship.Cargo.Units);
             if (amountToBuy * tradeGood.PurchasePrice > agent.Credits)
             {
                 if (ship.Cargo.Units > 0) break;

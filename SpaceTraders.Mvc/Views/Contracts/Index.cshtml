@@ -18,6 +18,8 @@
         <li><b>Type:</b> @contract.Type</li>
         <li><b>Accepted:</b> @contract.Accepted</li>
         <li><b>Fulfilled:</b> @contract.Fulfilled</li>
+        <li><b>Credits On Accepted:</b> @contract.Terms.Payment.OnAccepted</li>
+        <li><b>Credits On Fulfilled:</b> @contract.Terms.Payment.OnFulfilled</li>
         <li><b>DeadlineToComplete:</b> @ViewHelperService.MinimalHumanReadableTimeSpan(contract.Terms.Deadline - DateTime.UtcNow)</li>
         @foreach (var deliver in contract.Terms.Deliver)
         {

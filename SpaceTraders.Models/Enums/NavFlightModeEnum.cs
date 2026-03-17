@@ -4,4 +4,5 @@ public enum NavFlightModeEnum
 {
     CRUISE,
     DRIFT,
+    BURN,
 }
