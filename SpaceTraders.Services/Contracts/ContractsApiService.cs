@@ -145,6 +145,7 @@ public class ContractsApiService(
 
         var request = new HttpRequestMessage(HttpMethod.Post, url);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+        request.Content = JsonContent.Create(new { shipSymbol, tradeSymbol, units });
         //var response = await _dispatcher.SendAsync(request);
         //var response = await _httpClient.SendAsync(request);
         var response = await HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
