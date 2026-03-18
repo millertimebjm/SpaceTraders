@@ -373,6 +373,163 @@ public class PathsService(
         return waypoint.Marketplace?.Exchange.Any(e => e.Symbol == TradeSymbolsEnum.FUEL.ToString()) == true;
     }
 
+    public static List<PathModelWithBurn> BuildSystemPathWithCostWithBurn(
+        List<Waypoint> waypoints,
+        string originWaypoint, 
+        int maxFuel, 
+        int startingFuel,
+        string waypointShortCircuit = null,
+        int depth = int.MaxValue)
+    {
+        var waypointsDictionary = waypoints.ToDictionary(w => w.Symbol, w => w);
+        const int COST_OF_JUMP = 1000;
+        var waypointsReviewed = new List<string>();
+        var waypointsCost = new List<PathModelWithBurn>
+        {
+            new(originWaypoint, [new (originWaypoint, NavFlightModeEnum.CRUISE)], 0, startingFuel),
+        };
+        while (waypointsReviewed.Count < waypoints.Count)
+        {
+            var pathModelToReview = waypointsCost.Where(w => !waypointsReviewed.Contains(w.WaypointSymbol)).OrderBy(w => w.TimeCost).First();
+            var pathModelToReviewWaypoint = waypointsDictionary[pathModelToReview.WaypointSymbol];
+            if (HasRefuel(pathModelToReviewWaypoint))
+            {
+                CleanupWaypointsCostIfHasRefuel(waypointsCost, pathModelToReview.WaypointSymbol);
+            }
+
+            var currentFuel = pathModelToReview.ResultFuel;
+            var waypointToReview = waypointsDictionary[pathModelToReview.WaypointSymbol];
+            var waypointsWithinSystemNotReviewed = waypoints
+                .Where(w => WaypointsService.ExtractSystemFromWaypoint(w.Symbol) == WaypointsService.ExtractSystemFromWaypoint(waypointToReview.Symbol)
+                    && !waypointsReviewed.Contains(w.Symbol)
+                    && w.Symbol != pathModelToReview.WaypointSymbol)
+                .ToList();
+            
+            foreach (var waypointWithinSystemNotReviewed in waypointsWithinSystemNotReviewed)
+            {
+                var waypointsCostTemp = new List<PathModelWithBurn>();
+                var waypointCostsForWaypointWithinSystemNotReviewed = waypointsCost.Where(w => w.WaypointSymbol == waypointWithinSystemNotReviewed.Symbol).ToList();
+                foreach (var waypointCost in waypointCostsForWaypointWithinSystemNotReviewed)
+                {
+                    int? burnCost = GetBurnCost(waypointWithinSystemNotReviewed, waypointsDictionary[waypointCost.WaypointSymbol], currentFuel);
+                    int? burnFuel = GetBurnFuel(waypointWithinSystemNotReviewed, waypointsDictionary[waypointCost.WaypointSymbol], currentFuel);
+                    if (burnCost is not null && burnFuel is not null)
+                    {
+                        AddToWaypointsCost(waypointsCostTemp, waypointWithinSystemNotReviewed, waypointCost, NavFlightModeEnum.BURN, currentFuel - burnFuel.Value, burnCost.Value, maxFuel, currentFuel);
+                    }
+                    int? cruiseCost = GetCruiseCost(waypointWithinSystemNotReviewed, waypointsDictionary[waypointCost.WaypointSymbol], currentFuel);
+                    int? cruiseFuel = GetCruiseFuel(waypointWithinSystemNotReviewed, waypointsDictionary[waypointCost.WaypointSymbol], currentFuel);
+                    if (cruiseCost is not null && cruiseFuel is not null)
+                    {
+                        AddToWaypointsCost(waypointsCostTemp, waypointWithinSystemNotReviewed, waypointCost, NavFlightModeEnum.CRUISE, currentFuel - cruiseFuel.Value, cruiseCost.Value, maxFuel, currentFuel);
+                    }
+                    int driftCost = GetDriftCost(waypointWithinSystemNotReviewed, waypointsDictionary[waypointCost.WaypointSymbol]);
+                    int driftFuel = GetDriftFuel();
+                    if (burnCost is null && burnFuel is null && cruiseCost is null && cruiseFuel is null)
+                    {
+                        AddToWaypointsCost(waypointsCostTemp, waypointWithinSystemNotReviewed, waypointCost, NavFlightModeEnum.DRIFT, currentFuel - driftFuel, driftCost, maxFuel, currentFuel);
+                    }
+                }
+
+                waypointsCost.AddRange(waypointsCostTemp);
+                waypointsReviewed.Add(waypointToReview.Symbol);
+            }
+
+            if (waypointToReview.JumpGate is not null && !waypointToReview.IsUnderConstruction)
+            {
+                var jumpGateConnectionsNotReviewed = waypointToReview.JumpGate.Connections.Where(c => !waypointsReviewed.Contains(c)).ToList();
+                foreach (var jumpGateConnectionNotReviewed in jumpGateConnectionsNotReviewed)
+                {
+                    var jumpGateConnectionNotReviewedWaypoint = waypointsDictionary[jumpGateConnectionNotReviewed];
+                    if (jumpGateConnectionNotReviewedWaypoint is null) continue;
+                    var newFuel = currentFuel;
+                    if (HasRefuel(jumpGateConnectionNotReviewedWaypoint))
+                    {
+                        newFuel = maxFuel;
+                    }
+                    var newPathWaypoints = pathModelToReview.PathWaypoints.ToList();
+                    newPathWaypoints.Add(new (jumpGateConnectionNotReviewed, NavFlightModeEnum.CRUISE));
+                    waypointsCost.Add(new PathModelWithBurn(jumpGateConnectionNotReviewed, newPathWaypoints, pathModelToReview.TimeCost + COST_OF_JUMP, newFuel));
+                }
+            }
+            
+            if (waypointToReview.Symbol == waypointShortCircuit) break;
+        }
+        return waypointsCost
+            .GroupBy(w => w.WaypointSymbol)
+            .Select(wg => 
+                wg.OrderBy(w => w.TimeCost)
+                .ThenByDescending(w => w.ResultFuel)
+                .First()).ToList();
+    }
+
+    private static void AddToWaypointsCost(List<PathModelWithBurn> waypointsCostTemp, Waypoint waypointWithinSystemNotReviewed, PathModelWithBurn waypointCost, NavFlightModeEnum flightMode, int fuelCost, int timeCost, int maxFuel, int currentFuel)
+    {
+        var newPathWaypoints = waypointCost.PathWaypoints.ToList();
+        newPathWaypoints.Add(new (waypointWithinSystemNotReviewed.Symbol, flightMode));
+        var newFuel = HasRefuel(waypointWithinSystemNotReviewed) ? maxFuel : currentFuel - fuelCost;
+        waypointsCostTemp.Add(new (waypointWithinSystemNotReviewed.Symbol, newPathWaypoints, waypointCost.TimeCost + timeCost, newFuel));
+        throw new NotImplementedException();
+    }
+
+    private static void CleanupWaypointsCostIfHasRefuel(List<PathModelWithBurn> waypointsCost, string waypointSymbol)
+    {
+        var waypointsToRemove = waypointsCost
+            .Where(w => w.WaypointSymbol == waypointSymbol)
+            .OrderBy(w => w.TimeCost)
+            .ThenByDescending(w => w.ResultFuel)
+            .Skip(1)
+            .ToList();
+        foreach (var waypointToRemove in waypointsToRemove.ToList())
+        {
+            waypointsCost.Remove(waypointToRemove);
+        }
+    }
+
+    private static int? GetCruiseFuel(Waypoint originWaypoint, Waypoint destinationWaypoint, int currentFuel)
+    {
+        var cost = WaypointsService.CalculateDistance(originWaypoint, destinationWaypoint);
+        var costInt = (int)Math.Ceiling(cost);
+        if (costInt < currentFuel) return costInt;
+        return null;
+    }
+
+    private static int? GetCruiseCost(Waypoint originWaypoint, Waypoint destinationWaypoint, int currentFuel)
+    {
+        var cost = WaypointsService.CalculateDistance(originWaypoint, destinationWaypoint);
+        var costInt = (int)Math.Ceiling(cost);
+        if (costInt < currentFuel) return costInt;
+        return null;
+    }
+
+    private static int? GetBurnFuel(Waypoint originWaypoint, Waypoint destinationWaypoint, int currentFuel)
+    {
+        var cost = WaypointsService.CalculateDistance(originWaypoint, destinationWaypoint);
+        var costInt = ((int)Math.Ceiling(cost)) * 2;
+        if (costInt < currentFuel) return costInt;
+        return null;
+    }
+
+    private static int? GetBurnCost(Waypoint originWaypoint, Waypoint destinationWaypoint, int currentFuel)
+    {
+        var cost = WaypointsService.CalculateDistance(originWaypoint, destinationWaypoint);
+        var costInt = ((int)Math.Ceiling(cost)) * 2;
+        if (costInt < currentFuel) return (int)Math.Ceiling(cost / 2);
+        return null;
+    }
+
+    private static int GetDriftFuel()
+    {
+        return 1;
+    }
+
+    private static int GetDriftCost(Waypoint originWaypoint, Waypoint destinationWaypoint)
+    {
+        var cost = WaypointsService.CalculateDistance(originWaypoint, destinationWaypoint);
+        var costInt = (int)Math.Ceiling(cost) * 10;
+        return costInt;
+    }
+
     // public static List<PathModel> BuildSystemPathWithCostWithBurn(
     //     List<Waypoint> waypoints,
     //     string originWaypoint, 
@@ -439,7 +596,7 @@ public class PathsService(
     //         waypointsCost.Add(new PathModelWithBurn(destination.Symbol, clonedPath, originPathModel.TimeCost + cost, currentFuel));
     //         return;
     //     }
-        
+
     //     var newCost = originPathModel.TimeCost + cost;
     //     if (newCost < destinationPathModel.TimeCost)
     //     {
