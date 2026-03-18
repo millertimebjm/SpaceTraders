@@ -23,4 +23,5 @@ public interface IShipsService
     Task<ChartWaypointResult> ChartAsync(string waypointSymbol);
     Task<ScanSystemsResult> ScanSystemsAsync(string shipSymbol);
     Task<TransferCargoResult> TransferCargo(string shipSymbol, string targetShipSymbol, string inventorySymbol, int inventoryAmount);
+    Task<ScrapShipResponse> ScrapShipAsync(string symbol);
 }

@@ -731,4 +731,9 @@ public class ShipsService(
         var data = await response.Content.ReadFromJsonAsync<DataSingle<TransferCargoResult>>();
         return data.Datum;
     }
+
+    public async Task<ScrapShipResponse> ScrapShipAsync(string symbol)
+    {
+        throw new NotImplementedException();
+    }
 }

@@ -148,7 +148,7 @@ public class ExplorationCommand(
             var path = paths.SingleOrDefault(p => p.WaypointSymbol == ship.Goal);
             if (WaypointsService.ExtractSystemFromWaypoint(path.PathWaypoints[1].WaypointSymbol) != ship.Nav.SystemSymbol)
             {
-                (nav, cooldown) = await _shipsService.JumpAsync(ship.Symbol, path.PathWaypoints[1].WaypointSymbol);
+                (nav, cooldown) = await _shipsService.JumpAsync(path.PathWaypoints[1].WaypointSymbol, ship.Symbol);
                 return (nav, ship.Fuel, cooldown, ship.Goal);
             }
             (nav, fuel, cooldown) = await NavigateHelper(ship, path.PathWaypoints[1].WaypointSymbol);

@@ -60,12 +60,12 @@ public class ShipLoopsService(
         _configuration[$"SpaceTrader:" + ConfigurationEnums.AgentToken.ToString()] = account.Token;
         
         var ships = await _shipsService.GetAsync();
-        await _shipStatusesCacheService.DeleteAsync();
-        foreach (var ship in ships)
-        {
-            var shipStatus = new ShipStatus(ship, "No instructions set.", DateTime.UtcNow);
-            await _shipStatusesCacheService.SetAsync(shipStatus);
-        }
+        // await _shipStatusesCacheService.DeleteAsync();
+        // foreach (var ship in ships)
+        // {
+        //     var shipStatus = new ShipStatus(ship, "No instructions set.", DateTime.UtcNow);
+        //     await _shipStatusesCacheService.SetAsync(shipStatus);
+        // }
 
         while (!cts.IsCancellationRequested)
         {
@@ -199,7 +199,6 @@ public class ShipLoopsService(
             {
                 _logger.LogInformation("Refreshing Waypoint {waypoint}", waypoint.Symbol);
                 await _waypointsService.GetAsync(waypoint.Symbol, refresh: true);
-                //await Task.Delay(500);
             }
         }
     }

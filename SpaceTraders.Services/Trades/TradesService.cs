@@ -37,7 +37,7 @@ public class TradesService(
 
     public async Task<IReadOnlyList<TradeModel>> GetTradeModelsAsync(List<Waypoint> waypoints, string originWaypoint, int maxFuel, int currentFuel)
     {
-        return await BuildTradeModel(waypoints, maxFuel, currentFuel, originWaypoint);
+        return await BuildTradeModelWithBurn(waypoints, maxFuel, currentFuel, originWaypoint);
     }
 
     public async Task<IReadOnlyList<TradeModel>> GetTradeModelsAsync()
@@ -210,23 +210,23 @@ public class TradesService(
         var marketplaceWaypoints = waypoints.Where(w => w.Marketplace is not null && w.Marketplace.TradeGoods is not null).ToList();
         ConcurrentBag<TradeModel> tradeModels = new();
         var marketplaceWaypointExports = marketplaceWaypoints.Where(w => w.Marketplace.Exports.Any() || w.Marketplace.Exchange.Any(e => e.Symbol != TradeSymbolsEnum.FUEL.ToString() && e.Symbol != TradeSymbolsEnum.ANTIMATTER.ToString())).ToList();
-        List<PathModel> pathModels = [];
+        List<PathModelWithBurn> pathModelsWithBurn = [];
         if (originWaypoint is not null)
         {
-            pathModels = PathsService.BuildSystemPathWithCost(waypoints.ToList(), originWaypoint, fuelMax, fuelCurrent);
+            pathModelsWithBurn = PathsService.BuildSystemPathWithCostWithBurn(waypoints.ToList(), originWaypoint, fuelMax, fuelCurrent);
         }
 
         //await Parallel.ForEachAsync(marketplaceWaypointExports, async (marketplaceWaypointExport, CancellationToken) =>
         foreach (var marketplaceWaypointExport in marketplaceWaypointExports)
         {
-            var exportTimeCost = pathModels.SingleOrDefault(p => p.WaypointSymbol == marketplaceWaypointExport.Symbol)?.TimeCost ?? 0;
+            var exportTimeCost = pathModelsWithBurn.SingleOrDefault(p => p.WaypointSymbol == marketplaceWaypointExport.Symbol)?.TimeCost ?? 0;
             var exports = marketplaceWaypointExport.Marketplace.TradeGoods.Where(tg => tg.Type == TradeGoodTypeEnum.EXPORT.ToString()).ToList();
             foreach (var export in exports)
             {
                 var imports = marketplaceWaypoints.Where(w => marketplaceWaypointExport.Symbol != w.Symbol && w.Marketplace.Imports.Any(i => i.Symbol == export.Symbol)).ToList();
                 foreach (var marketplaceWaypointImport in imports)
                 {
-                    var (navigationFactor, timeCost) = await GetNavigationFactor(waypoints, marketplaceWaypointExport, marketplaceWaypointImport.Symbol, fuelMax, fuelCurrent);
+                    var (navigationFactor, timeCost) = await GetNavigationFactorWithBurn(waypoints, marketplaceWaypointExport, marketplaceWaypointImport.Symbol, fuelMax, fuelCurrent);
                     var marketplaceWaypointImports = marketplaceWaypointImport.Marketplace.TradeGoods.Where(tg => tg.Type == TradeGoodTypeEnum.IMPORT.ToString() && tg.Symbol == export.Symbol).ToList();
                     foreach (var import in marketplaceWaypointImports)
                     {
@@ -248,7 +248,7 @@ public class TradesService(
                 var exchangeMarketplaceWaypoints = marketplaceWaypoints.Where(w => marketplaceWaypointExport.Symbol != w.Symbol && w.Marketplace.Exchange.Any(i => i.Symbol == export.Symbol)).ToList();
                 foreach (var marketplaceWaypointExchange in exchangeMarketplaceWaypoints)
                 {
-                    var (navigationFactor, timeCost) = await GetNavigationFactor(waypoints, marketplaceWaypointExport, marketplaceWaypointExchange.Symbol, fuelMax, fuelCurrent);
+                    var (navigationFactor, timeCost) = await GetNavigationFactorWithBurn(waypoints, marketplaceWaypointExport, marketplaceWaypointExchange.Symbol, fuelMax, fuelCurrent);
                     var tradeGoodImports = marketplaceWaypointExchange.Marketplace.TradeGoods.Where(tg => tg.Type == TradeGoodTypeEnum.EXCHANGE.ToString() && tg.Symbol == export.Symbol);
                     foreach (var import in tradeGoodImports)
                     {
@@ -268,13 +268,13 @@ public class TradesService(
                     }
                 }
             }
-            var exchanges = marketplaceWaypointExport.Marketplace.TradeGoods.Where(tg => tg.Type == TradeGoodTypeEnum.EXCHANGE.ToString()).ToList();
+            var exchanges = marketplaceWaypointExport.Marketplace.TradeGoods.Where(tg => tg.Type == TradeGoodTypeEnum.EXCHANGE.ToString() && tg.Symbol != TradeSymbolsEnum.FUEL.ToString() && tg.Symbol != TradeSymbolsEnum.ANTIMATTER.ToString()).ToList();
             foreach (var exchange in exchanges)
             {
                 var imports = marketplaceWaypoints.Where(w => marketplaceWaypointExport.Symbol != w.Symbol && w.Marketplace.Imports.Any(i => i.Symbol == exchange.Symbol)).ToList();
                 foreach (var marketplaceWaypointImport in imports)
                 {
-                    var (navigationFactor, timeCost) = await GetNavigationFactor(waypoints, marketplaceWaypointExport, marketplaceWaypointImport.Symbol, fuelMax, fuelCurrent);
+                    var (navigationFactor, timeCost) = await GetNavigationFactorWithBurn(waypoints, marketplaceWaypointExport, marketplaceWaypointImport.Symbol, fuelMax, fuelCurrent);
                     var marketplaceWaypointImports = marketplaceWaypointImport.Marketplace.TradeGoods.Where(tg => tg.Type == TradeGoodTypeEnum.IMPORT.ToString() && tg.Symbol == exchange.Symbol).ToList();
                     foreach (var import in marketplaceWaypointImports)
                     {
@@ -296,7 +296,7 @@ public class TradesService(
                 var otherExchangeMarketplaceWaypoints = marketplaceWaypoints.Where(w => marketplaceWaypointExport.Symbol != w.Symbol && w.Marketplace.Exchange.Any(i => i.Symbol == exchange.Symbol)).ToList();
                 foreach (var otherMarketplaceWaypointExchange in otherExchangeMarketplaceWaypoints)
                 {
-                    var (navigationFactor, timeCost) = await GetNavigationFactor(waypoints, marketplaceWaypointExport, otherMarketplaceWaypointExchange.Symbol, fuelMax, fuelCurrent);
+                    var (navigationFactor, timeCost) = await GetNavigationFactorWithBurn(waypoints, marketplaceWaypointExport, otherMarketplaceWaypointExchange.Symbol, fuelMax, fuelCurrent);
                     var tradeGoodImports = otherMarketplaceWaypointExchange.Marketplace.TradeGoods.Where(tg => tg.Type == TradeGoodTypeEnum.EXCHANGE.ToString() && tg.Symbol == exchange.Symbol);
                     foreach (var otherExchange in tradeGoodImports)
                     {
@@ -340,6 +340,32 @@ public class TradesService(
             await _pathsCacheService.ClearAllCachedSystemPaths();
 
             var paths = PathsService.BuildSystemPathWithCost(waypoints.ToList(), exportWaypoint.Symbol, fuelMax, fuelCurrent);
+            var path = paths.Single(p => p.WaypointSymbol == importSymbol);
+            navigationFactor = NavigationFactor(path.TimeCost);
+            await _pathsCacheService.SetNavigationFactor(exportWaypoint.Symbol, importSymbol, fuelMax, fuelCurrent, navigationFactor.Value, path.TimeCost);
+            return (navigationFactor.Value, path.TimeCost);
+        }
+    }
+
+    public async Task<(decimal navigationFactor, int timeCost)> GetNavigationFactorWithBurn(IReadOnlyList<Waypoint> waypoints, Waypoint exportWaypoint, string importSymbol, int fuelMax, int fuelCurrent)
+    {
+        var (navigationFactor, timeCost) = await _pathsCacheService.GetNavigationFactor(exportWaypoint.Symbol, importSymbol, fuelMax, fuelCurrent);
+        if (navigationFactor is not null) return (navigationFactor.Value, timeCost ?? 0); 
+
+        try
+        {
+            var paths = PathsService.BuildSystemPathWithCostWithBurn(waypoints.ToList(), exportWaypoint.Symbol, fuelMax, fuelCurrent, importSymbol);
+            var path = paths.Single(p => p.WaypointSymbol == importSymbol);
+            navigationFactor = NavigationFactor(path.TimeCost);
+            await _pathsCacheService.SetNavigationFactor(exportWaypoint.Symbol, importSymbol, fuelMax, fuelCurrent, navigationFactor.Value, path.TimeCost);
+            return (navigationFactor.Value, path.TimeCost);
+        }
+        catch(Exception ex)
+        {
+            _logger.LogError("Paths were not updated because a new system became available.");
+            await _pathsCacheService.ClearAllCachedSystemPaths();
+
+            var paths = PathsService.BuildSystemPathWithCostWithBurn(waypoints.ToList(), exportWaypoint.Symbol, fuelMax, fuelCurrent, importSymbol);
             var path = paths.Single(p => p.WaypointSymbol == importSymbol);
             navigationFactor = NavigationFactor(path.TimeCost);
             await _pathsCacheService.SetNavigationFactor(exportWaypoint.Symbol, importSymbol, fuelMax, fuelCurrent, navigationFactor.Value, path.TimeCost);

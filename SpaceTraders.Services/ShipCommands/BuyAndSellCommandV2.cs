@@ -115,6 +115,12 @@ public class BuyAndSellCommandV2(
             return new ShipStatus(ship, $"Resetting job after Buy and Sell.", DateTime.UtcNow); 
         }
 
+        if (ship.Fuel is null)
+        {
+            var updatedShip = await _shipsService.GetAsync(ship.Symbol);
+            ship = ship with { Fuel = updatedShip.Fuel };
+        }
+
         if (ship.Fuel.Current < ship.Fuel.Capacity && currentWaypoint.Marketplace?.Exchange.Any(e => e.Symbol == TradeSymbolsEnum.FUEL.ToString()) == true)
         {
             if (ship.Nav.Status != NavStatusEnum.DOCKED.ToString())
@@ -155,7 +161,7 @@ public class BuyAndSellCommandV2(
         return null;
     }
 
-    private async Task<(Nav?, Fuel?, Cooldown?)> NavigateHelper(Ship ship, string waypointSymbol)
+    private async Task<(Nav?, Fuel?, Cooldown)> NavigateHelper(Ship ship, string waypointSymbol)
     {
         var systems = await _systemsService.GetAsync();
         var traversableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol);
