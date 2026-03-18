@@ -99,7 +99,7 @@ public class TradesService(
         await Parallel.ForEachAsync(marketplaceWaypointExports, async (marketplaceWaypointExport, CancellationToken) =>
         //foreach (var marketplaceWaypointExport in marketplaceWaypointExports)
         {
-            var exportTimeCost = pathModels.SingleOrDefault(p => p.WaypointSymbol == marketplaceWaypointExport.Symbol)?.TimeCost;
+            var exportTimeCost = pathModels.SingleOrDefault(p => p.WaypointSymbol == marketplaceWaypointExport.Symbol)?.TimeCost ?? 0;
             var exports = marketplaceWaypointExport.Marketplace.TradeGoods.Where(tg => tg.Type == TradeGoodTypeEnum.EXPORT.ToString()).ToList();
             foreach (var export in exports)
             {

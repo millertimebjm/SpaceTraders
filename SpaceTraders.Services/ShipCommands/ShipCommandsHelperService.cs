@@ -680,22 +680,28 @@ public class ShipCommandsHelperService(
             return null;
         }
 
+        var inventoryToSell = ship.Cargo.Inventory.OrderByDescending(i => i.Units).ThenBy(i => i.Symbol).First().Symbol;
         var systems = await _systemsService.GetAsync();
         var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(currentWaypoint.Symbol));
         var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
         var paths = PathsService.BuildSystemPathWithCost(waypoints, currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
         var reachableWaypoints = waypoints.Where(w => paths.Select(p => p.WaypointSymbol).Contains(w.Symbol)).ToList();
         var sellModels = _tradesService.BuildSellModel(reachableWaypoints);
-        var inventoryToSell = ship.Cargo.Inventory.OrderByDescending(i => i.Units).ThenBy(i => i.Symbol).First().Symbol;
+        
         sellModels = sellModels.Where(tm => tm.TradeSymbol == inventoryToSell).ToList();
-        var bestTrade = _tradesService.GetBestSellModel(sellModels);
-        if (bestTrade is null || bestTrade.WaypointSymbol != ship.Nav.WaypointSymbol) return null;
-
+        var currentSellModel = sellModels.SingleOrDefault(m => m.WaypointSymbol == currentWaypoint.Symbol);
+        
+        if (currentSellModel is null)
+        {
+            var bestTrade = _tradesService.GetBestSellModel(sellModels);
+            if (bestTrade is null || bestTrade.WaypointSymbol != ship.Nav.WaypointSymbol) return null;
+        }
+        
         SellCargoResponse? sellCargoResponse = null;
         while (ship.Cargo.Inventory.SingleOrDefault(i => i.Symbol == inventoryToSell)?.Units > 0)
         {
-            var units = Math.Min(bestTrade.TradeVolume, ship.Cargo.Inventory.Single(i => i.Symbol == inventoryToSell).Units);
-            sellCargoResponse = await _marketplacesService.SellAsync(ship.Symbol, bestTrade.TradeSymbol, units);
+            var units = Math.Min(currentSellModel.TradeVolume, ship.Cargo.Inventory.Single(i => i.Symbol == inventoryToSell).Units);
+            sellCargoResponse = await _marketplacesService.SellAsync(ship.Symbol, currentSellModel.TradeSymbol, units);
             ship = ship with { Cargo = sellCargoResponse.Cargo };
             await _transactionsService.SetAsync(sellCargoResponse.Transaction);
         }
@@ -1233,6 +1239,12 @@ public class ShipCommandsHelperService(
                 var shipyard = headquartersSystem.Waypoints.Single(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_LIGHT_SHUTTLE.ToString()) == true);
                 return (shipyard.Symbol, ShipTypesEnum.SHIP_LIGHT_SHUTTLE);
             }
+
+            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()) < 10)
+            {
+                var shipyard = headquartersSystem.Waypoints.Single(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_LIGHT_HAULER.ToString()) == true);
+                return (shipyard.Symbol, ShipTypesEnum.SHIP_LIGHT_HAULER);
+            }
         }
 
         foreach (var system in reachableSystems)
@@ -1257,7 +1269,7 @@ public class ShipCommandsHelperService(
         
         if (headquartersSystem.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction))
         {
-            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()) < 10)
+            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()) < 20)
             {
                 var shipyard = headquartersSystem.Waypoints.Single(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_LIGHT_HAULER.ToString()) == true);
                 return (shipyard.Symbol, ShipTypesEnum.SHIP_LIGHT_HAULER);

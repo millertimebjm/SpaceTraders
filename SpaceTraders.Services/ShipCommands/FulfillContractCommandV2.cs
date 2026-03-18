@@ -102,31 +102,6 @@ public class FulfillContractCommandV2(
             await _transactionsService.SetAsync(refuelResponse.Transaction);
         }
 
-        if (currentWaypoint.Symbol == goalModel.BuyWaypointSymbol 
-            && ship.Cargo.Units == 0)
-        {
-            if (ship.Nav.Status != NavStatusEnum.DOCKED.ToString())
-            {
-                nav = await _shipsService.DockAsync(ship.Symbol);
-                ship = ship with { Nav = nav };
-            }
-            var purchaseCargoResult = await _shipCommandsHelperService.PurchaseCargo(
-                ship, 
-                currentWaypoint, 
-                goalModel.TradeSymbol, 
-                contract.Terms.Deliver[0].UnitsRequired - contract.Terms.Deliver[0].UnitsFulfilled);
-            await _agentsService.SetAsync(purchaseCargoResult.Agent);
-            await _transactionsService.SetAsync(purchaseCargoResult.Transaction);
-            ship = ship with { Cargo = purchaseCargoResult.Cargo };
-
-            nav = await _shipsService.OrbitAsync(ship.Symbol);
-            ship = ship with { Nav = nav };
-
-            (nav, fuel, cooldown) = await NavigateHelper(ship, goalModel.SellWaypointSymbol);
-            ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown };
-            return new ShipStatus(ship, $"Navigate To Contract Fulfill {ship.Nav.Route.Destination.Symbol}", DateTime.UtcNow);
-        }
-
         if (currentWaypoint.Symbol == goalModel.SellWaypointSymbol
             && ship.Cargo.Units > 0)
         {
@@ -156,6 +131,31 @@ public class FulfillContractCommandV2(
                 ArgumentNullException.ThrowIfNull(goalModel, nameof(goalModel));
                 ship = ship with { GoalModel = goalModel };
             }
+        }
+
+        if (currentWaypoint.Symbol == goalModel.BuyWaypointSymbol 
+            && ship.Cargo.Units == 0)
+        {
+            if (ship.Nav.Status != NavStatusEnum.DOCKED.ToString())
+            {
+                nav = await _shipsService.DockAsync(ship.Symbol);
+                ship = ship with { Nav = nav };
+            }
+            var purchaseCargoResult = await _shipCommandsHelperService.PurchaseCargo(
+                ship, 
+                currentWaypoint, 
+                goalModel.TradeSymbol, 
+                contract.Terms.Deliver[0].UnitsRequired - contract.Terms.Deliver[0].UnitsFulfilled);
+            await _agentsService.SetAsync(purchaseCargoResult.Agent);
+            await _transactionsService.SetAsync(purchaseCargoResult.Transaction);
+            ship = ship with { Cargo = purchaseCargoResult.Cargo };
+
+            nav = await _shipsService.OrbitAsync(ship.Symbol);
+            ship = ship with { Nav = nav };
+
+            (nav, fuel, cooldown) = await NavigateHelper(ship, goalModel.SellWaypointSymbol);
+            ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown };
+            return new ShipStatus(ship, $"Navigate To Contract Fulfill {ship.Nav.Route.Destination.Symbol}", DateTime.UtcNow);
         }
 
         if (ship.Cargo.Units == 0)
@@ -202,25 +202,6 @@ public class FulfillContractCommandV2(
         return new GoalModel(tradeSymbol, pathModelsToTradeSymbol.WaypointSymbol, contract.Terms.Deliver[0].DestinationSymbol);
     }
 
-    // private async Task<(Nav?, Fuel?, Cooldown)> NavigateHelper(Ship ship, string waypointSymbol)
-    // {
-    //     var paths = await _pathsService.BuildSystemPathWithCost(ship.Nav.WaypointSymbol, ship.Fuel.Capacity, ship.Fuel.Current);
-    //     var path = paths.Single(p => p.WaypointSymbol == waypointSymbol);
-    //     var nextHop = path.PathWaypointSymbols[1];
-
-    //     Nav? nav = null;
-    //     Fuel? fuel = null;
-    //     Cooldown cooldown = ship.Cooldown;
-
-    //     if (WaypointsService.ExtractSystemFromWaypoint(nextHop) != WaypointsService.ExtractSystemFromWaypoint(waypointSymbol))
-    //     {
-    //         (nav, cooldown) = await _shipsService.JumpAsync(nextHop, ship.Symbol);
-    //         return (nav, fuel, cooldown);
-    //     }
-    //     (nav, fuel) = await _shipsService.NavigateAsync(nextHop, ship);
-    //     return (nav, fuel, cooldown);
-    // }
-
     private async Task<(Nav?, Fuel?, Cooldown?)> NavigateHelper(Ship ship, string waypointSymbol)
     {
         var systems = await _systemsService.GetAsync();
@@ -234,7 +215,7 @@ public class FulfillContractCommandV2(
         Fuel? fuel = null;
         Cooldown cooldown = ship.Cooldown;
 
-        if (WaypointsService.ExtractSystemFromWaypoint(nextHop.WaypointSymbol) != WaypointsService.ExtractSystemFromWaypoint(waypointSymbol))
+        if (WaypointsService.ExtractSystemFromWaypoint(nextHop.WaypointSymbol) != WaypointsService.ExtractSystemFromWaypoint(ship.Nav.WaypointSymbol))
         {
             (nav, cooldown) = await _shipsService.JumpAsync(nextHop.WaypointSymbol, ship.Symbol);
             return (nav, fuel, cooldown);

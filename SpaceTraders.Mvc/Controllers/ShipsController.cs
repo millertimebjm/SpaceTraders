@@ -233,23 +233,18 @@ public class ShipsController(
     }
 
     [Route("/ships/{shipSymbol}/navtoggle")]
-    public async Task<IActionResult> NavToggle(string shipSymbol)
+    public async Task<IActionResult> NavToggle(string shipSymbol, string flightMode)
     {
         var shipStatus = await _shipStatusesCacheService.GetAsync(shipSymbol);
         var ship = shipStatus.Ship;
         Nav nav;
-        if (ship.Nav.FlightMode == NavFlightModeEnum.CRUISE.ToString())
+        if (ship.Nav.FlightMode != NavFlightModeEnum.CRUISE.ToString())
         {
-            nav = await _shipsService.NavToggleAsync(shipSymbol, NavFlightModeEnum.DRIFT);
+            nav = await _shipsService.NavToggleAsync(ship, Enum.Parse<NavFlightModeEnum>(flightMode));
+            ship = ship with { Nav = nav };
+            shipStatus = shipStatus with { Ship = ship };
+            await _shipStatusesCacheService.SetAsync(shipStatus);
         }
-        else
-        {
-            nav = await _shipsService.NavToggleAsync(shipSymbol, NavFlightModeEnum.CRUISE);
-        }
-        ship = ship with { Nav = nav };
-        shipStatus = shipStatus with { Ship = ship };
-        await _shipStatusesCacheService.SetAsync(shipStatus);
-
         return RedirectToRoute(new
         {
             controller = "Ships",

@@ -238,7 +238,7 @@ public class BuyAndSellCommandV2(
         Fuel? fuel = null;
         Cooldown cooldown = ship.Cooldown;
 
-        if (WaypointsService.ExtractSystemFromWaypoint(nextHop.WaypointSymbol) != WaypointsService.ExtractSystemFromWaypoint(waypointSymbol))
+        if (WaypointsService.ExtractSystemFromWaypoint(nextHop.WaypointSymbol) != WaypointsService.ExtractSystemFromWaypoint(ship.Nav.WaypointSymbol))
         {
             (nav, cooldown) = await _shipsService.JumpAsync(nextHop.WaypointSymbol, ship.Symbol);
             return (nav, fuel, cooldown);
