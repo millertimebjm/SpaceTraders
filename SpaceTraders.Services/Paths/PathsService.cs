@@ -379,7 +379,7 @@ public class PathsService(
         int maxFuel, 
         int startingFuel,
         string waypointShortCircuit = null,
-        int depth = int.MaxValue)
+        int depth = 10)
     {
         var waypointsDictionary = waypoints.ToDictionary(w => w.Symbol, w => w);
         const int COST_OF_JUMP = 1000;
@@ -408,7 +408,7 @@ public class PathsService(
             foreach (var waypointWithinSystemNotReviewed in waypointsWithinSystemNotReviewed)
             {
                 var waypointsCostTemp = new List<PathModelWithBurn>();
-                var waypointCostsForWaypointWithinSystemNotReviewed = waypointsCost.Where(w => w.WaypointSymbol == waypointWithinSystemNotReviewed.Symbol).ToList();
+                var waypointCostsForWaypointWithinSystemNotReviewed = waypointsCost.Where(w => w.WaypointSymbol == waypointToReview.Symbol).ToList();
                 foreach (var waypointCost in waypointCostsForWaypointWithinSystemNotReviewed)
                 {
                     int? burnCost = GetBurnCost(waypointWithinSystemNotReviewed, waypointsDictionary[waypointCost.WaypointSymbol], currentFuel);
@@ -432,7 +432,6 @@ public class PathsService(
                 }
 
                 waypointsCost.AddRange(waypointsCostTemp);
-                waypointsReviewed.Add(waypointToReview.Symbol);
             }
 
             if (waypointToReview.JumpGate is not null && !waypointToReview.IsUnderConstruction)
@@ -452,7 +451,10 @@ public class PathsService(
                     waypointsCost.Add(new PathModelWithBurn(jumpGateConnectionNotReviewed, newPathWaypoints, pathModelToReview.TimeCost + COST_OF_JUMP, newFuel));
                 }
             }
-            
+
+            waypointsCost = waypointsCost.GroupBy(w => w.WaypointSymbol).SelectMany(wc => wc.OrderBy(w => w.TimeCost).ThenBy(w => w.ResultFuel).Take(depth)).ToList();
+
+            waypointsReviewed.Add(waypointToReview.Symbol);
             if (waypointToReview.Symbol == waypointShortCircuit) break;
         }
         return waypointsCost
@@ -467,9 +469,8 @@ public class PathsService(
     {
         var newPathWaypoints = waypointCost.PathWaypoints.ToList();
         newPathWaypoints.Add(new (waypointWithinSystemNotReviewed.Symbol, flightMode));
-        var newFuel = HasRefuel(waypointWithinSystemNotReviewed) ? maxFuel : currentFuel - fuelCost;
+        var newFuel = HasRefuel(waypointWithinSystemNotReviewed) ? maxFuel : fuelCost;
         waypointsCostTemp.Add(new (waypointWithinSystemNotReviewed.Symbol, newPathWaypoints, waypointCost.TimeCost + timeCost, newFuel));
-        throw new NotImplementedException();
     }
 
     private static void CleanupWaypointsCostIfHasRefuel(List<PathModelWithBurn> waypointsCost, string waypointSymbol)
@@ -490,7 +491,7 @@ public class PathsService(
     {
         var cost = WaypointsService.CalculateDistance(originWaypoint, destinationWaypoint);
         var costInt = (int)Math.Ceiling(cost);
-        if (costInt < currentFuel) return costInt;
+        if (costInt <= currentFuel) return costInt;
         return null;
     }
 
@@ -498,7 +499,7 @@ public class PathsService(
     {
         var cost = WaypointsService.CalculateDistance(originWaypoint, destinationWaypoint);
         var costInt = (int)Math.Ceiling(cost);
-        if (costInt < currentFuel) return costInt;
+        if (costInt <= currentFuel) return costInt;
         return null;
     }
 
@@ -506,7 +507,7 @@ public class PathsService(
     {
         var cost = WaypointsService.CalculateDistance(originWaypoint, destinationWaypoint);
         var costInt = ((int)Math.Ceiling(cost)) * 2;
-        if (costInt < currentFuel) return costInt;
+        if (costInt <= currentFuel) return costInt;
         return null;
     }
 
@@ -514,7 +515,7 @@ public class PathsService(
     {
         var cost = WaypointsService.CalculateDistance(originWaypoint, destinationWaypoint);
         var costInt = ((int)Math.Ceiling(cost)) * 2;
-        if (costInt < currentFuel) return (int)Math.Ceiling(cost / 2);
+        if (costInt <= currentFuel) return (int)Math.Ceiling(cost / 2);
         return null;
     }
 
@@ -529,82 +530,4 @@ public class PathsService(
         var costInt = (int)Math.Ceiling(cost) * 10;
         return costInt;
     }
-
-    // public static List<PathModel> BuildSystemPathWithCostWithBurn(
-    //     List<Waypoint> waypoints,
-    //     string originWaypoint, 
-    //     int maxFuel, 
-    //     int startingFuel)
-    // {
-    //     const int COST_OF_JUMP = 1000;
-    //     var waypointsReviewed = new List<string>();
-    //     var waypointsCost = new List<PathModel>
-    //     {
-    //         new(originWaypoint, [originWaypoint], 0, startingFuel),
-    //     };
-
-    //     while (waypointsReviewed.Count < waypoints.Count)
-    //     {
-    //         var pathModelToReview = waypointsCost.Where(w => !waypointsReviewed.Contains(w.WaypointSymbol)).OrderBy(w => w.TimeCost).First();
-    //         var currentFuel = pathModelToReview.ResultFuel;
-    //         var waypointToReview = waypoints.Single(w => w.Symbol == pathModelToReview.WaypointSymbol);
-    //         var waypointsWithinSystemNotReviewed = waypoints
-    //             .Where(w => WaypointsService.ExtractSystemFromWaypoint(w.Symbol) == WaypointsService.ExtractSystemFromWaypoint(waypointToReview.Symbol)
-    //                 && !waypointsReviewed.Contains(w.Symbol)
-    //                 && w.Symbol != pathModelToReview.WaypointSymbol)
-    //             .ToList();
-    //         foreach (var waypointWithinSystem in waypointsWithinSystemNotReviewed)
-    //         {
-    //             var cost = CalculateCost(waypointToReview, waypointWithinSystem, currentFuel);
-    //             if (HasRefuel(waypointWithinSystem)) 
-    //             {
-    //                 currentFuel = maxFuel;
-    //             }
-    //             else
-    //             {
-    //                 if (cost < currentFuel) currentFuel -= cost;
-    //                 else currentFuel--;
-    //             }
-    //             ReplaceIfLowerCostOrAdd(waypointsCost, pathModelToReview, waypointWithinSystem, cost, currentFuel);
-    //         }
-    //         if (waypointToReview.JumpGate is not null && !waypointToReview.IsUnderConstruction)
-    //         {
-    //             var jumpGateConnectionsNotReviewed = waypointToReview.JumpGate.Connections.Where(c => !waypointsReviewed.Contains(c)).ToList();
-    //             foreach (var jumpGateWaypoint in jumpGateConnectionsNotReviewed)
-    //             {
-    //                 var jumpGateConnectionWaypoint = waypoints.SingleOrDefault(w => w.Symbol == jumpGateWaypoint);
-    //                 if (jumpGateConnectionWaypoint is null) continue;
-    //                 if (HasRefuel(jumpGateConnectionWaypoint)) currentFuel = maxFuel;
-    //                 ReplaceIfLowerCostOrAdd(waypointsCost, pathModelToReview, jumpGateConnectionWaypoint, COST_OF_JUMP, currentFuel);
-    //             }
-    //         }
-    //         waypointsReviewed.Add(pathModelToReview.WaypointSymbol);
-    //     }
-
-    //     return waypointsCost;
-    // }
-
-    //     private static void ReplaceIfLowerCostOrAddWithBurn(List<PathModelWithBurn> waypointsCost, PathModelWithBurn origin, Waypoint destination, int cost, int currentFuel)
-    // {
-    //     var originPathModel = waypointsCost.Single(wc => wc.WaypointSymbol == origin.WaypointSymbol);
-    //     var destinationPathModel = waypointsCost.SingleOrDefault(wc => wc.WaypointSymbol == destination.Symbol);
-    //     if (destinationPathModel is null)
-    //     {
-    //         var clonedPath = new List<PathWaypointWithBurn>();
-    //         clonedPath.AddRange(originPathModel.PathWaypoints);
-    //         clonedPath.AddRange(destination.Symbol);
-    //         waypointsCost.Add(new PathModelWithBurn(destination.Symbol, clonedPath, originPathModel.TimeCost + cost, currentFuel));
-    //         return;
-    //     }
-
-    //     var newCost = originPathModel.TimeCost + cost;
-    //     if (newCost < destinationPathModel.TimeCost)
-    //     {
-    //         var clonedPath = new List<string>();
-    //         clonedPath.AddRange(originPathModel.PathWaypointSymbols);
-    //         clonedPath.AddRange(destination.Symbol);
-    //         waypointsCost.Remove(destinationPathModel);
-    //         waypointsCost.Add(new PathModel(destination.Symbol, clonedPath, newCost, currentFuel));
-    //     }
-    // }
 }
