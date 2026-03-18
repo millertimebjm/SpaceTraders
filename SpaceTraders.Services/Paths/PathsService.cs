@@ -439,8 +439,7 @@ public class PathsService(
                 var jumpGateConnectionsNotReviewed = waypointToReview.JumpGate.Connections.Where(c => !waypointsReviewed.Contains(c)).ToList();
                 foreach (var jumpGateConnectionNotReviewed in jumpGateConnectionsNotReviewed)
                 {
-                    var jumpGateConnectionNotReviewedWaypoint = waypointsDictionary[jumpGateConnectionNotReviewed];
-                    if (jumpGateConnectionNotReviewedWaypoint is null) continue;
+                    if (!waypointsDictionary.TryGetValue(jumpGateConnectionNotReviewed, out var jumpGateConnectionNotReviewedWaypoint)) continue;
                     var newFuel = currentFuel;
                     if (HasRefuel(jumpGateConnectionNotReviewedWaypoint))
                     {

@@ -19,9 +19,8 @@ public interface IShipsService
     Task<Cargo> JettisonAsync(string shipSymbol, string inventorySymbol, int units);
     Task<SurveyResult> SurveyAsync(string shipSymbol);
     Task<ScanWaypointsResult> ScanWaypointsAsync(string shipSymbol);
-    Task<Nav> NavToggleAsync(string shipSymbol, NavFlightModeEnum flightMode);
+    Task<Nav> NavToggleAsync(Ship ship, NavFlightModeEnum flightMode);
     Task<ChartWaypointResult> ChartAsync(string waypointSymbol);
     Task<ScanSystemsResult> ScanSystemsAsync(string shipSymbol);
-    Task SwitchShipFlightMode(Ship ship, NavFlightModeEnum flightMode);
     Task<TransferCargoResult> TransferCargo(string shipSymbol, string targetShipSymbol, string inventorySymbol, int inventoryAmount);
 }

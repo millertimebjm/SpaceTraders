@@ -7,11 +7,13 @@ using SpaceTraders.Models.Results;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Contracts;
 using SpaceTraders.Services.Contracts.Interfaces;
+using SpaceTraders.Services.Paths;
 using SpaceTraders.Services.Paths.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.ShipLogs.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.Shipyards;
+using SpaceTraders.Services.Systems;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Trades;
 using SpaceTraders.Services.Transactions.Interfaces;
@@ -200,22 +202,45 @@ public class FulfillContractCommandV2(
         return new GoalModel(tradeSymbol, pathModelsToTradeSymbol.WaypointSymbol, contract.Terms.Deliver[0].DestinationSymbol);
     }
 
-    private async Task<(Nav?, Fuel?, Cooldown)> NavigateHelper(Ship ship, string waypointSymbol)
+    // private async Task<(Nav?, Fuel?, Cooldown)> NavigateHelper(Ship ship, string waypointSymbol)
+    // {
+    //     var paths = await _pathsService.BuildSystemPathWithCost(ship.Nav.WaypointSymbol, ship.Fuel.Capacity, ship.Fuel.Current);
+    //     var path = paths.Single(p => p.WaypointSymbol == waypointSymbol);
+    //     var nextHop = path.PathWaypointSymbols[1];
+
+    //     Nav? nav = null;
+    //     Fuel? fuel = null;
+    //     Cooldown cooldown = ship.Cooldown;
+
+    //     if (WaypointsService.ExtractSystemFromWaypoint(nextHop) != WaypointsService.ExtractSystemFromWaypoint(waypointSymbol))
+    //     {
+    //         (nav, cooldown) = await _shipsService.JumpAsync(nextHop, ship.Symbol);
+    //         return (nav, fuel, cooldown);
+    //     }
+    //     (nav, fuel) = await _shipsService.NavigateAsync(nextHop, ship);
+    //     return (nav, fuel, cooldown);
+    // }
+
+    private async Task<(Nav?, Fuel?, Cooldown?)> NavigateHelper(Ship ship, string waypointSymbol)
     {
-        var paths = await _pathsService.BuildSystemPathWithCost(ship.Nav.WaypointSymbol, ship.Fuel.Capacity, ship.Fuel.Current);
+        var systems = await _systemsService.GetAsync();
+        var traversableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol);
+        var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
+        var paths = PathsService.BuildSystemPathWithCostWithBurn(waypoints, ship.Nav.WaypointSymbol, ship.Fuel.Capacity, ship.Fuel.Current, waypointSymbol);
         var path = paths.Single(p => p.WaypointSymbol == waypointSymbol);
-        var nextHop = path.PathWaypointSymbols[1];
+        var nextHop = path.PathWaypoints[1];
 
         Nav? nav = null;
         Fuel? fuel = null;
         Cooldown cooldown = ship.Cooldown;
 
-        if (WaypointsService.ExtractSystemFromWaypoint(nextHop) != WaypointsService.ExtractSystemFromWaypoint(waypointSymbol))
+        if (WaypointsService.ExtractSystemFromWaypoint(nextHop.WaypointSymbol) != WaypointsService.ExtractSystemFromWaypoint(waypointSymbol))
         {
-            (nav, cooldown) = await _shipsService.JumpAsync(nextHop, ship.Symbol);
+            (nav, cooldown) = await _shipsService.JumpAsync(nextHop.WaypointSymbol, ship.Symbol);
             return (nav, fuel, cooldown);
         }
-        (nav, fuel) = await _shipsService.NavigateAsync(nextHop, ship);
+        nav = await _shipsService.NavToggleAsync(ship, nextHop.FlightModeEnum);
+        (nav, fuel) = await _shipsService.NavigateAsync(nextHop.WaypointSymbol, ship);
         return (nav, fuel, cooldown);
     }
 

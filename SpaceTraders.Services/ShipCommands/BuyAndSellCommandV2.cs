@@ -2,6 +2,7 @@ using SpaceTraders.Model.Exceptions;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
+using SpaceTraders.Services.Paths;
 using SpaceTraders.Services.Paths.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
@@ -226,20 +227,24 @@ public class BuyAndSellCommandV2(
 
     private async Task<(Nav?, Fuel?, Cooldown?)> NavigateHelper(Ship ship, string waypointSymbol)
     {
-        var paths = await _pathsService.BuildSystemPathWithCost(ship.Nav.WaypointSymbol, ship.Fuel.Capacity, ship.Fuel.Current);
+        var systems = await _systemsService.GetAsync();
+        var traversableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol);
+        var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
+        var paths = PathsService.BuildSystemPathWithCostWithBurn(waypoints, ship.Nav.WaypointSymbol, ship.Fuel.Capacity, ship.Fuel.Current, waypointSymbol);
         var path = paths.Single(p => p.WaypointSymbol == waypointSymbol);
-        var nextHop = path.PathWaypointSymbols[1];
+        var nextHop = path.PathWaypoints[1];
 
         Nav? nav = null;
         Fuel? fuel = null;
         Cooldown cooldown = ship.Cooldown;
 
-        if (WaypointsService.ExtractSystemFromWaypoint(nextHop) != WaypointsService.ExtractSystemFromWaypoint(waypointSymbol))
+        if (WaypointsService.ExtractSystemFromWaypoint(nextHop.WaypointSymbol) != WaypointsService.ExtractSystemFromWaypoint(waypointSymbol))
         {
-            (nav, cooldown) = await _shipsService.JumpAsync(nextHop, ship.Symbol);
+            (nav, cooldown) = await _shipsService.JumpAsync(nextHop.WaypointSymbol, ship.Symbol);
             return (nav, fuel, cooldown);
         }
-        (nav, fuel) = await _shipsService.NavigateAsync(nextHop, ship);
+        nav = await _shipsService.NavToggleAsync(ship, nextHop.FlightModeEnum);
+        (nav, fuel) = await _shipsService.NavigateAsync(nextHop.WaypointSymbol, ship);
         return (nav, fuel, cooldown);
     }
 

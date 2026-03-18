@@ -172,12 +172,12 @@ public class ShipsService(
         if (distance > ship.Fuel.Current || ship.Fuel.Current == 0)
         {
             var flightMode = NavFlightModeEnum.DRIFT;
-            await this.SwitchShipFlightMode(ship, flightMode);
+            await NavToggleAsync(ship, flightMode);
         }
         else
         {
             var flightMode = NavFlightModeEnum.CRUISE;
-            await this.SwitchShipFlightMode(ship, flightMode);
+            await NavToggleAsync(ship, flightMode);
         }
         var urlBuilder = new UriBuilder(ApiUrl)
         {
@@ -563,19 +563,10 @@ public class ShipsService(
         return data.Datum;
     }
 
-    public async Task<Nav> NavToggleAsync(string shipSymbol, NavFlightModeEnum flightMode)
+    public async Task<Nav> NavToggleAsync(Ship ship, NavFlightModeEnum flightMode)
     {
-        var ship = await this.GetAsync(shipSymbol);
-        if (ship.Nav.FlightMode != flightMode.ToString())
-        {
-            return await NavToggleAsync(ship, flightMode);
-        }
-        return ship.Nav;
-    }
+        if (ship.Nav.FlightMode == flightMode.ToString()) return ship.Nav;
 
-    private async Task<Nav> NavToggleAsync(Ship ship, NavFlightModeEnum flightMode)
-    {
-        var flightModeString = flightMode.ToString();
         var urlBuilder = new UriBuilder(ApiUrl)
         {
             Path = $"/my/ships/{ship.Symbol}/nav"
@@ -595,7 +586,7 @@ public class ShipsService(
 
         var request = new HttpRequestMessage(HttpMethod.Patch, url);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
-        request.Content = JsonContent.Create(new { flightMode = flightModeString });
+        request.Content = JsonContent.Create(new { flightMode = flightMode.ToString() });
         // var response = await _dispatcher.SendAsync(request);
         //var response = await _httpClient.SendAsync(request);
         var response = await HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
@@ -702,19 +693,6 @@ public class ShipsService(
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Scan not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<ScanSystemsResult>>();
         return data.Datum;
-    }
-
-    public async Task SwitchShipFlightMode(Ship ship, NavFlightModeEnum flightMode)
-    {
-        if (ship.Nav.FlightMode == flightMode.ToString())
-        {
-            return;
-        }
-        var nav = await NavToggleAsync(ship.Symbol, flightMode);
-        var shipStatuses = await _shipStatusesCacheService.GetAsync(ship.Symbol);
-        ship = ship with { Nav = nav };
-        shipStatuses = shipStatuses with { Ship = ship };
-        await _shipStatusesCacheService.SetAsync(shipStatuses);
     }
 
     // public static async Task<IEnumerable<Ship>> HexadecimalSort(this IEnumerable<Ship> ships)

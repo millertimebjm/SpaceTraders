@@ -24,10 +24,10 @@ public class HaulerShipJobService(
         {
             return new ShipCommand(ship.Symbol, ShipCommandEnum.SupplyConstruction);
         }
-        if (await IsHaulingAssist(ships, ship))
-        {
-            return new ShipCommand(ship.Symbol, ShipCommandEnum.HaulingAssistToSellAnywhere);
-        }
+        // if (await IsHaulingAssist(ships, ship))
+        // {
+        //     return new ShipCommand(ship.Symbol, ShipCommandEnum.HaulingAssistToSellAnywhere);
+        // }
         return new ShipCommand(ship.Symbol, ShipCommandEnum.BuyToSell);
     }
 
