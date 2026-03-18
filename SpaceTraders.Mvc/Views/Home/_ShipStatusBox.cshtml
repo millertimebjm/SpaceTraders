@@ -19,9 +19,9 @@
             <span data-toggle="tooltip" data-placement="top" title="@(string.Join(" ", shipStatus.Ship.Cargo.Inventory.Select(i => $"{i.Symbol} ({i.Units})")))">Cargo: @shipStatus.Ship.Cargo.Units</span>
         }
         
-        @if (shipStatus.Ship.Goal is not null)
+        @if (shipStatus.Ship.GoalModel is not null)
         {
-            <span>Goal: @shipStatus.Ship.Goal</span>
+            <span>@shipStatus.Ship.GoalModel.TradeSymbol @shipStatus.Ship.GoalModel.BuyWaypointSymbol => @shipStatus.Ship.GoalModel.SellWaypointSymbol</span>
         }
 
         <span>@shipStatus.LastMessage</span>
