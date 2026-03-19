@@ -60,6 +60,9 @@ public class ShipLoopsService(
         _configuration[$"SpaceTrader:" + ConfigurationEnums.AgentToken.ToString()] = account.Token;
         
         var ships = await _shipsService.GetAsync();
+        var shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
+        shipStatuses = shipStatuses.Where(ss => ships.Select(s => s.Symbol).Contains(ss.Ship.Symbol)).ToList();
+        await _shipStatusesCacheService.SetAsync(shipStatuses);
         // await _shipStatusesCacheService.DeleteAsync();
         // foreach (var ship in ships)
         // {
@@ -69,13 +72,15 @@ public class ShipLoopsService(
 
         while (!cts.IsCancellationRequested)
         {
-            var shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
+            shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
 
             await UpdateSystemWaypoints(ships);
             if (await BuyNewShipIfPossible(shipStatuses.Select(ss => ss.Ship).ToList()))
             {
                 shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
             }
+
+            
 
             shipStatuses = shipStatuses
                 .OrderBy(s => {
@@ -114,13 +119,22 @@ public class ShipLoopsService(
                 try
                 {
                     var shipStatusesDictionary = shipStatuses.ToDictionary(ss => ss.Ship.Symbol, ss => ss.Ship);
-                    shipStatus = await shipCommandService.Run(
+                    var newShipStatus = await shipCommandService.Run(
                         shipStatus,
                         shipStatusesDictionary);
-                    ship = shipStatus.Ship;
-                    ship = ship with { Error = null };
-                    shipStatus = shipStatus with { Ship = ship };
-                    shipStatuses[i] = shipStatus;
+                    if (newShipStatus is null)
+                    {
+                        shipStatuses.Remove(shipStatus);
+                        i--;
+                    }
+                    else
+                    {
+                        shipStatus = newShipStatus;
+                        ship = shipStatus.Ship;
+                        ship = ship with { Error = null };
+                        shipStatus = shipStatus with { Ship = ship };
+                        shipStatuses[i] = shipStatus;
+                    }
                 }
                 catch (SpaceTraderResultException ex)
                 {

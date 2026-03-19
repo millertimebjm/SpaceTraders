@@ -718,7 +718,7 @@ public class ShipsService(
         //     _httpClient,
         //     content,
         //     _logger);
-        // if (data.Datum is null) throw new HttpRequestException("Scrap not retrieved");
+        // if (data.Datum is null) throw new HttpRequestException("Transfer not retrieved");
         // return data.Datum;
 
         var request = new HttpRequestMessage(HttpMethod.Post, url);
@@ -727,13 +727,36 @@ public class ShipsService(
         //var response = await _dispatcher.SendAsync(request);
         //var response = await _httpClient.SendAsync(request);
         var response = await HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
-        if (!response.IsSuccessStatusCode) throw new HttpRequestException("Scrap not retrieved");
+        if (!response.IsSuccessStatusCode) throw new HttpRequestException("Transfer not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<TransferCargoResult>>();
         return data.Datum;
     }
 
-    public async Task<ScrapShipResponse> ScrapShipAsync(string symbol)
+    public async Task<ScrapShipResponse> ScrapShipAsync(string shipSymbol)
     {
-        throw new NotImplementedException();
+        var urlBuilder = new UriBuilder(ApiUrl)
+        {
+            Path = $"/my/ships/{shipSymbol}/scrap"
+        };
+        var url = urlBuilder.ToString();
+        // _httpClient.DefaultRequestHeaders.Authorization =
+        //     new AuthenticationHeaderValue("Bearer", Token);
+        // var content = JsonContent.Create(new { tradeSymbol = inventorySymbol, units = inventoryAmount, shipSymbol = targetShipSymbol });
+        // var data = await HttpHelperService.HttpPostHelper<DataSingle<TransferCargoResult>>(
+        //     url,
+        //     _httpClient,
+        //     content,
+        //     _logger);
+        // if (data.Datum is null) throw new HttpRequestException("Scrap not retrieved");
+        // return data.Datum;
+
+        var request = new HttpRequestMessage(HttpMethod.Post, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+        //var response = await _dispatcher.SendAsync(request);
+        //var response = await _httpClient.SendAsync(request);
+        var response = await HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        if (!response.IsSuccessStatusCode) throw new HttpRequestException("Scrap not retrieved");
+        var data = await response.Content.ReadFromJsonAsync<DataSingle<ScrapShipResponse>>();
+        return data.Datum;
     }
 }

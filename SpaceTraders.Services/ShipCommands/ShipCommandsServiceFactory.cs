@@ -20,6 +20,7 @@ public class ShipCommandsServiceFactory(IServiceProvider _serviceProvider) : ISh
             ShipCommandEnum.FulfillContract => _serviceProvider.GetRequiredService<FulfillContractCommandV2>(),
             ShipCommandEnum.MarketWatch => _serviceProvider.GetRequiredService<MarketWatchCommand>(),
             ShipCommandEnum.HaulingAssistToSellAnywhere => _serviceProvider.GetRequiredService<HaulingAssistToSellAnywhereCommand>(),
+            ShipCommandEnum.ScrapShip => _serviceProvider.GetRequiredService<ScrapShipCommand>(),
             _ => throw new ArgumentException($"Unknown command: {command}", nameof(command))
         };
     }

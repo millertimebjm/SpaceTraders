@@ -1,23 +1,13 @@
-using System.Diagnostics.Contracts;
-using System.Text.Json;
-using SpaceTraders.Model.Exceptions;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
-using SpaceTraders.Models.Results;
 using SpaceTraders.Services.Agents.Interfaces;
-using SpaceTraders.Services.Contracts;
-using SpaceTraders.Services.Contracts.Interfaces;
 using SpaceTraders.Services.Paths;
-using SpaceTraders.Services.Paths.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
-using SpaceTraders.Services.ShipLogs.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
+using SpaceTraders.Services.ShipStatuses.Interfaces;
 using SpaceTraders.Services.Shipyards;
-using SpaceTraders.Services.Systems;
 using SpaceTraders.Services.Systems.Interfaces;
-using SpaceTraders.Services.Trades;
 using SpaceTraders.Services.Transactions.Interfaces;
-using SpaceTraders.Services.Waypoints;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.ShipCommands;
@@ -28,11 +18,8 @@ public class ScrapShipCommand(
     ISystemsService _systemsService,
     IAgentsService _agentsService,
     ITransactionsCacheService _transactionsService,
-    IContractsService _contractsService,
-    IShipLogsService _shipLogsService,
     IShipsService _shipsService,
-    ITradesService _tradesService,
-    IPathsService _pathsService
+    IShipStatusesCacheService _shipStatusesCacheService
 ) : IShipCommandsService
 {
     public async Task<ShipStatus> Run(
@@ -46,7 +33,6 @@ public class ScrapShipCommand(
         Nav? nav;
         Fuel? fuel;
         Cooldown cooldown = ship.Cooldown;
-        Cargo? cargo;
         var goalModel = ship.GoalModel;
 
         var currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol);
@@ -64,9 +50,15 @@ public class ScrapShipCommand(
                 ship = ship with { Nav = nav };
             }
 
-            // var scrapShipResponse = await _shipsService.ScrapShipAsync(ship.Symbol);
-            // await _agentsService.SetAsync(scrapShipResponse.Agent);
-            // await _transactionsService.SetAsync(scrapShipResponse.Transaction);
+            var scrapShipResponse = await _shipsService.ScrapShipAsync(ship.Symbol);
+            await _agentsService.SetAsync(scrapShipResponse.Agent);
+            await _transactionsService.SetAsync(scrapShipResponse.Transaction);
+
+            var ships = await _shipsService.GetAsync();
+            var shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
+            shipStatuses = shipStatuses.Where(ss => ships.Select(s => s.Symbol).Contains(ss.Ship.Symbol)).ToList();
+            await _shipStatusesCacheService.SetAsync(shipStatuses);
+            return null;
         }
 
         if (ship.Fuel.Current < ship.Fuel.Capacity
@@ -91,7 +83,7 @@ public class ScrapShipCommand(
             
             var shipyardWaypointSymbols = waypoints.Where(w => w.Shipyard is not null).Select(w => w.Symbol).ToList();
             var shipyardWaypointPathModels = pathModelsWithBurn.Where(pm => shipyardWaypointSymbols.Contains(pm.WaypointSymbol));
-            //var closest
+            goalModel = new GoalModel(null, null, shipyardWaypointPathModels.First().WaypointSymbol);
         }
 
         if (goalModel?.SellWaypointSymbol is not null)
@@ -102,7 +94,7 @@ public class ScrapShipCommand(
                 ship = ship with { Nav = nav };
             }
 
-            (nav, fuel, cooldown) = await NavigateHelper(ship, goalModel.SellWaypointSymbol);
+            (nav, fuel, cooldown) = await _shipCommandsHelperService.NavigateHelper(ship, goalModel.SellWaypointSymbol);
             ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown };
             return new ShipStatus(ship, $"Navigate To Scrap {ship.Nav.Route.Destination.Symbol}", DateTime.UtcNow);
 
@@ -129,28 +121,5 @@ public class ScrapShipCommand(
         }
 
         return null;
-    }
-
-    private async Task<(Nav?, Fuel?, Cooldown?)> NavigateHelper(Ship ship, string waypointSymbol)
-    {
-        var systems = await _systemsService.GetAsync();
-        var traversableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol);
-        var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
-        var paths = PathsService.BuildSystemPathWithCostWithBurn(waypoints, ship.Nav.WaypointSymbol, ship.Fuel.Capacity, ship.Fuel.Current, waypointSymbol);
-        var path = paths.Single(p => p.WaypointSymbol == waypointSymbol);
-        var nextHop = path.PathWaypoints[1];
-
-        Nav? nav = null;
-        Fuel? fuel = null;
-        Cooldown cooldown = ship.Cooldown;
-
-        if (WaypointsService.ExtractSystemFromWaypoint(nextHop.WaypointSymbol) != WaypointsService.ExtractSystemFromWaypoint(ship.Nav.WaypointSymbol))
-        {
-            (nav, cooldown) = await _shipsService.JumpAsync(nextHop.WaypointSymbol, ship.Symbol);
-            return (nav, fuel, cooldown);
-        }
-        nav = await _shipsService.NavToggleAsync(ship, nextHop.FlightModeEnum);
-        (nav, fuel) = await _shipsService.NavigateAsync(nextHop.WaypointSymbol, ship);
-        return (nav, fuel, cooldown);
     }
 }

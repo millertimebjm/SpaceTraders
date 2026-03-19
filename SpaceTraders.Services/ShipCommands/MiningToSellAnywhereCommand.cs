@@ -2,6 +2,7 @@ using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
+using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Transactions.Interfaces;
 using SpaceTraders.Services.Waypoints.Interfaces;
@@ -12,7 +13,8 @@ public class MiningToSellAnywhereCommand(
     IShipCommandsHelperService _shipCommandsHelperService,
     IWaypointsService _waypointsService,
     IAgentsService _agentsService,
-    ITransactionsCacheService _transactionsService
+    ITransactionsCacheService _transactionsService,
+    IShipsService _shipsService
 ) : IShipCommandsService
 {
     public async Task<ShipStatus> Run(
@@ -21,11 +23,14 @@ public class MiningToSellAnywhereCommand(
     {
         var ship = shipStatus.Ship;
         var currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol);
+        var loop =0;
         while (true)
         {
+            ship = ship with { ShipCommand = null };
+            return new ShipStatus(ship, "Resetting", DateTime.UtcNow); 
+            
             if (ShipsService.GetShipCooldown(ship) is not null) return shipStatus;
-
-            //await Task.Delay(1000);
+            loop++;
 
             var cargo = await _shipCommandsHelperService.Jettison(ship);
             if (cargo is not null) 
@@ -97,7 +102,13 @@ public class MiningToSellAnywhereCommand(
                 ship = ship with { Nav = nav };
                 continue;
             }
-
+            // TODO: Fix this
+            if (loop < 10)
+            {
+                ship = await _shipsService.GetAsync(ship.Symbol);
+                continue;
+            }
+            
             throw new Exception($"Infinite loop, no work planned. {ship.Symbol}, {currentWaypoint.Symbol}, {string.Join(":", ship.Cargo.Inventory.Select(i => $"{i.Name}/{i.Units}"))}, {ship.Fuel.Current}/{ship.Fuel.Capacity}");
         }
     }

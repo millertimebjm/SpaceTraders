@@ -151,7 +151,7 @@ public class ExplorationCommand(
                 (nav, cooldown) = await _shipsService.JumpAsync(path.PathWaypoints[1].WaypointSymbol, ship.Symbol);
                 return (nav, ship.Fuel, cooldown, ship.Goal);
             }
-            (nav, fuel, cooldown) = await NavigateHelper(ship, path.PathWaypoints[1].WaypointSymbol);
+            (nav, fuel, cooldown) = await _shipCommandsHelperService.NavigateHelper(ship, path.PathWaypoints[1].WaypointSymbol);
             return (nav, fuel, cooldown, ship.Goal);
         }
 
@@ -180,28 +180,5 @@ public class ExplorationCommand(
         }
         (nav, fuel) = await _shipsService.NavigateAsync(closestUnmappedPath.PathWaypoints[1].WaypointSymbol, ship);
         return (nav, fuel, ship.Cooldown, goal);
-    }
-
-    private async Task<(Nav?, Fuel?, Cooldown)> NavigateHelper(Ship ship, string waypointSymbol)
-    {
-        var systems = await _systemsService.GetAsync();
-        var traversableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol);
-        var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
-        var paths = PathsService.BuildSystemPathWithCostWithBurn(waypoints, ship.Nav.WaypointSymbol, ship.Fuel.Capacity, ship.Fuel.Current, waypointSymbol);
-        var path = paths.Single(p => p.WaypointSymbol == waypointSymbol);
-        var nextHop = path.PathWaypoints[1];
-
-        Nav? nav = null;
-        Fuel? fuel = null;
-        Cooldown cooldown = ship.Cooldown;
-
-        if (WaypointsService.ExtractSystemFromWaypoint(nextHop.WaypointSymbol) != WaypointsService.ExtractSystemFromWaypoint(ship.Nav.WaypointSymbol))
-        {
-            (nav, cooldown) = await _shipsService.JumpAsync(nextHop.WaypointSymbol, ship.Symbol);
-            return (nav, fuel, cooldown);
-        }
-        nav = await _shipsService.NavToggleAsync(ship, nextHop.FlightModeEnum);
-        (nav, fuel) = await _shipsService.NavigateAsync(nextHop.WaypointSymbol, ship);
-        return (nav, fuel, cooldown);
     }
 }

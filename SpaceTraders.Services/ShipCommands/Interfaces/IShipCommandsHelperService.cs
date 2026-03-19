@@ -32,7 +32,7 @@ public interface IShipCommandsHelperService
         IEnumerable<string> otherShipGoalSymbols);
     Task<(Nav?, Fuel?)> NavigateToSurvey(Ship ship, Waypoint currentWaypoint);
     Task<(Nav?, Fuel?)> NavigateToMiningWaypoint(Ship ship, Waypoint currentWaypoint);
-    Task<(Nav?, Fuel?)> NavigateToSiphonWaypoint(Ship ship, Waypoint currentWaypoint);
+    Task<(Nav?, Fuel?, Cooldown)> NavigateToSiphonWaypoint(Ship ship, Waypoint currentWaypoint);
 
     Task<Cooldown> Survey(Ship ship);
     Task<(Nav? nav, Fuel? fuel, Cooldown cooldown)> NavigateToShipyard(Ship ship, Waypoint currentWaypoint);
@@ -56,4 +56,5 @@ public interface IShipCommandsHelperService
     Task<(string?, ShipTypesEnum?)> ShipToBuy(IEnumerable<Ship> ships);
     Task<bool> CheckRemotePurchaseShip(IEnumerable<Ship> ships, string shipyardWaypoint, ShipTypesEnum shipType);
     Task<Cargo?> TransferCargo(Ship ship, Waypoint currentWaypoint);
+    Task<(Nav?, Fuel?, Cooldown)> NavigateHelper(Ship ship, string waypointSymbol);
 }

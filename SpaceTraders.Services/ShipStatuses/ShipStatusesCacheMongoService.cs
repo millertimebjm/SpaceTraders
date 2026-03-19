@@ -40,6 +40,15 @@ public class ShipStatusesCacheMongoService(IMongoCollectionFactory _collectionFa
         await collection.InsertOneAsync(shipStatus);
     }
 
+    public async Task SetAsync(List<ShipStatus> shipStatuses)
+    {
+        var filter = Builders<ShipStatus>
+            .Filter.Empty;
+        var collection = _collectionFactory.GetCollection<ShipStatus>();
+        await collection.DeleteManyAsync(filter, CancellationToken.None);
+        await collection.InsertManyAsync(shipStatuses);
+    }
+
     public async Task DeleteAsync()
     {
         var collection = _collectionFactory.GetCollection<ShipStatus>();

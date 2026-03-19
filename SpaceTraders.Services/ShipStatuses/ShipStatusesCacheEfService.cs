@@ -64,4 +64,9 @@ public class ShipStatusesCacheEfService(SpaceTraderDbContext _context) : IShipSt
         // var collection = _collectionFactory.GetCollection<ShipStatus>();
         // await collection.DeleteManyAsync(FilterDefinition<ShipStatus>.Empty, CancellationToken.None);
     }
+
+    public Task SetAsync(List<ShipStatus> shipStatuses)
+    {
+        throw new NotImplementedException();
+    }
 }

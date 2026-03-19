@@ -23,7 +23,14 @@ public class SiphonToSellAnywhereCommand(
         var currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol);
         while (true)
         {
+            ship = ship with { ShipCommand = null };
+            return new ShipStatus(ship, "Resetting", DateTime.UtcNow); 
+
             if (ShipsService.GetShipCooldown(ship) is not null) return shipStatus;
+
+            Nav? nav;
+            Fuel? fuel;
+            Cooldown cooldown = ship.Cooldown;
 
             var cargo = await _shipCommandsHelperService.Jettison(ship);
             if (cargo is not null) 
@@ -41,7 +48,7 @@ public class SiphonToSellAnywhereCommand(
                 continue;
             }
 
-            var nav = await _shipCommandsHelperService.DockForMiningToSellAnywhere(ship, currentWaypoint);
+            nav = await _shipCommandsHelperService.DockForMiningToSellAnywhere(ship, currentWaypoint);
             if (nav is not null)
             {
                 ship = ship with { Nav = nav };
@@ -49,14 +56,14 @@ public class SiphonToSellAnywhereCommand(
                 continue;
             }
 
-            (nav, var fuel) = await _shipCommandsHelperService.NavigateToSiphonWaypoint(ship, currentWaypoint);
+            (nav, fuel, cooldown) = await _shipCommandsHelperService.NavigateToSiphonWaypoint(ship, currentWaypoint);
             if (nav is not null && fuel is not null)
             {
-                ship = ship with { Nav = nav, Fuel = fuel, Error = null };
+                ship = ship with { Nav = nav, Fuel = fuel, Error = null, Cooldown = cooldown };
                 return new ShipStatus(ship, $"Navigate To Start Waypoint {nav.WaypointSymbol}", DateTime.UtcNow);
             }
 
-            (cargo, var cooldown) = await _shipCommandsHelperService.Siphon(ship, currentWaypoint);
+            (cargo, cooldown) = await _shipCommandsHelperService.Siphon(ship, currentWaypoint);
             if (cargo is not null && cooldown is not null)
             {
                 ship = ship with { Cargo = cargo, Cooldown = cooldown, Error = null  };

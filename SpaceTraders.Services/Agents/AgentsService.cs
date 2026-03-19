@@ -17,8 +17,7 @@ public class AgentsService(
     ILogger<AgentsService> _logger,
     IConfiguration _configuration,
     HttpClient _httpClient,
-    IAgentsCacheService _agentsCacheService,
-    IDispatcher _dispatcher) : IAgentsService
+    IAgentsCacheService _agentsCacheService) : IAgentsService
 {
     private const string DIRECTORY_PATH = "/v2/my/agent";
 

@@ -18,4 +18,5 @@ public enum ShipCommandEnum
     MarketWatch,
     SiphonToSellAnywhere,
     HaulingAssistToSellAnywhere,
+    ScrapShip,
 }

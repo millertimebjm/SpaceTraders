@@ -469,8 +469,7 @@ public class ShipCommandsHelperService(
     {
         if (ship.Nav.Status == NavStatusEnum.DOCKED.ToString()
             || ship.Cargo.Units == ship.Cargo.Capacity
-            || !(currentWaypoint.Type == WaypointTypesEnum.ASTEROID.ToString()
-                || currentWaypoint.Type == WaypointTypesEnum.ENGINEERED_ASTEROID.ToString()))
+            || !(currentWaypoint.Type == WaypointTypesEnum.ENGINEERED_ASTEROID.ToString()))
         {
             return (null, null);
         }
@@ -596,33 +595,59 @@ public class ShipCommandsHelperService(
             return (null, null);
         }
 
-        var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
-
-        var paths = PathsService.BuildSystemPathWithCost(system.Waypoints.ToList(), currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
-        var asteroidWaypoints = system.Waypoints.Where(w => w.Type == WaypointTypesEnum.ENGINEERED_ASTEROID.ToString()).ToList();
+        var systems = await _systemsService.GetAsync();
+        var traversableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol);
+        var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
+        var paths = PathsService.BuildSystemPathWithCost(waypoints, currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
+        var asteroidWaypoints = waypoints.Where(w => w.Type == WaypointTypesEnum.ENGINEERED_ASTEROID.ToString()).ToList();
         var asteroidPaths = paths.Where(p => asteroidWaypoints.Select(w => w.Symbol).Contains(p.WaypointSymbol));
-        var closestAsteroidPath = asteroidPaths.OrderBy(p => p.PathWaypointSymbols.Count()).FirstOrDefault();
+        var closestAsteroidPath = asteroidPaths.OrderBy(p => p.TimeCost).FirstOrDefault();
         return await _shipsService.NavigateAsync(closestAsteroidPath.PathWaypointSymbols[1], ship);
     }
 
-    public async Task<(Nav?, Fuel?)> NavigateToSiphonWaypoint(Ship ship, Waypoint currentWaypoint)
+    public async Task<(Nav?, Fuel?, Cooldown)> NavigateToSiphonWaypoint(Ship ship, Waypoint currentWaypoint)
     {
         if (ship.Nav.Status == NavStatusEnum.DOCKED.ToString()
             || ship.Cargo.Units != 0
             || currentWaypoint.Type == WaypointTypesEnum.GAS_GIANT.ToString())
         {
-            return (null, null);
+            return (null, null, ship.Cooldown);
         }
 
-        var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
-        var asteroidWaypoints = system.Waypoints.Where(w =>
+        var systems = await _systemsService.GetAsync();
+        var traversableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol);
+        var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
+        var asteroidWaypoints = waypoints.Where(w =>
             w.Type == WaypointTypesEnum.GAS_GIANT.ToString()).ToList();
 
-        var paths = PathsService.BuildSystemPathWithCost(system.Waypoints.ToList(), currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
+        var paths = PathsService.BuildSystemPathWithCost(waypoints.ToList(), currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
         var asteroidPaths = paths.Where(p => asteroidWaypoints.Any(w => w.Symbol == p.WaypointSymbol));
         var closestAsteroidPath = asteroidPaths.OrderBy(p => p.PathWaypointSymbols.Count()).FirstOrDefault();
 
-        return await _shipsService.NavigateAsync(closestAsteroidPath.PathWaypointSymbols[1], ship);
+        return await NavigateHelper(ship, closestAsteroidPath.PathWaypointSymbols[1]);
+    }
+
+    public async Task<(Nav?, Fuel?, Cooldown)> NavigateHelper(Ship ship, string waypointSymbol)
+    {
+        var systems = await _systemsService.GetAsync();
+        var traversableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol);
+        var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
+        var paths = PathsService.BuildSystemPathWithCostWithBurn(waypoints, ship.Nav.WaypointSymbol, ship.Fuel.Capacity, ship.Fuel.Current, waypointSymbol);
+        var path = paths.Single(p => p.WaypointSymbol == waypointSymbol);
+        var nextHop = path.PathWaypoints[1];
+
+        Nav? nav = null;
+        Fuel? fuel = null;
+        Cooldown cooldown = ship.Cooldown;
+
+        if (WaypointsService.ExtractSystemFromWaypoint(nextHop.WaypointSymbol) != WaypointsService.ExtractSystemFromWaypoint(ship.Nav.WaypointSymbol))
+        {
+            (nav, cooldown) = await _shipsService.JumpAsync(nextHop.WaypointSymbol, ship.Symbol);
+            return (nav, fuel, cooldown);
+        }
+        nav = await _shipsService.NavToggleAsync(ship, nextHop.FlightModeEnum);
+        (nav, fuel) = await _shipsService.NavigateAsync(nextHop.WaypointSymbol, ship);
+        return (nav, fuel, cooldown);
     }
 
     public async Task<Nav?> Orbit(Ship ship, Waypoint currentWaypoint)
@@ -672,7 +697,7 @@ public class ShipCommandsHelperService(
 
     public async Task<SellCargoResponse?> Sell(Ship ship, Waypoint currentWaypoint)
     {
-        if (ship.Cargo.Inventory.Count == 0
+        if (ship.Cargo.Units == 0
             || currentWaypoint.Marketplace is null
             || !(currentWaypoint.Marketplace.Imports.Any(i => ship.Cargo.Inventory.Select(i => i.Symbol).Contains(i.Symbol))
                 || currentWaypoint.Marketplace.Exchange.Any(e => ship.Cargo.Inventory.Select(i => i.Symbol).Contains(e.Symbol))))
@@ -735,7 +760,7 @@ public class ShipCommandsHelperService(
 
     public async Task<Cargo?> Jettison(Ship ship)
     {
-        if (ship.Cargo.Inventory.Count == 0)
+        if (ship.Cargo.Units == 0)
         {
             return null;
         }
@@ -765,7 +790,7 @@ public class ShipCommandsHelperService(
 
     public async Task<(Nav?, Fuel?, Cooldown)> NavigateToMarketplaceImport(Ship ship, Waypoint currentWaypoint)
     {
-        if (ship.Cargo.Inventory.Count == 0
+        if (ship.Cargo.Units == 0
             || ship.Nav.Status == NavStatusEnum.DOCKED.ToString())
         {
             return (null, null, ship.Cooldown);
