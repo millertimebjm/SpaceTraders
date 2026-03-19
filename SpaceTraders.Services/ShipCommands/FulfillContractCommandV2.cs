@@ -119,6 +119,7 @@ public class FulfillContractCommandV2(
                 var contractFulfillResult = await _contractsService.FulfillAsync(contract.ContractId);
                 contract = STContractApi.MapToSTContract(contractFulfillResult.Contract);
                 await _agentsService.SetAsync(contractFulfillResult.Agent);
+                await AddFulfillShipLog(ship.Symbol, contract);
 
                 var contractNegotiateResult = await _contractsService.NegotiateAsync(ship.Symbol);
                 contract = STContractApi.MapToSTContract(contractNegotiateResult.Contract);
