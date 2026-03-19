@@ -1,3 +1,4 @@
+using SpaceTraders.Model.Exceptions;
 using SpaceTraders.Models;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Paths;
@@ -108,8 +109,7 @@ public class SupplyConstructionCommand(
                 return new ShipStatus(ship, $"NavigateToMarketplaceExport {nav.Route.Destination.Symbol}", DateTime.UtcNow);
             }
 
-            throw new Exception($"Infinite loop, no work planned. {ship.Symbol}, {currentWaypoint.Symbol}, {string.Join(":", ship.Cargo.Inventory.Select(i => $"{i.Name}/{i.Units}"))}, {ship.Fuel.Current}/{ship.Fuel.Capacity}");
-
+            throw new SpaceTraderResultException("Infinite loop, no work planned. SupplyConstruction", new HttpRequestException("Fake"), $"Infinite loop, no work planned. {ship.Symbol}, {currentWaypoint.Symbol}, {string.Join(":", ship.Cargo.Inventory.Select(i => $"{i.Name}/{i.Units}"))}, {ship.Fuel.Current}/{ship.Fuel.Capacity}");
         }
     }
 }

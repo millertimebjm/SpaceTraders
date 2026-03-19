@@ -1,3 +1,4 @@
+using SpaceTraders.Model.Exceptions;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
@@ -95,10 +96,7 @@ public class SiphonToSellAnywhereCommand(
             }
 
             //ship = ship with {ShipCommand = new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration) };
-            ship = ship with {ShipCommand = null, Cooldown = new Cooldown(ship.Symbol, 60, 60, DateTime.UtcNow.AddMinutes(1)) };
-
-            return new ShipStatus(ship, "No Gas Giant found, retting...", DateTime.UtcNow);
-            //throw new Exception($"Infinite loop, no work planned. {ship.Symbol}, {currentWaypoint.Symbol}, {string.Join(":", ship.Cargo.Inventory.Select(i => $"{i.Name}/{i.Units}"))}, {ship.Fuel.Current}/{ship.Fuel.Capacity}");
+            throw new SpaceTraderResultException("Infinite loop, no work planned. SiphonToSellAnywhere", new HttpRequestException("Fake"), $"Infinite loop, no work planned. {ship.Symbol}, {currentWaypoint.Symbol}, {string.Join(":", ship.Cargo.Inventory.Select(i => $"{i.Name}/{i.Units}"))}, {ship.Fuel.Current}/{ship.Fuel.Capacity}");
         }
     }
 }
