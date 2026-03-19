@@ -26,9 +26,6 @@ public class MiningToSellAnywhereCommand(
         var loop =0;
         while (true)
         {
-            ship = ship with { ShipCommand = null };
-            return new ShipStatus(ship, "Resetting", DateTime.UtcNow); 
-            
             if (ShipsService.GetShipCooldown(ship) is not null) return shipStatus;
             loop++;
 
@@ -88,7 +85,7 @@ public class MiningToSellAnywhereCommand(
             {
                 ship = ship with { Cargo = sellCargoResponse.Cargo };
                 await _agentsService.SetAsync(sellCargoResponse.Agent);
-                if (sellCargoResponse.Cargo.Units == 0 && ship.Registration.Role == ShipRegistrationRolesEnum.COMMAND.ToString())
+                if (ship.Cargo.Units == 0)
                 {
                     ship = ship with { ShipCommand = null, Error = null  };
                     return new ShipStatus(ship, $"Resetting Job.", DateTime.UtcNow);

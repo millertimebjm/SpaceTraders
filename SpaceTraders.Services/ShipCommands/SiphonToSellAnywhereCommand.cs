@@ -23,9 +23,6 @@ public class SiphonToSellAnywhereCommand(
         var currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol);
         while (true)
         {
-            ship = ship with { ShipCommand = null };
-            return new ShipStatus(ship, "Resetting", DateTime.UtcNow); 
-
             if (ShipsService.GetShipCooldown(ship) is not null) return shipStatus;
 
             Nav? nav;
@@ -82,7 +79,7 @@ public class SiphonToSellAnywhereCommand(
             {
                 ship = ship with { Cargo = sellCargoResponse.Cargo };
                 await _agentsService.SetAsync(sellCargoResponse.Agent);
-                if (sellCargoResponse.Cargo.Units == 0 && ship.Registration.Role == ShipRegistrationRolesEnum.COMMAND.ToString())
+                if (ship.Cargo.Units == 0)
                 {
                     ship = ship with { ShipCommand = null, Error = null  };
                     return new ShipStatus(ship, $"Resetting Job.", DateTime.UtcNow);
