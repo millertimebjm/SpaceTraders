@@ -50,7 +50,7 @@ public class TransportShipJobService(
         var agent = await _agentsService.GetAsync();
         var homeSystem = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters));
         var systems = await _systemsService.GetAsync();
-        var traversableSystems = SystemsService.Traverse(systems, homeSystem.Symbol);
+        var traversableSystems = SystemsService.Traverse(systems, homeSystem.Symbol, maxDepth: 100);
         var traversableWaypoints = traversableSystems.SelectMany(w => w.Waypoints);
         var completedJumpGates = traversableWaypoints.Where(tw => tw.JumpGate is not null && !tw.IsUnderConstruction);
         foreach (var completedJumpGate in completedJumpGates)

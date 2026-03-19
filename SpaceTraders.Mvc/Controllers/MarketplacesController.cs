@@ -6,13 +6,16 @@ using SpaceTraders.Models.Enums;
 using SpaceTraders.Mvc.Models;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Marketplaces.Interfaces;
+using SpaceTraders.Services.Paths;
 using SpaceTraders.Services.Paths.Interfaces;
 using SpaceTraders.Services.ShipLogs.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.ShipStatuses.Interfaces;
+using SpaceTraders.Services.Systems;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Trades;
 using SpaceTraders.Services.Trades.Interfaces;
+using SpaceTraders.Services.Waypoints;
 
 namespace SpaceTraders.Mvc.Controllers;
 
@@ -220,6 +223,66 @@ public class MarketplacesController(
             }
         }
         return shipRevenueEvents;
+    }
+
+    [Route("/marketplaces/pathtester/{originWaypointSymbol?}/{destinationWaypointSymbol?}")]
+    public async Task<IActionResult> PathTester(string? originWaypointSymbol, string? destinationWaypointSymbol)
+    {
+        var agent = await _agentsService.GetAsync();
+        var systems = await _systemsService.GetAsync();
+        var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters));
+        var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
+        
+        List<PathModelWithBurn> pathsWithBurn;
+        List<PathModel> paths;
+        originWaypointSymbol ??= agent.Headquarters;
+
+        pathsWithBurn = PathsService.BuildSystemPathWithCostWithBurn(waypoints, originWaypointSymbol, 600, 600);
+        paths = PathsService.BuildSystemPathWithCost(waypoints, originWaypointSymbol, 600, 600);
+  
+        return View((waypoints, pathsWithBurn, paths, originWaypointSymbol, destinationWaypointSymbol));
+    }
+
+    [Route("/marketplaces/shipyards")]
+    public async Task<IActionResult> Shipyards()
+    {
+        var agent = await _agentsService.GetAsync();
+        var systems = await _systemsService.GetAsync();
+        var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters));
+        var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
+        
+        // List<PathModelWithBurn> pathsWithBurn;
+        // List<PathModel> paths;
+        // originWaypointSymbol ??= agent.Headquarters;
+
+        // pathsWithBurn = PathsService.BuildSystemPathWithCostWithBurn(waypoints, originWaypointSymbol, 600, 600);
+        // paths = PathsService.BuildSystemPathWithCost(waypoints, originWaypointSymbol, 600, 600);
+  
+        // return View((waypoints, pathsWithBurn, paths, originWaypointSymbol, destinationWaypointSymbol));
+
+        var shipyards = waypoints.Where(w => w.Shipyard is not null).ToList();
+        return View(shipyards);
+    }
+
+    [Route("/marketplaces/marketplaces")]
+    public async Task<IActionResult> Marketplaces()
+    {
+        var agent = await _agentsService.GetAsync();
+        var systems = await _systemsService.GetAsync();
+        var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters));
+        var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
+        
+        // List<PathModelWithBurn> pathsWithBurn;
+        // List<PathModel> paths;
+        // originWaypointSymbol ??= agent.Headquarters;
+
+        // pathsWithBurn = PathsService.BuildSystemPathWithCostWithBurn(waypoints, originWaypointSymbol, 600, 600);
+        // paths = PathsService.BuildSystemPathWithCost(waypoints, originWaypointSymbol, 600, 600);
+  
+        // return View((waypoints, pathsWithBurn, paths, originWaypointSymbol, destinationWaypointSymbol));
+
+        var marketplaces = waypoints.Where(w => w.Marketplace is not null).ToList();
+        return View(marketplaces);
     }
 }
 

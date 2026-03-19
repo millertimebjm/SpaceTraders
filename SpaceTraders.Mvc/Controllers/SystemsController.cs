@@ -167,28 +167,4 @@ public class SystemsController(
         );
         return View("~/Views/Systems/Index.cshtml", model);
     }
-
-    [Route("/systems/pathtester/{originWaypointSymbol?}/{destinationWaypointSymbol?}")]
-    public async Task<IActionResult> PathTester(string? originWaypointSymbol, string? destinationWaypointSymbol)
-    {
-        var agent = await _agentsService.GetAsync();
-        var systems = await _systemsService.GetAsync();
-        var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters));
-        var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
-        
-        List<PathModelWithBurn> pathsWithBurn;
-        List<PathModel> paths;
-        originWaypointSymbol ??= agent.Headquarters;
-        //if (originWaypointSymbol is not null && destinationWaypointSymbol is not null)
-        //{
-        pathsWithBurn = PathsService.BuildSystemPathWithCostWithBurn(waypoints, originWaypointSymbol, 600, 600);
-        paths = PathsService.BuildSystemPathWithCost(waypoints, originWaypointSymbol, 600, 600);
-        //}
-        // else
-        // {
-        //     pathsWithBurn = PathsService.BuildSystemPathWithCostWithBurn(waypoints, originWaypointSymbol!, 600, 600);
-        //     paths = PathsService.BuildSystemPathWithCost(waypoints, originWaypointSymbol, 600, 600);
-        // }
-        return View((waypoints, pathsWithBurn, paths, originWaypointSymbol, destinationWaypointSymbol));
-    }
 }

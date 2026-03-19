@@ -1272,17 +1272,6 @@ public class ShipCommandsHelperService(
             }
         }
 
-        foreach (var system in reachableSystems)
-        {
-            var markets = system.Waypoints.Where(w => w.Marketplace is not null).ToList();
-            var probes = ships.Where(s => s.Registration.Role == ShipRegistrationRolesEnum.SATELLITE.ToString() && s.Nav.SystemSymbol == system.Symbol).ToList();
-            if (probes.Count < markets.Count) 
-            {
-                var shipyard = system.Waypoints.OrderBy(w => w.Symbol).FirstOrDefault(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_PROBE.ToString()) == true);
-                if (shipyard is not null) return (shipyard.Symbol, ShipTypesEnum.SHIP_PROBE);
-            }
-        }
-
         if (headquartersSystem.Waypoints.Any(w => w.JumpGate is not null && w.IsUnderConstruction))
         {
             if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()) < 4)
@@ -1298,6 +1287,17 @@ public class ShipCommandsHelperService(
             {
                 var shipyard = headquartersSystem.Waypoints.Single(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_LIGHT_HAULER.ToString()) == true);
                 return (shipyard.Symbol, ShipTypesEnum.SHIP_LIGHT_HAULER);
+            }
+        }
+
+        foreach (var system in reachableSystems)
+        {
+            var markets = system.Waypoints.Where(w => w.Marketplace is not null).ToList();
+            var probes = ships.Where(s => s.Registration.Role == ShipRegistrationRolesEnum.SATELLITE.ToString() && s.Nav.SystemSymbol == system.Symbol).ToList();
+            if (probes.Count < markets.Count) 
+            {
+                var shipyard = system.Waypoints.OrderBy(w => w.Symbol).FirstOrDefault(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_PROBE.ToString()) == true);
+                if (shipyard is not null) return (shipyard.Symbol, ShipTypesEnum.SHIP_PROBE);
             }
         }
 

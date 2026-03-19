@@ -162,14 +162,22 @@ public class ExplorationCommand(
             .Select(w => w.Symbol)
             .ToList();
 
-        
-        var unmappedPaths = paths.Where(p => unmappedWaypoints.Contains(p.WaypointSymbol)).ToList();
+        if (!unmappedWaypoints.Any())
+        {
+            unmappedWaypoints = waypoints
+            .Where(w =>
+                !WaypointsService.IsVisited(w)
+                && !otherShipGoals.Contains(w.Symbol))
+            .Select(w => w.Symbol)
+            .ToList();
+        }
 
+        var unmappedPaths = paths.Where(p => unmappedWaypoints.Contains(p.WaypointSymbol)).ToList();
         var closestUnmappedPath = unmappedPaths
             .OrderByDescending(p => WaypointsService.ExtractSystemFromWaypoint(p.WaypointSymbol) == ship.Nav.SystemSymbol)
             .ThenBy(p => p.TimeCost)
             .ThenBy(p => p.WaypointSymbol)
-            .FirstOrDefault();
+            .FirstOrDefault();        
 
         var goal = closestUnmappedPath.WaypointSymbol;
 

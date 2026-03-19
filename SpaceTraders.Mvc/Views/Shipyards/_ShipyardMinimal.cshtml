@@ -1,0 +1,11 @@
+@using SpaceTraders.Models
+@using SpaceTraders.Models.Enums
+@model Shipyard
+@{
+    var shipyard = Model;
+}
+
+<h6><u>Shipyard @shipyard.Symbol</u></h6>
+<ul>
+    <li><b>Ship Types:</b> @(Html.Raw(string.Join(", ", shipyard.ShipTypes.Select(st => $"{st.Type} (<a href='/waypoints/{shipyard.Symbol}/shipyards/{st.Type}/buy'>buy</a>)"))))</li>
+</ul>

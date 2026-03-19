@@ -1,0 +1,24 @@
+﻿@using SpaceTraders.Models
+@using SpaceTraders.Services.Waypoints
+@model List<Waypoint>
+@{
+    var waypoints = Model;
+    ViewData["Title"] = $"Marketplaces";
+    var waypointGroups = waypoints.GroupBy(w => WaypointsService.ExtractSystemFromWaypoint(w.Symbol));
+}
+
+<div>
+    @foreach (var waypointGroup in waypointGroups)
+    {
+        <h3>@WaypointsService.ExtractSystemFromWaypoint(waypointGroup.First().Symbol)</h3>
+
+        <div class="row">
+            @foreach (var waypoint in waypointGroup.OrderBy(w => w.Symbol))
+            {
+                @await Html.PartialAsync("_Marketplace", waypoint.Marketplace)
+            }
+        </div>
+        <br/>
+    }
+</div>
+
