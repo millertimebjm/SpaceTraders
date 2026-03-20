@@ -82,7 +82,7 @@ public class BuyAndSellCommandV2(
             nav = await _shipsService.OrbitAsync(ship.Symbol);
             ship = ship with { Nav = nav };
 
-            (nav, fuel, cooldown) = await _shipCommandsHelperService.NavigateToMarketplaceImport(ship, currentWaypoint);
+            (nav, fuel, cooldown) = await _shipCommandsHelperService.NavigateHelper(ship, goalModel.SellWaypointSymbol);
             ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown };
             return new ShipStatus(ship, $"Navigate To Marketplace Import {ship.Nav.Route.Destination.Symbol}", DateTime.UtcNow);
         }
@@ -168,20 +168,19 @@ public class BuyAndSellCommandV2(
         var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
         if (ship.Cargo.Units > 0)
         {
-            var sellModels = _tradesService.BuildSellModel(waypoints, currentWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
+            var sellModels = await _tradesService.GetSellModelsAsyncWithBurn2(traversableSystems.Select(s => s.Symbol).ToList(), currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
             var inventory = ship.Cargo.Inventory.OrderByDescending(i => i.Units).FirstOrDefault();
             var validSellModels = sellModels.Where(sm => sm.TradeSymbol == inventory.Symbol).ToList();
-            var bestSellModel = _tradesService.GetBestSellModel(validSellModels);
+            var bestSellModel = validSellModels.OrderByDescending(sm => sm.NavigationFactor).FirstOrDefault();
             return new GoalModel(bestSellModel.TradeSymbol, null, bestSellModel.WaypointSymbol);
         }
         else
         {
-
-            var tradeModels = await _tradesService.GetTradeModelsAsync(waypoints, ship.Nav.WaypointSymbol, ship.Fuel.Capacity, ship.Fuel.Current);
+            var tradeModels = await _tradesService.GetTradeModelsAsyncWithBurn2(traversableSystems.Select(s => s.Symbol).ToList(), ship.Nav.WaypointSymbol, ship.Fuel.Capacity, ship.Fuel.Current);
             tradeModels = tradeModels.Where(tm => !otherShipGoalModelTradeSymbols.Contains(tm.TradeSymbol)).ToList();
-            var bestTrade = _tradesService.GetBestOrderedTradesWithTravelCost(tradeModels).FirstOrDefault();
-            if (bestTrade is null) return null;
-            return new GoalModel(bestTrade.TradeSymbol, bestTrade.ExportWaypointSymbol, bestTrade.ImportWaypointSymbol);
+            var bestTradeModel = tradeModels.OrderByDescending(sm => sm.NavigationFactor).FirstOrDefault();
+            if (bestTradeModel is null) return null;
+            return new GoalModel(bestTradeModel.TradeSymbol, bestTradeModel.ExportWaypointSymbol, bestTradeModel.ImportWaypointSymbol);
         }
     }
 }

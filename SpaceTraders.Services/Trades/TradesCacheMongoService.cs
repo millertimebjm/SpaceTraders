@@ -25,14 +25,6 @@ public class TradesCacheMongoService(IMongoCollectionFactory _collectionFactory)
         await collection.InsertManyAsync(tradeModels, new InsertManyOptions(), CancellationToken.None);
     }
 
-    public async Task SaveTradeModelsAsync(IEnumerable<TradeModel> tradeModels, int fuelMax, int fuelCurrent)
-    {
-        var collection = _collectionFactory.GetCollection<TradeModel>();
-
-        await collection.DeleteManyAsync(Builders<TradeModel>.Filter.Empty,CancellationToken.None);
-        await collection.InsertManyAsync(tradeModels, new InsertManyOptions(), CancellationToken.None);
-    }
-
     public async Task<bool> AnyTradeModelAsync(string waypointSymbol)
     {
         var collection = _collectionFactory.GetCollection<TradeModel>();
@@ -75,5 +67,3 @@ public class TradesCacheMongoService(IMongoCollectionFactory _collectionFactory)
         }
     }
 }
-
-public record TradeCacheModel(string Key, IEnumerable<TradeModel> TradeModels);

@@ -12,3 +12,14 @@ SpaceTraders.io Game REST API
 * move all non-ship-api properties to shipstatus
 * mining ships in each system
 * Add error data to shiplog
+
+# Plan for Trade Models and Path Tracing
+
+## Uses for Path tracing
+
+* Building Trade models (cacheable and single marketplace updatable)
+* Travel
+
+## Caching methods for Path Tracing
+
+* Path Tracing needs to be cached per origin
