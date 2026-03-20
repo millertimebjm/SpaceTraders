@@ -190,17 +190,9 @@ public class FulfillContractCommandV2(
     {
         var tradeSymbol = contract.Terms.Deliver[0].TradeSymbol;
         var tradeModels = await _tradesService.GetTradeModelsAsyncWithBurn2([WaypointsService.ExtractSystemFromWaypoint(contract.Terms.Deliver[0].DestinationSymbol)], originWaypoint, fuelMax, fuelCurrent);
-        var tradeModelsOnTradeSymbol = tradeModels.Where(tm => tm.TradeSymbol == tradeSymbol).ToList();
-        var pathModels = await _pathsService.BuildSystemPathWithCost(originWaypoint, fuelMax, fuelCurrent);
-        var pathModelsToTradeSymbol = pathModels
-            .Where(pm => tradeModelsOnTradeSymbol
-            .Select(tm => tm.ExportWaypointSymbol)
-            .Contains(pm.WaypointSymbol))
-            .OrderBy(pm => pm.TimeCost)
-            .ThenBy(pm => pm.WaypointSymbol) // tiebreaker
-            .First();
+        var tradeModelsOnTradeSymbol = tradeModels.Where(tm => tm.TradeSymbol == tradeSymbol).FirstOrDefault();
 
-        return new GoalModel(tradeSymbol, pathModelsToTradeSymbol.WaypointSymbol, contract.Terms.Deliver[0].DestinationSymbol);
+        return new GoalModel(tradeSymbol, tradeModelsOnTradeSymbol.ExportWaypointSymbol, contract.Terms.Deliver[0].DestinationSymbol);
     }
 
     private async Task<STContract?> GetLatestUnfulfilledContract()

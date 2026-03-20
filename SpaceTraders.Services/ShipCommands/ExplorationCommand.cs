@@ -1,5 +1,6 @@
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
+using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Paths;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
@@ -18,7 +19,8 @@ public class ExplorationCommand(
     ITransactionsCacheService _transactionsService,
     IShipsService _shipsService,
     IWaypointsCacheService _waypointsCacheService,
-    ISystemsService _systemsService) : IShipCommandsService
+    ISystemsService _systemsService,
+    IAgentsService _agentsService) : IShipCommandsService
 {
     public async Task<ShipStatus> Run(
         ShipStatus shipStatus,
@@ -35,6 +37,7 @@ public class ExplorationCommand(
                     var chartWaypointResult = await _shipsService.ChartAsync(ship.Symbol);
                     currentWaypoint = chartWaypointResult.Waypoint;
                     await _waypointsCacheService.SetAsync(currentWaypoint);
+                    await _agentsService.SetAsync(chartWaypointResult.Agent);
                 }
                 catch
                 {

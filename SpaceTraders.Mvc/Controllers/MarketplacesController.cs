@@ -52,11 +52,14 @@ public class MarketplacesController(
                 IReadOnlyList<TradeModel> orderedModelTrades;
                 if (string.IsNullOrWhiteSpace(waypointSymbol))
                 {
-                    orderedModelTrades = await _tradesService.GetBestOrderedTradesWithTravelCost();
+                    orderedModelTrades = await _tradesService.GetTradeModelsWithCacheAsync();
                 }
                 else
                 {
-                    orderedModelTrades = await _tradesService.GetBestOrderedTradesWithTravelCost(waypointSymbol, 600, 600);
+                    var systems = await _systemsService.GetAsync();
+                    var traversableSystems = SystemsService.Traverse(systems, waypointSymbol);
+                    var modelTrades = await _tradesService.GetTradeModelsAsyncWithBurn2(traversableSystems.Select(s => s.Symbol).ToList(), waypointSymbol, 600, 600);
+                    orderedModelTrades = modelTrades.OrderByDescending(mt => mt.NavigationFactor).ToList();
                 }
                 return orderedModelTrades;
             }),
@@ -65,16 +68,16 @@ public class MarketplacesController(
         return View(model);
     }
 
-    [Route("/marketplaces/trademodels/reset")]
-    public async Task<IActionResult> ResetTradeModels()
-    {
-        await _tradesService.BuildTradeModel();
-        return RedirectToRoute(new
-        {
-            controller = "Marketplaces",
-            action = "TradeModels"
-        });
-    }
+    // [Route("/marketplaces/trademodels/reset")]
+    // public async Task<IActionResult> ResetTradeModels()
+    // {
+    //     await _tradesService.GetTradeModelsAsyncWithBurn2();
+    //     return RedirectToRoute(new
+    //     {
+    //         controller = "Marketplaces",
+    //         action = "TradeModels"
+    //     });
+    // }
 
     [Route("/marketplaces/tradestats")]
     public async Task<IActionResult> TradeStats()

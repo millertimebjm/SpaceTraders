@@ -548,9 +548,10 @@ public class TradesService(
     {
         var tradeModels = await GetTradeModelsWithCacheAsync();
 
-        var localTradeModels = tradeModels.Where(tm => systemSymbols.Any(s => s.StartsWith(tm.ExportWaypointSymbol)) || systemSymbols.Any(s => s.StartsWith(tm.ImportWaypointSymbol))).ToList();
+        var localTradeModels = tradeModels.Where(tm => systemSymbols.Any(s => tm.ExportWaypointSymbol.StartsWith(s)) && systemSymbols.Any(s => tm.ImportWaypointSymbol.StartsWith(s))).ToList();
         var systems = await _systemsService.GetAsync();
-        var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(originWaypointSymbol));
+        var systemsIncluded = systems.Where(s => systemSymbols.Contains(s.Symbol));
+        var traversableSystems = SystemsService.Traverse(systemsIncluded, WaypointsService.ExtractSystemFromWaypoint(originWaypointSymbol));
         var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
         var pathModels = PathsService.BuildSystemPathWithCostWithBurn(waypoints, originWaypointSymbol, fuelMax, fuelCurrent);
         List<TradeModel> tradeModelsWithOriginTimeCost = [];
@@ -558,7 +559,7 @@ public class TradesService(
         {
             var pathModel = pathModels.Single(pm => pm.WaypointSymbol == localTradeModel.ExportWaypointSymbol);
             var newLocalTradeModel = localTradeModel with { TimeCost = localTradeModel.TimeCost + pathModel.TimeCost };
-            newLocalTradeModel = newLocalTradeModel with { NavigationFactor = NavigationFactor(newLocalTradeModel.TimeCost) };
+            newLocalTradeModel = newLocalTradeModel with { NavigationFactor = GetTradeModelNavigationFactorWithBurn2(localTradeModel.ExportBuyPrice, localTradeModel.ImportSellPrice, localTradeModel.ExportSupplyEnum, localTradeModel.ImportSupplyEnum, localTradeModel.TimeCost) };
             tradeModelsWithOriginTimeCost.Add(newLocalTradeModel);
         }
 
@@ -577,8 +578,8 @@ public class TradesService(
         ConcurrentBag<TradeModel> tradeModels = [];
         var marketplaceWaypointExports = marketplaceWaypoints.Where(w => w.Marketplace.Exports.Any() || w.Marketplace.Exchange.Any(e => e.Symbol != TradeSymbolsEnum.FUEL.ToString() && e.Symbol != TradeSymbolsEnum.ANTIMATTER.ToString())).ToList();
 
-        //await Parallel.ForEachAsync(marketplaceWaypointExports, async (marketplaceWaypointExport, CancellationToken) =>
-        foreach (var marketplaceWaypointExport in marketplaceWaypointExports)
+        await Parallel.ForEachAsync(marketplaceWaypointExports, async (marketplaceWaypointExport, CancellationToken) =>
+        //foreach (var marketplaceWaypointExport in marketplaceWaypointExports)
         {
             var paths = PathsService.BuildSystemPathWithCostWithBurn(waypoints, marketplaceWaypointExport.Symbol, 600, 600);
             var exports = marketplaceWaypointExport.Marketplace.TradeGoods.Where(tg => tg.Type == TradeGoodTypeEnum.EXPORT.ToString()).ToList();
@@ -701,8 +702,8 @@ public class TradesService(
                     }
                 }
             }
-        //});
-        }
+        });
+        //}
         return tradeModels.ToList();
     }
 
@@ -735,7 +736,7 @@ public class TradesService(
         decimal score = sellModel.SellPrice;
         score *= SupplyFactorImportMuliplier(sellModel.SupplyEnum);
         score *= NavigationFactor(sellModel.TimeCost);
-        return score;
+        return Math.Round(score, 0);
     }
 
     public static decimal GetTradeModelNavigationFactorWithBurn2(
@@ -757,7 +758,7 @@ public class TradesService(
 
         score *= SupplyFactor(exportSupplyEnum, importSupplyEnum);
         score *= GetTimeCostFactorWithBurn2(timeCost);
-        return score;
+        return Math.Round(score, 0);
     }
 
     private static decimal GetTimeCostFactorWithBurn2(int cost)

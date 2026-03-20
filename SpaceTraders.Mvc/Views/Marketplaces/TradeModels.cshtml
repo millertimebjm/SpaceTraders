@@ -9,7 +9,7 @@
     List<PathModel> pathModels = await Model.PathModelsTask;
 }
 
-<h3>Best Trade Models <small>(<a href="/marketplaces/trademodels/reset">reset</a>)</small></h3>
+<h3>Best Trade Models</h3>
 
 @{
     var tradeModelsGrouped = tradeModelsOrdered.GroupBy(tm => tm.TradeSymbol);

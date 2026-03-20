@@ -621,11 +621,11 @@ public class ShipsService(
         var response = await HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Scan not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<ChartWaypointResult>>();
-        await AddChartShipLog(shipSymbol, data.Datum.Waypoint);
+        await AddChartShipLog(shipSymbol, data.Datum.Waypoint, data.Datum.Transaction);
         return data.Datum;
     }
 
-    private async Task AddChartShipLog(string shipSymbol, Waypoint waypoint)
+    private async Task AddChartShipLog(string shipSymbol, Waypoint waypoint, MarketTransaction transaction)
     {
         var datetime = DateTime.UtcNow;
         var shipLog = new ShipLog(
@@ -633,7 +633,8 @@ public class ShipsService(
             ShipLogEnum.Chart,
             JsonSerializer.Serialize(new
             {
-                Waypoint = waypoint.Symbol
+                Waypoint = waypoint.Symbol,
+                TotalCredits = transaction.TotalPrice,
             }),
             datetime,
             datetime
