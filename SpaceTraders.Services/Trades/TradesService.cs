@@ -93,15 +93,14 @@ public class TradesService(
         var localTradeModels = tradeModels.Where(tm => systemSymbols.Any(s => tm.ExportWaypointSymbol.StartsWith(s)) && systemSymbols.Any(s => tm.ImportWaypointSymbol.StartsWith(s))).ToList();
         var systems = await _systemsService.GetAsync();
         var systemsIncluded = systems.Where(s => systemSymbols.Contains(s.Symbol));
-        var traversableSystems = SystemsService.Traverse(systemsIncluded, WaypointsService.ExtractSystemFromWaypoint(originWaypointSymbol));
-        var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
+        var waypoints = systemsIncluded.SelectMany(s => s.Waypoints).ToList();
         var pathModels = PathsService.BuildSystemPathWithCostWithBurn(waypoints, originWaypointSymbol, fuelMax, fuelCurrent);
         List<TradeModel> tradeModelsWithOriginTimeCost = [];
         foreach (var localTradeModel in localTradeModels)
         {
             var pathModel = pathModels.Single(pm => pm.WaypointSymbol == localTradeModel.ExportWaypointSymbol);
             var newLocalTradeModel = localTradeModel with { TimeCost = localTradeModel.TimeCost + pathModel.TimeCost };
-            newLocalTradeModel = newLocalTradeModel with { NavigationFactor = GetTradeModelNavigationFactorWithBurn2(localTradeModel.ExportBuyPrice, localTradeModel.ImportSellPrice, localTradeModel.ExportSupplyEnum, localTradeModel.ImportSupplyEnum, localTradeModel.TimeCost) };
+            newLocalTradeModel = newLocalTradeModel with { NavigationFactor = GetTradeModelNavigationFactorWithBurn2(newLocalTradeModel.ExportBuyPrice, newLocalTradeModel.ImportSellPrice, newLocalTradeModel.ExportSupplyEnum, newLocalTradeModel.ImportSupplyEnum, newLocalTradeModel.TimeCost) };
             tradeModelsWithOriginTimeCost.Add(newLocalTradeModel);
         }
 
@@ -253,31 +252,33 @@ public class TradesService(
     {
         var tradeModels = await GetTradeModelsWithCacheAsync();
 
-        var localSellModels = tradeModels.Where(tm => systemSymbols.Any(s => systemSymbols.Any(s => s.StartsWith(tm.ImportWaypointSymbol))))
-            .Select(tm => new SellModel(tm.TradeSymbol, tm.ImportWaypointSymbol, tm.ImportSellPrice, tm.ImportSupplyEnum, tm.ImportTradeVolume, 0, 0));
+        var localSellModels = tradeModels
+            .Where(tm => systemSymbols.Any(s => systemSymbols.Any(s => tm.ImportWaypointSymbol.StartsWith(s))))
+            .Select(tm => new SellModel(tm.TradeSymbol, tm.ImportWaypointSymbol, tm.ImportSellPrice, tm.ImportSupplyEnum, tm.ImportTradeVolume, 0, 0))
+            .ToList();
         var systems = await _systemsService.GetAsync();
-        var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(originWaypointSymbol));
-        var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
+        var systemsIncluded = systems.Where(s => systemSymbols.Contains(s.Symbol)).ToList();
+        var waypoints = systemsIncluded.SelectMany(s => s.Waypoints).ToList();
         var pathModels = PathsService.BuildSystemPathWithCostWithBurn(waypoints, originWaypointSymbol, fuelMax, fuelCurrent);
         List<SellModel> tradeModelsWithOriginTimeCost = [];
         foreach (var localSellModel in localSellModels)
         {
             var pathModel = pathModels.Single(pm => pm.WaypointSymbol == localSellModel.WaypointSymbol);
             var newLocalSellModel = localSellModel with { TimeCost = localSellModel.TimeCost + pathModel.TimeCost };
-            newLocalSellModel = newLocalSellModel with { NavigationFactor = NavigationFactor(newLocalSellModel.TimeCost) };
+            newLocalSellModel = newLocalSellModel with { NavigationFactor = GetSellModelNavigationFactorWithBurn2(newLocalSellModel.SellPrice, newLocalSellModel.SupplyEnum, newLocalSellModel.TimeCost) };
             tradeModelsWithOriginTimeCost.Add(newLocalSellModel);
         }
 
         var sellModelsWithOriginTimeCostGrouped = tradeModelsWithOriginTimeCost.GroupBy(tm => tm.TradeSymbol);
         var bestSellModelBySymbol = sellModelsWithOriginTimeCostGrouped.Select(tmg => tmg.OrderBy(tm => tm.TimeCost).First()).ToList();
-        return bestSellModelBySymbol.OrderBy(tm => tm.TimeCost).ToList();
+        return bestSellModelBySymbol.OrderByDescending(tm => tm.NavigationFactor).ToList();
     }
 
-    public static decimal GetSellModelNavigationFactorWithBurn2(SellModel sellModel)
+    public static decimal GetSellModelNavigationFactorWithBurn2(int sellPrice, SupplyEnum supplyEnum, int timeCost)
     {
-        decimal score = sellModel.SellPrice;
-        score *= SupplyFactorImportMuliplier(sellModel.SupplyEnum);
-        score *= NavigationFactor(sellModel.TimeCost);
+        decimal score = sellPrice;
+        score *= SupplyFactorImportMuliplier(supplyEnum);
+        score *= NavigationFactor(timeCost);
         return Math.Round(score, 0);
     }
 

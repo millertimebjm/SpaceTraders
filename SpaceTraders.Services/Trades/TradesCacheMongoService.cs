@@ -40,8 +40,11 @@ public class TradesCacheMongoService(IMongoCollectionFactory _collectionFactory)
     {
         var collection = _collectionFactory.GetCollection<TradeModel>();
         var emptyFilter = Builders<TradeModel>.Filter.Empty;
-        var findResult = await collection.FindAsync(emptyFilter);
-        return await findResult.AnyAsync();
+        var projection = Builders<TradeModel>.Projection.Exclude("_id");
+
+        return await collection.Find(emptyFilter)
+            .Project<TradeModel>(projection)
+            .AnyAsync();
     }
 
     public async Task UpdateTradeModelAsync(string waypointSymbol, IReadOnlyList<TradeGood> tradeGoods)

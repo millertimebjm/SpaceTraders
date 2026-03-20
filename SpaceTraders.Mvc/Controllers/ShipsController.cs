@@ -146,6 +146,16 @@ public class ShipsController(
         return View(model);
     }
 
+    [Route("/ships/{shipSymbol}/reset")]
+    public async Task<IActionResult> Reset(string shipSymbol)
+    {
+        var shipsStatus = await _shipStatusesCacheService.GetAsync(shipSymbol);
+        var ship = await _shipsService.GetAsync(shipSymbol);
+        shipsStatus = shipsStatus with { Ship = ship };
+        await _shipStatusesCacheService.SetAsync(shipsStatus);
+        return Redirect($"/ships/{shipSymbol}");
+    }
+
     [Route("/ships/{shipSymbol}/jettison/{inventorySymbol}")]
     public async Task<IActionResult> Jettison(string shipSymbol, string inventorySymbol)
     {
