@@ -2,15 +2,16 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
+using SpaceTraders.Services.Trades;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.Waypoints;
 
 public class WaypointsService(
-    IConfiguration _configuration,
     ILogger<WaypointsService> _logger,
     IWaypointsCacheService _waypointsCacheService,
-    IWaypointsApiService _waypointsApiService
+    IWaypointsApiService _waypointsApiService,
+    ITradesService _tradesService
 ) : IWaypointsService
 {
     public async Task<Waypoint> GetAsync(
@@ -27,6 +28,9 @@ public class WaypointsService(
         waypoint = await _waypointsApiService.GetAsync(waypointSymbol);
         waypoint.RefreshDateTimeUtc = DateTime.UtcNow;
         await _waypointsCacheService.SetAsync(waypoint);
+        
+        await _tradesService.TradeModelRefreshIfNone();
+
         return waypoint;
     }
 
@@ -104,7 +108,7 @@ public class WaypointsService(
 
     public static bool IsMarketplaceVisited(Waypoint waypoint)
     {
-        if (waypoint.Marketplace is not null && waypoint.Marketplace.TradeGoods is null) return false;
+        if (waypoint.Marketplace?.TradeGoods is null) return false;
         return true;
     }
 }

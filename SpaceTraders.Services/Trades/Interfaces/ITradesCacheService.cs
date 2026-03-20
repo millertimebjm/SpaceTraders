@@ -7,5 +7,6 @@ public interface ITradesCacheService
     Task<IReadOnlyList<TradeModel>> GetTradeModelsAsync();
     Task SaveTradeModelsAsync(IReadOnlyList<TradeModel> tradeModels);
     Task UpdateTradeModelAsync(string waypointSymbol, IReadOnlyList<TradeGood> tradeGoods);
+    Task<bool> AnyTradeModelAsync();
     Task<bool> AnyTradeModelAsync(string waypointSymbol);
 }

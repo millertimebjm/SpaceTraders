@@ -36,6 +36,14 @@ public class TradesCacheMongoService(IMongoCollectionFactory _collectionFactory)
         return await findResult.AnyAsync();
     }
 
+    public async Task<bool> AnyTradeModelAsync()
+    {
+        var collection = _collectionFactory.GetCollection<TradeModel>();
+        var emptyFilter = Builders<TradeModel>.Filter.Empty;
+        var findResult = await collection.FindAsync(emptyFilter);
+        return await findResult.AnyAsync();
+    }
+
     public async Task UpdateTradeModelAsync(string waypointSymbol, IReadOnlyList<TradeGood> tradeGoods)
     {
         var collection = _collectionFactory.GetCollection<TradeModel>();

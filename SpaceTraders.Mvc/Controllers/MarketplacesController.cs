@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Text.Json;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Razor.TagHelpers;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Mvc.Models;
@@ -52,7 +53,8 @@ public class MarketplacesController(
                 IReadOnlyList<TradeModel> orderedModelTrades;
                 if (string.IsNullOrWhiteSpace(waypointSymbol))
                 {
-                    orderedModelTrades = await _tradesService.GetTradeModelsWithCacheAsync();
+                    var tradeModels = await _tradesService.GetTradeModelsWithCacheAsync();
+                    orderedModelTrades = tradeModels.OrderByDescending(tm => tm.NavigationFactor).ToList();
                 }
                 else
                 {
