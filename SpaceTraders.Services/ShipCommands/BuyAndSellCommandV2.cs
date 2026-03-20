@@ -32,6 +32,11 @@ public class BuyAndSellCommandV2(
         Dictionary<string, Ship> shipsDictionary)
     {
         var ship = shipStatus.Ship;
+        if (ship.Fuel is null || ship.Cargo is null)
+        {
+            var apiShip = await _shipsService.GetAsync(ship.Symbol);
+            ship = ship with { Fuel = apiShip.Fuel, Cargo = apiShip.Cargo};
+        }
         var currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol);
         if ((currentWaypoint.Marketplace is not null && currentWaypoint.Marketplace.TradeGoods is null)
             || (currentWaypoint.Shipyard is not null && currentWaypoint.Shipyard.ShipFrames is null))
@@ -75,6 +80,11 @@ public class BuyAndSellCommandV2(
                 ship = ship with { Nav = nav };
             }
             var purchaseCargoResult = await _shipCommandsHelperService.PurchaseCargo(ship, currentWaypoint, goalModel.TradeSymbol);
+            if (purchaseCargoResult is null)
+            {
+                ship = ship with {GoalModel = null};
+                return new ShipStatus(ship, $"Resetting goal because of bad GoalModel", DateTime.UtcNow);
+            }
             await _agentsService.SetAsync(purchaseCargoResult.Agent);
             await _transactionsService.SetAsync(purchaseCargoResult.Transaction);
             ship = ship with { Cargo = purchaseCargoResult.Cargo };

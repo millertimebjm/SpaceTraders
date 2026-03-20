@@ -28,6 +28,13 @@ public class MarketWatchCommand(
         if (localShips.Count > 1 || waypoint.Marketplace is null)
         {
             var destinationWaypoint = await FindEmptyMarketplace(ship, shipsDictionary);
+            if (destinationWaypoint is null)
+            {
+                var errorTimespan = TimeSpan.FromMinutes(MARKET_WATCH_MINUTES);
+                ship = ship with { Cooldown = new Cooldown(ship.Symbol, (int)errorTimespan.TotalSeconds, (int)errorTimespan.TotalSeconds, DateTime.UtcNow.AddMinutes(MARKET_WATCH_MINUTES)) };
+                shipStatus = shipStatus with { Ship = ship, LastMessage = "No market to find" };
+                return shipStatus;
+            }
             if (ship.Nav.Status == NavStatusEnum.DOCKED.ToString())
             {
                 await _shipsService.OrbitAsync(ship.Symbol);
@@ -53,7 +60,7 @@ public class MarketWatchCommand(
         return shipStatus;
     }
 
-    private async Task<string> FindEmptyMarketplace(Ship ship, Dictionary<string, Ship> shipsDictionary)
+    private async Task<string?> FindEmptyMarketplace(Ship ship, Dictionary<string, Ship> shipsDictionary)
     {
         var system = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(ship.Nav.WaypointSymbol));
         var waypoints = system.Waypoints;
@@ -64,7 +71,7 @@ public class MarketWatchCommand(
             .Select(sd => sd.Nav.WaypointSymbol)
             .Distinct()
             .ToList();
-        var emptyMarketplaceWaypoint = marketplaceWaypoints.Except(shipWaypoints).OrderBy(w => w).First();
+        var emptyMarketplaceWaypoint = marketplaceWaypoints.Except(shipWaypoints).OrderBy(w => w).FirstOrDefault();
         return emptyMarketplaceWaypoint;
     }
 }

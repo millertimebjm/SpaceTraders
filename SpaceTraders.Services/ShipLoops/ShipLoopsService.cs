@@ -14,6 +14,7 @@ using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.ShipStatuses.Interfaces;
 using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Systems.Interfaces;
+using SpaceTraders.Services.Trades;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.ShipLoops;
@@ -30,7 +31,8 @@ public class ShipLoopsService(
     IMongoCollectionFactory _collectionFactory,
     IAccountService _accountService,
     IConfiguration _configuration,
-    IShipCommandsHelperService _shipCommandHelperService
+    IShipCommandsHelperService _shipCommandHelperService,
+    ITradesService _tradesService
 ) : IShipLoopsService
 {
     public async Task Run()
@@ -58,6 +60,8 @@ public class ShipLoopsService(
         }
         var account = await _accountService.GetAsync();
         _configuration[$"SpaceTrader:" + ConfigurationEnums.AgentToken.ToString()] = account.Token;
+
+        var tradeModels = await _tradesService.GetTradeModelsWithCacheAsync();
         
         var ships = await _shipsService.GetAsync();
         var shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();

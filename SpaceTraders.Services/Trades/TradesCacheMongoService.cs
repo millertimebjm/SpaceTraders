@@ -32,8 +32,7 @@ public class TradesCacheMongoService(IMongoCollectionFactory _collectionFactory)
             Builders<TradeModel>.Filter.Eq(tm => tm.ExportWaypointSymbol, waypointSymbol),
             Builders<TradeModel>.Filter.Eq(tm => tm.ImportWaypointSymbol, waypointSymbol)
         );
-        var findResult = await collection.FindAsync(anyFilter);
-        return await findResult.AnyAsync();
+        return await collection.Find(anyFilter).AnyAsync();
     }
 
     public async Task<bool> AnyTradeModelAsync()
@@ -47,11 +46,10 @@ public class TradesCacheMongoService(IMongoCollectionFactory _collectionFactory)
             .AnyAsync();
     }
 
-    public async Task UpdateTradeModelAsync(string waypointSymbol, IReadOnlyList<TradeGood> tradeGoods)
+    public async Task UpdateExistingTradeModelsAsync(string waypointSymbol, IReadOnlyList<TradeGood> tradeGoods)
     {
         var collection = _collectionFactory.GetCollection<TradeModel>();
-
-        var exports = tradeGoods.Where(tg => tg.Type == TradeGoodTypeEnum.EXPORT.ToString() || tg.Type == TradeGoodTypeEnum.EXCHANGE.ToString()).ToList();
+        var exports = tradeGoods.Where(tg => (tg.Type == TradeGoodTypeEnum.EXPORT.ToString() || tg.Type == TradeGoodTypeEnum.EXCHANGE.ToString()) && tg.Symbol != TradeSymbolsEnum.FUEL.ToString() && tg.Symbol != TradeSymbolsEnum.ANTIMATTER.ToString()).ToList();
         foreach (var tradeGood in exports)
         {
             var filter = Builders<TradeModel>.Filter.Eq(tm => tm.ExportWaypointSymbol, waypointSymbol)
@@ -64,7 +62,7 @@ public class TradesCacheMongoService(IMongoCollectionFactory _collectionFactory)
             await collection.UpdateManyAsync(filter, update);
         }
 
-        var importsExchanges = tradeGoods.Where(tg => tg.Type == TradeGoodTypeEnum.IMPORT.ToString() || tg.Type == TradeGoodTypeEnum.EXCHANGE.ToString());
+        var importsExchanges = tradeGoods.Where(tg => (tg.Type == TradeGoodTypeEnum.IMPORT.ToString() || tg.Type == TradeGoodTypeEnum.EXCHANGE.ToString())  && tg.Symbol != TradeSymbolsEnum.FUEL.ToString() && tg.Symbol != TradeSymbolsEnum.ANTIMATTER.ToString());
         foreach (var tradeGood in importsExchanges)
         {
             var filter = Builders<TradeModel>.Filter.Eq(tm => tm.ImportWaypointSymbol, waypointSymbol)
@@ -76,5 +74,11 @@ public class TradesCacheMongoService(IMongoCollectionFactory _collectionFactory)
 
             await collection.UpdateManyAsync(filter, update);
         }
+    }
+
+    public async Task InsertNewTradeModelsAsync(List<TradeModel> tradeModels)
+    {
+        var collection = _collectionFactory.GetCollection<TradeModel>();
+        await collection.InsertManyAsync(tradeModels, new InsertManyOptions(), CancellationToken.None);
     }
 }

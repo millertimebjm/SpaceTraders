@@ -1,8 +1,8 @@
 using MongoDB.Driver;
 using SpaceTraders.Models;
-using SpaceTraders.Services.Marketplaces.Interfaces;
 using SpaceTraders.Services.MongoCache.Interfaces;
 using SpaceTraders.Services.Systems.Interfaces;
+using SpaceTraders.Services.Trades;
 using SpaceTraders.Services.Trades.Interfaces;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
@@ -11,7 +11,7 @@ namespace SpaceTraders.Services.Waypoints;
 public class WaypointsCacheMongoService(
     IMongoCollectionFactory _mongoCollectionFactory,
     ISystemsCacheService _systemsCacheService,
-    ITradesCacheService _tradesCacheService
+    ITradesService _tradesService
 ) : IWaypointsCacheService
 {
     public async Task<Waypoint?> GetAsync(string waypointSymbol)
@@ -65,7 +65,7 @@ public class WaypointsCacheMongoService(
         Task updateTradeModelTask = Task.CompletedTask;
         if (waypoint.Marketplace?.TradeGoods is not null)
         {
-            updateTradeModelTask = _tradesCacheService.UpdateTradeModelAsync(waypoint.Symbol, waypoint.Marketplace.TradeGoods);
+            updateTradeModelTask = _tradesService.UpdateTradeModelAsync(waypoint.Symbol, waypoint.Marketplace.TradeGoods);
         }
 
         var filter = Builders<Waypoint>
