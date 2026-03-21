@@ -59,7 +59,7 @@ public class MarketplacesController(
                 else
                 {
                     var systems = await _systemsService.GetAsync();
-                    var traversableSystems = SystemsService.Traverse(systems, waypointSymbol);
+                    var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(waypointSymbol));
                     var modelTrades = await _tradesService.GetTradeModelsAsyncWithBurn2(traversableSystems.Select(s => s.Symbol).ToList(), waypointSymbol, 600, 600);
                     orderedModelTrades = modelTrades.OrderByDescending(mt => mt.NavigationFactor).ToList();
                 }
