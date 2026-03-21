@@ -34,6 +34,17 @@ public class ShipsController(
             var parts = s.Symbol.Split('-');
             return Convert.ToInt32(parts[1], 16); // Parse as hex
         }).ToList();
+        // var shipsApi = await _shipsService.GetAsync();
+        // foreach (var ship in ships)
+        // {
+        //     if (ship.Cargo is null)
+        //     {
+        //         var newShip = ship with {Cargo = shipsApi.Single(s => s.Symbol == ship.Symbol).Cargo};
+        //         var newShipStatus = shipStatuses.Single(ss => ss.Ship.Symbol == newShip.Symbol);
+        //         newShipStatus = newShipStatus with { Ship = newShip };
+        //         await _shipStatusesCacheService.SetAsync(newShipStatus);
+        //     }
+        // }
         var systems = await _systemsService.GetAsync();
         IReadOnlyList<Waypoint> waypoints = systems.SelectMany(s => s.Waypoints).ToList();
         ShipsViewModel model = new(

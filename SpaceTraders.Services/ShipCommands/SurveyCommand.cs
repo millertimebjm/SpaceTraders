@@ -12,7 +12,6 @@ namespace SpaceTraders.Services.ShipCommands;
 public class SurveyCommand(
     IShipCommandsHelperService _shipCommandsHelperService,
     IWaypointsService _waypointsService,
-    ISystemsService _systemsService,
     IAgentsService _agentsService,
     ITransactionsCacheService _transactionsService
 ) : IShipCommandsService
@@ -26,7 +25,6 @@ public class SurveyCommand(
         while (true)
         {
             if (ShipsService.GetShipCooldown(ship) is not null) return shipStatus;
-            //await Task.Delay(500);
 
             var refuelResponse = await _shipCommandsHelperService.Refuel(ship, currentWaypoint);
             if (refuelResponse is not null)
@@ -61,6 +59,10 @@ public class SurveyCommand(
 
             var cooldown = await _shipCommandsHelperService.Survey(ship);
             ship = ship with { Cooldown = cooldown };
+            if (ship.Cooldown.TotalSeconds > 10)
+            {
+                return new ShipStatus(ship, $"Resetting job after surveying.", DateTime.UtcNow);
+            }
             return new ShipStatus(ship, $"Survey {ship.Nav.WaypointSymbol}", DateTime.UtcNow);
         }
     }

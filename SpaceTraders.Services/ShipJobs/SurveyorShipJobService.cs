@@ -27,39 +27,11 @@ public class SurveyorShipJobService(ISystemsService _systemsService) : IShipJobS
             {
                 return new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration);
             }
+
+            return new ShipCommand(ship.Symbol, ShipCommandEnum.Survey);
         }
         
-        return new ShipCommand(ship.Symbol, ShipCommandEnum.Survey);
-    }
-
-    private async Task<bool> IsExplorationAvailableOutsideCurrentSystem(string systemSymbol, List<Waypoint> waypoints)
-    {
-        var jumpGate = waypoints.SingleOrDefault(w =>
-            WaypointsService.ExtractSystemFromWaypoint(w.Symbol) == systemSymbol
-            && w.Type == WaypointTypesEnum.JUMP_GATE.ToString()
-            && w.JumpGate is not null
-            && !w.IsUnderConstruction);
-        if (jumpGate is not null)
-        {
-            var jumpSystems = jumpGate.JumpGate.Connections;
-            foreach (var jumpSystem in jumpSystems)
-            {
-                var jumpGateConnection = waypoints.SingleOrDefault(w => 
-                    WaypointsService.ExtractSystemFromWaypoint(w.Symbol) == WaypointsService.ExtractSystemFromWaypoint(jumpSystem)
-                    && w.Type == WaypointTypesEnum.JUMP_GATE.ToString()
-                    && w.JumpGate is not null
-                    && !w.IsUnderConstruction);
-                if (jumpGateConnection is not null)
-                {
-                    var cacheSystem = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(jumpSystem));
-                    if (cacheSystem.Waypoints.Any(w => w.Traits is null || !w.Traits.Any()))
-                    {
-                        return true;
-                    }
-                }
-            }
-        }
-        return false;
+        return new ShipCommand(ship.Symbol, ShipCommandEnum.ScrapShip);
     }
 
     private static bool IsExplorationAvailableInCurrentSystem(string systemSymbol, List<Waypoint> waypoints)

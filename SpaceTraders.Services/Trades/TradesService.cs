@@ -72,7 +72,7 @@ public class TradesService(
         {
             SupplyEnum.ABUNDANT => 5,
             SupplyEnum.HIGH => 3,
-            SupplyEnum.MODERATE => 1,
+            SupplyEnum.MODERATE => 0.7m,
             SupplyEnum.LIMITED => 0.5m,
             SupplyEnum.SCARCE => 0.3m,
             _ => 0
@@ -330,19 +330,26 @@ public class TradesService(
         SupplyEnum importSupplyEnum,
         int timeCost)
     {
-        const decimal profitWeight = 0.5m;
-        const decimal marginWeight = 0.5m;
+        // 1. Calculate the raw efficiency (Return on Investment)
+        // Using decimal to avoid integer division issues
+        var profit = (decimal)importSellPrice - exportBuyPrice;
+        var roi = profit / exportBuyPrice; 
 
-        var profit = importSellPrice - exportBuyPrice;
-        var marginPercent = (decimal)profit / exportBuyPrice;
+        // 2. Apply the Supply Factor 
+        // This adjusts based on how much stock is actually available
+        var supplyFactor = SupplyFactor(exportSupplyEnum, importSupplyEnum);
+        
+        // 3. Apply Time Decay
+        // This ensures that a high-profit trade that takes 10 hours 
+        // isn't ranked higher than a medium-profit trade that takes 10 minutes.
+        var timeFactor = GetTimeCostFactorWithBurn2(timeCost);
 
-        var score =
-            (profitWeight * profit) +
-            (marginWeight * marginPercent * 100); // scale percentage for balance
+        // Final Score: (ROI * Supply) / Time
+        // We use ROI so that the 'total amount' of the price doesn't 
+        // bloat the score unnaturally.
+        decimal score = roi * supplyFactor * timeFactor;
 
-        score *= SupplyFactor(exportSupplyEnum, importSupplyEnum);
-        score *= GetTimeCostFactorWithBurn2(timeCost);
-        return Math.Round(score, 0);
+        return Math.Round(score, 2); 
     }
 
     private static decimal GetTimeCostFactorWithBurn2(int cost)

@@ -67,12 +67,6 @@ public class ShipLoopsService(
         var shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
         shipStatuses = shipStatuses.Where(ss => ships.Select(s => s.Symbol).Contains(ss.Ship.Symbol)).ToList();
         await _shipStatusesCacheService.SetAsync(shipStatuses);
-        // await _shipStatusesCacheService.DeleteAsync();
-        // foreach (var ship in ships)
-        // {
-        //     var shipStatus = new ShipStatus(ship, "No instructions set.", DateTime.UtcNow);
-        //     await _shipStatusesCacheService.SetAsync(shipStatus);
-        // }
 
         while (!cts.IsCancellationRequested)
         {

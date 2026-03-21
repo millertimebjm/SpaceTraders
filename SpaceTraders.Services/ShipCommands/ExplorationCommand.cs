@@ -101,9 +101,9 @@ public class ExplorationCommand(
                 .Select(s => s.Goal ?? "")
                 .ToList();
             (nav, fuel, cooldown, goal) = await NavigateToExplore(ship, currentWaypoint, explorerShipGoals);
-            if (nav is not null && fuel is not null)
+            if (nav is not null || fuel is not null)
             {
-                ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown, Goal = goal };
+                ship = ship with { Nav = nav ?? ship.Nav, Fuel = fuel ?? ship.Fuel, Cooldown = cooldown, Goal = goal };
                 return new ShipStatus(ship, $"Navigate To Explore {ship.Nav.WaypointSymbol}", DateTime.UtcNow);
             }
 
@@ -120,7 +120,7 @@ public class ExplorationCommand(
         List<string> otherShipGoals)
     {
         var systems = await _systemsService.GetAsync();
-        var reachableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol);
+        var reachableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol, int.MaxValue);
         var waypoints = reachableSystems.SelectMany(s => s.Waypoints).ToList();
         var paths = PathsService.BuildSystemPathWithCostWithBurn(waypoints, currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
 
@@ -148,20 +148,17 @@ public class ExplorationCommand(
 
         if (ship.Goal is not null)
         {
-            var path = paths.SingleOrDefault(p => p.WaypointSymbol == ship.Goal);
-            if (WaypointsService.ExtractSystemFromWaypoint(path.PathWaypoints[1].WaypointSymbol) != ship.Nav.SystemSymbol)
-            {
-                (nav, cooldown) = await _shipsService.JumpAsync(path.PathWaypoints[1].WaypointSymbol, ship.Symbol);
-                return (nav, ship.Fuel, cooldown, ship.Goal);
-            }
-            (nav, fuel, cooldown) = await _shipCommandsHelperService.NavigateHelper(ship, path.PathWaypoints[1].WaypointSymbol);
+            (nav, fuel, cooldown) = await _shipCommandsHelperService.NavigateHelper(ship, ship.Goal);
             return (nav, fuel, cooldown, ship.Goal);
         }
+
+        var fullSystems = otherShipGoals.GroupBy(g => WaypointsService.ExtractSystemFromWaypoint(g)).Where(s => s.Count() >= 3).Select(s => s.Key).ToList();
 
         var unmappedWaypoints = waypoints
             .Where(w =>
                 !WaypointsService.IsMarketplaceVisited(w)
-                && !otherShipGoals.Contains(w.Symbol))
+                && !otherShipGoals.Contains(w.Symbol)
+                && !fullSystems.Contains(WaypointsService.ExtractSystemFromWaypoint(w.Symbol)))
             .Select(w => w.Symbol)
             .ToList();
 
@@ -184,12 +181,7 @@ public class ExplorationCommand(
 
         var goal = closestUnmappedPath.WaypointSymbol;
 
-        if (WaypointsService.ExtractSystemFromWaypoint(closestUnmappedPath.PathWaypoints[1].WaypointSymbol) != ship.Nav.SystemSymbol)
-        {
-            (nav, cooldown) = await _shipsService.JumpAsync(closestUnmappedPath.PathWaypoints[1].WaypointSymbol, ship.Symbol);
-            return (nav, ship.Fuel, cooldown, goal);
-        }
-        (nav, fuel) = await _shipsService.NavigateAsync(closestUnmappedPath.PathWaypoints[1].WaypointSymbol, ship);
-        return (nav, fuel, ship.Cooldown, goal);
+        (nav, fuel, cooldown) = await _shipCommandsHelperService.NavigateHelper(ship, closestUnmappedPath.WaypointSymbol);
+        return (nav, fuel, cooldown, goal);
     }
 }
