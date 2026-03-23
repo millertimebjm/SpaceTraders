@@ -29,4 +29,5 @@ public interface ITradesService
     Task<List<TradeModel>> GetTradeModelsAsyncWithBurn2(List<string> systemSymbols, string originWaypointSymbol, int fuelMax, int fuelCurrent);
     Task<List<SellModel>> GetSellModelsAsyncWithBurn2(List<string> systemSymbols, string originWaypointSymbol, int fuelMax, int fuelCurrent);
     Task TradeModelRefreshIfNone(bool refresh = false);
+    Task SaveTradeModelWithBurnAsync2ByMarketplaceSetup(Waypoint marketplaceWaypoint);
 }

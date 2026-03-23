@@ -10,4 +10,5 @@ public interface ITradesCacheService
     Task<bool> AnyTradeModelAsync();
     Task<bool> AnyTradeModelAsync(string waypointSymbol);
     Task InsertNewTradeModelsAsync(List<TradeModel> tradeModels);
+    Task ReplaceExistingTradeModelsAsync(List<TradeModel> tradeModels);
 }

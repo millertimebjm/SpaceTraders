@@ -15,7 +15,6 @@ public interface IShipCommandsHelperService
     Task<(Nav?, Fuel?)> NavigateToEndWaypoint(Ship ship, Waypoint currentWaypoint, Waypoint endWaypoint);
     Task<(Nav?, Fuel?)> NavigateToStartWaypoint(Ship ship, Waypoint currentWaypoint, Waypoint startWaypoint);
     Task<SellCargoResponse?> Sell(Ship ship, Waypoint currentWaypoint);
-    Task<PurchaseCargoResult?> PurchaseCargo(Ship ship, Waypoint currentWaypoint);
     Task<PurchaseCargoResult?> PurchaseCargo(Ship ship, Waypoint currentWaypoint, string tradeSymbol, int maxQuantity = int.MaxValue);
     Task<SupplyResult?> SupplyConstructionSite(Ship ship, Waypoint currentWaypoint);
     Task<(Cargo?, Cooldown?)> Extract(Ship ship, Waypoint currentWaypoint);
@@ -23,13 +22,8 @@ public interface IShipCommandsHelperService
     Task<Cargo?> Jettison(Ship ship);
     Task<(Nav?, Fuel?, Cooldown)> NavigateToMarketplaceImport(Ship ship, Waypoint currentWaypoint);
     Task<(Nav?, Fuel?)> NavigateToConstructionWaypoint(Ship ship, Waypoint currentWaypoint);
-    Task<Waypoint?> GetClosestSellingWaypoint(Ship ship, Waypoint currentWaypoint);
     Task<(Nav?, Fuel?)> NavigateToMarketplaceExport(Ship ship, Waypoint currentWaypoint, Waypoint constructionWaypoint);
     Task<PurchaseCargoResult?> BuyForConstruction(Ship ship, Waypoint currentWaypoint, Waypoint constructionWaypoint);
-    Task<(Nav? nav, Fuel? fuel, Cooldown? cooldown, bool noWork, GoalModel? goalModel)> NavigateToMarketplaceRandomExport(
-        Ship ship, 
-        Waypoint currentWaypoint,
-        IEnumerable<string> otherShipGoalSymbols);
     Task<(Nav?, Fuel?)> NavigateToSurvey(Ship ship, Waypoint currentWaypoint);
     Task<(Nav?, Fuel?)> NavigateToMiningWaypoint(Ship ship, Waypoint currentWaypoint);
     Task<(Nav?, Fuel?, Cooldown)> NavigateToSiphonWaypoint(Ship ship, Waypoint currentWaypoint);
@@ -48,10 +42,6 @@ public interface IShipCommandsHelperService
         string inventorySymbol);
     Task<PurchaseCargoResult?> PurchaseCargoForContract(Ship ship, Waypoint currentWaypoint, string contractTradeSymbol, int amountToBuy);
     Task<(Nav?, Fuel?, Cooldown?)> NavigateToFulfillContract(Ship ship, Waypoint currentWaypoint, string contractDestinationWaypointSymbol);
-    Task<(Nav? nav, Fuel? fuel, Cooldown? cooldown, bool noWork, string? goal)> NavigateToMarketplaceExportForContract(
-        Ship ship, 
-        Waypoint currentWaypoint,
-        string inventorySymbol);
     Task<(STContract?, Cargo?, Agent?)> FulfillContract(Ship ship, STContract contract);
     Task<(string?, ShipTypesEnum?)> ShipToBuy(IEnumerable<Ship> ships);
     Task<bool> CheckRemotePurchaseShip(IEnumerable<Ship> ships, string shipyardWaypoint, ShipTypesEnum shipType);

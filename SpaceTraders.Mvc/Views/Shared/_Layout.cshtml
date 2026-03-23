@@ -91,11 +91,7 @@
                             <a class="nav-link text-dark" href="/contracts">Contracts</a>
                         </li>
                         <li class="nav-item">
-                            @if (ViewBag.CurrentShipSymbol is null)
-                            {
-                                <a class="nav-link text-dark" href="/ships"><b>No Active Ship</b></a>
-                            }
-                            else 
+                            @if (ViewBag.CurrentShipSymbol is not null)
                             {
                                 <text><a class="nav-link text-dark" href="/ships/@(ViewBag.CurrentShipSymbol)"><b>@(ViewBag.CurrentShipSymbol)</b></a></text>
                             }
@@ -107,6 +103,16 @@
                             </li>
                             <li class="nav-item">
                                 <a class="nav-link text-dark" href="/ships/deactivate">Deactivate</a>
+                            </li>
+                        }
+                        @if (ViewBag.JumpGateWaypoint is not null)
+                        {
+                            Waypoint jumpGateWaypoint = ViewBag.JumpGateWaypoint;
+                            decimal jumpGateRequired = jumpGateWaypoint.Construction.Materials.Sum(m => m.Required);
+                            decimal jumpGateFulfilled = jumpGateWaypoint.Construction.Materials.Sum(m => m.Fulfilled);
+                            var jumpGatePercentage = Math.Round(jumpGateFulfilled / jumpGateRequired, 2);
+                            <li class="nav-item">
+                                <a class="nav-link text-dark" href="/waypoints/@jumpGateWaypoint.Symbol"><b>JumpGate @(Math.Round(jumpGatePercentage*100, 0))%</b></a>
                             </li>
                         }
                         <li class="nav-item"></li>

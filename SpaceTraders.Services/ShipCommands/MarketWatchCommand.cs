@@ -52,7 +52,6 @@ public class MarketWatchCommand(
         if (currentWaypoint.RefreshDateTimeUtc is null || currentWaypoint.RefreshDateTimeUtc < DateTime.UtcNow.AddMinutes(-60))
         {
             await _waypointsService.GetAsync(ship.Nav.WaypointSymbol, refresh: true);
-            //await Task.Delay(500);
         }
         var timespan = TimeSpan.FromMinutes(MARKET_WATCH_MINUTES);
         ship = ship with { Cooldown = new Cooldown(ship.Symbol, (int)timespan.TotalSeconds, (int)timespan.TotalSeconds, DateTime.UtcNow.AddMinutes(MARKET_WATCH_MINUTES)) };

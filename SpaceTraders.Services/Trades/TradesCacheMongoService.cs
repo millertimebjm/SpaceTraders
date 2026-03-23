@@ -81,4 +81,22 @@ public class TradesCacheMongoService(IMongoCollectionFactory _collectionFactory)
         var collection = _collectionFactory.GetCollection<TradeModel>();
         await collection.InsertManyAsync(tradeModels, new InsertManyOptions(), CancellationToken.None);
     }
+
+    public async Task ReplaceExistingTradeModelsAsync(List<TradeModel> tradeModels)
+    {
+        var collection = _collectionFactory.GetCollection<TradeModel>();
+        foreach (var tradeModel in tradeModels)
+        {
+            var filter = Builders<TradeModel>.Filter.And(
+                Builders<TradeModel>.Filter.Eq(tm => tm.TradeSymbol, tradeModel.TradeSymbol),
+                Builders<TradeModel>.Filter.Eq(tm => tm.ExportWaypointSymbol, tradeModel.ExportWaypointSymbol),
+                Builders<TradeModel>.Filter.Eq(tm => tm.ImportWaypointSymbol, tradeModel.ImportWaypointSymbol)
+            );
+            await collection.ReplaceOneAsync(
+                filter, 
+                tradeModel, 
+                new ReplaceOptions { IsUpsert = true }, 
+                CancellationToken.None);
+        }
+    }
 }

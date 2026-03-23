@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc.Filters;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.ShipStatuses.Interfaces;
 using SpaceTraders.Services.Systems.Interfaces;
+using SpaceTraders.Services.Waypoints;
 
 namespace SpaceTraders.Mvc.Controllers;
 
@@ -24,6 +25,15 @@ public class BaseController(
         ViewBag.CurrentCredits = agentTask.Result.Credits;
         ViewBag.ShipStatuses = shipStatusesTask.Result;
         ViewBag.Systems = systemsTask.Result;
+        var headquartersSystemJumpGate = systemsTask
+            .Result
+            .Single(s => s.Symbol == WaypointsService.ExtractSystemFromWaypoint(agentTask.Result.Headquarters))
+            .Waypoints
+            .SingleOrDefault(w => w.JumpGate is not null && w.IsUnderConstruction);
+        if (headquartersSystemJumpGate is not null)
+        {
+            ViewBag.JumpGateWaypoint = headquartersSystemJumpGate;
+        }
         await base.OnActionExecutionAsync(context, next);
     }
 }
