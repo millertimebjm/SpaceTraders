@@ -2,6 +2,7 @@ using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Paths;
+using SpaceTraders.Services.Paths.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.Shipyards;
@@ -20,7 +21,8 @@ public class ExplorationCommand(
     IShipsService _shipsService,
     IWaypointsCacheService _waypointsCacheService,
     ISystemsService _systemsService,
-    IAgentsService _agentsService) : IShipCommandsService
+    IAgentsService _agentsService, 
+    IPathsService _pathsService) : IShipCommandsService
 {
     public async Task<ShipStatus> Run(
         ShipStatus shipStatus,
@@ -122,10 +124,10 @@ public class ExplorationCommand(
         var systems = await _systemsService.GetAsync();
         var reachableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol, int.MaxValue);
         var waypoints = reachableSystems.SelectMany(s => s.Waypoints).ToList();
-        var paths = PathsService.BuildSystemPathWithCostWithBurn(waypoints, currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
+        var paths = await _pathsService.BuildSystemPathWithCostWithBurn2(reachableSystems.Select(s => s.Symbol).ToList(), currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
 
-        Nav? nav;
-        Fuel? fuel;
+        Nav? nav = null;
+        Fuel? fuel = null;
         Cooldown cooldown = ship.Cooldown;
 
         if (ship.Fuel.Current < minimumFuel)
@@ -179,6 +181,7 @@ public class ExplorationCommand(
             .ThenBy(p => p.WaypointSymbol)
             .FirstOrDefault();        
 
+        if (closestUnmappedPath is null) return (nav, fuel, cooldown, null);
         var goal = closestUnmappedPath.WaypointSymbol;
 
         (nav, fuel, cooldown) = await _shipCommandsHelperService.NavigateHelper(ship, closestUnmappedPath.WaypointSymbol);

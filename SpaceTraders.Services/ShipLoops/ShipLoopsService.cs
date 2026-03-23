@@ -37,6 +37,7 @@ public class ShipLoopsService(
 {
     public async Task Run()
     {
+        _logger.LogInformation("Ship loop started.");
         var cts = new CancellationTokenSource();
         Console.CancelKeyPress += (s, e) =>
         {
@@ -50,14 +51,37 @@ public class ShipLoopsService(
             await _accountService.RegisterAsync();
         }
         
+        // var serverStatus = await _serverStatusService.GetAsync();
+        // if (serverStatus.ServerResets.Next.AddHours(-1) < DateTime.UtcNow)
+        // {
+        //     _logger.LogInformation("Waiting for next reset.");
+        //     await Task.Delay(DateTime.UtcNow - serverStatus.ServerResets.Next);
+        //     await _collectionFactory.DeleteDatabaseAsync();
+        //     await _accountService.RegisterAsync();
+        // }
+
         var serverStatus = await _serverStatusService.GetAsync();
-        if (serverStatus.ServerResets.Next.AddHours(-1) < DateTime.UtcNow)
+        var resetTime = serverStatus.ServerResets.Next;
+        var now = DateTime.UtcNow;
+
+        // If we are within 1 hour of the reset, or the reset just happened
+        if (resetTime.AddHours(-1) < now)
         {
-            _logger.LogInformation("Waiting for next reset.");
-            await Task.Delay(DateTime.UtcNow - serverStatus.ServerResets.Next);
+            // Calculate how long to wait. 
+            // If resetTime is 10:00 and now is 9:50, delay is 10 minutes.
+            var delayDuration = resetTime - now;
+
+            if (delayDuration > TimeSpan.Zero)
+            {
+                _logger.LogInformation("Waiting {Delay} for next reset.", delayDuration);
+                await Task.Delay(delayDuration.Add(new TimeSpan(0, 10, 0))); // add 10 minutes to the delay
+            }
+
+            // Now that we've waited (or if the time already passed), do the cleanup
             await _collectionFactory.DeleteDatabaseAsync();
             await _accountService.RegisterAsync();
         }
+
         var account = await _accountService.GetAsync();
         _configuration[$"SpaceTrader:" + ConfigurationEnums.AgentToken.ToString()] = account.Token;
 
@@ -66,7 +90,15 @@ public class ShipLoopsService(
         var ships = await _shipsService.GetAsync();
         var shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
         shipStatuses = shipStatuses.Where(ss => ships.Select(s => s.Symbol).Contains(ss.Ship.Symbol)).ToList();
-        await _shipStatusesCacheService.SetAsync(shipStatuses);
+        if (shipStatuses.Any())
+        {
+            await _shipStatusesCacheService.SetAsync(shipStatuses);
+        }
+        else
+        {
+            shipStatuses = ships.Select(s => new ShipStatus(s, "", DateTime.UtcNow)).ToList();
+            await _shipStatusesCacheService.SetAsync(shipStatuses);
+        }
 
         while (!cts.IsCancellationRequested)
         {
@@ -155,7 +187,7 @@ public class ShipLoopsService(
             _logger.LogInformation("Time until server reset: {hours} Hours", Math.Round((serverStatus.ServerResets.Next - DateTime.UtcNow).TotalHours));
             await SleepUntilNextShipReady(shipStatuses);
 
-            var now = DateTime.UtcNow;
+            now = DateTime.UtcNow;
             if (serverStatus.ServerResets.Next.AddHours(-1) < DateTime.UtcNow)
             {
                 _logger.LogInformation("Waiting for next reset.");

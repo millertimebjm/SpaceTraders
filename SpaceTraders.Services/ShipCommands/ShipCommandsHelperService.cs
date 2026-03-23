@@ -631,16 +631,16 @@ public class ShipCommandsHelperService(
 
     public async Task<(Nav?, Fuel?, Cooldown)> NavigateHelper(Ship ship, string waypointSymbol)
     {
-        var systems = await _systemsService.GetAsync();
-        var traversableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol);
-        var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
-        var paths = PathsService.BuildSystemPathWithCostWithBurn(waypoints, ship.Nav.WaypointSymbol, ship.Fuel.Capacity, ship.Fuel.Current, waypointSymbol);
-        var path = paths.Single(p => p.WaypointSymbol == waypointSymbol);
-        var nextHop = path.PathWaypoints[1];
-
         Nav? nav = null;
         Fuel? fuel = null;
         Cooldown cooldown = ship.Cooldown;
+
+        var systems = await _systemsService.GetAsync();
+        var traversableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol);
+        var paths = await _pathsService.BuildSystemPathWithCostWithBurn2(traversableSystems.Select(s => s.Symbol).ToList(), ship.Nav.WaypointSymbol, ship.Fuel.Capacity, ship.Fuel.Current);
+        var path = paths.Single(p => p.WaypointSymbol == waypointSymbol);
+        if (path.PathWaypoints.Count() == 1) return (nav, fuel, cooldown);
+        var nextHop = path.PathWaypoints[1];
 
         if (WaypointsService.ExtractSystemFromWaypoint(nextHop.WaypointSymbol) != WaypointsService.ExtractSystemFromWaypoint(ship.Nav.WaypointSymbol))
         {
@@ -782,7 +782,8 @@ public class ShipCommandsHelperService(
         var systems = await _systemsService.GetAsync();
         var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(currentWaypoint.Symbol));
         var sellModels = await _tradesService.GetSellModelsAsyncWithBurn2(traversableSystems.Select(s => s.Symbol).ToList(), ship.Nav.WaypointSymbol, ship.Fuel.Capacity, ship.Fuel.Current);
-        var bestSellModel = sellModels.OrderByDescending(sm => sm.NavigationFactor).FirstOrDefault();
+        var inventorySellModels = sellModels.Where(sm => sm.TradeSymbol == inventoryToSell).ToList();
+        var bestSellModel = inventorySellModels.OrderByDescending(sm => sm.NavigationFactor).FirstOrDefault();
         return await NavigateHelper(ship, bestSellModel.WaypointSymbol);
     }
 

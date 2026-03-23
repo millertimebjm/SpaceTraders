@@ -70,16 +70,16 @@ public class MarketplacesController(
         return View(model);
     }
 
-    // [Route("/marketplaces/trademodels/reset")]
-    // public async Task<IActionResult> ResetTradeModels()
-    // {
-    //     await _tradesService.GetTradeModelsAsyncWithBurn2();
-    //     return RedirectToRoute(new
-    //     {
-    //         controller = "Marketplaces",
-    //         action = "TradeModels"
-    //     });
-    // }
+    [Route("/marketplaces/trademodels/reset")]
+    public async Task<IActionResult> ResetTradeModels()
+    {
+        await _tradesService.TradeModelRefreshIfNone(refresh: true);
+        return RedirectToRoute(new
+        {
+            controller = "Marketplaces",
+            action = "TradeModels"
+        });
+    }
 
     [Route("/marketplaces/tradestats")]
     public async Task<IActionResult> TradeStats()
@@ -242,7 +242,7 @@ public class MarketplacesController(
         List<PathModel> paths;
         originWaypointSymbol ??= agent.Headquarters;
 
-        pathsWithBurn = PathsService.BuildSystemPathWithCostWithBurn(waypoints, originWaypointSymbol, 600, 600);
+        pathsWithBurn = await _pathsService.BuildSystemPathWithCostWithBurn2(traversableSystems.Select(s => s.Symbol).ToList(), originWaypointSymbol, 600, 600);
         paths = PathsService.BuildSystemPathWithCost(waypoints, originWaypointSymbol, 600, 600);
   
         return View((waypoints, pathsWithBurn, paths, originWaypointSymbol, destinationWaypointSymbol));

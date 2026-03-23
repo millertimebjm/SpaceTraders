@@ -108,7 +108,7 @@ public class WaypointsService(
 
     public static bool IsMarketplaceVisited(Waypoint waypoint)
     {
-        if (waypoint.Marketplace?.TradeGoods is null) return false;
+        if (waypoint.Marketplace is not null && waypoint.Marketplace?.TradeGoods is null) return false;
         return true;
     }
 }

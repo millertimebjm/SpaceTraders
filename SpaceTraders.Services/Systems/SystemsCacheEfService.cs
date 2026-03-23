@@ -39,6 +39,11 @@ public class SystemsCacheEfService(SpaceTraderDbContext _context) : ISystemsCach
         //     .FirstOrDefaultAsync();
     }
 
+    public Task<List<STSystem>> GetAsync(List<string> systemSymbols)
+    {
+        throw new NotImplementedException();
+    }
+
     public async Task SetAsync(STSystem system)
     {
         var dbSystem = await _context.STSystems.SingleOrDefaultAsync(s => s.Symbol == system.Symbol);

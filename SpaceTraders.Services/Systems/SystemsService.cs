@@ -16,6 +16,11 @@ public class SystemsService(
         return await _systemsCacheService.GetAsync();
     }
 
+    public async Task<List<STSystem>> GetAsync(List<string> systemSymbols)
+    {
+        return await _systemsCacheService.GetAsync(systemSymbols);
+    }
+
     public async Task<STSystem> GetAsync(string systemSymbol, bool refresh = false)
     {
         STSystem? system;
@@ -94,7 +99,7 @@ public class SystemsService(
             var nextSystem = systemsToTraverse.Dequeue();
             traversableSystems.Add(nextSystem);
             
-            var jumpGateWaypoints = nextSystem.Waypoints.Where(w => !w.IsUnderConstruction && w.JumpGate is not null);
+            var jumpGateWaypoints = nextSystem.Waypoints.Where(w => !w.IsUnderConstruction && w.JumpGate is not null).ToList();
             foreach (var jumpGateWaypoint in jumpGateWaypoints)
             {
                 foreach (var connection in jumpGateWaypoint.JumpGate.Connections)

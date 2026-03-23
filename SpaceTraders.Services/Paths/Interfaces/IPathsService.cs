@@ -29,4 +29,6 @@ public interface IPathsService
         string originWaypoint, 
         int maxFuel, 
         int startingFuel);
+
+    Task<List<PathModelWithBurn>> BuildSystemPathWithCostWithBurn2(List<string> systemSymbols, string originWaypoint, int maxFuel, int currentFuel);
 }

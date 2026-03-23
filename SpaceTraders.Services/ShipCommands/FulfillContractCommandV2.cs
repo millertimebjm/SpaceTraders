@@ -66,7 +66,7 @@ public class FulfillContractCommandV2(
                     var contractNegotiateResult = await _contractsService.NegotiateAsync(ship.Symbol);
                     contract = STContractApi.MapToSTContract(contractNegotiateResult.Contract);
                 }
-                var contractAcceptResult = await _contractsService.AcceptAsync(ship.Symbol);
+                var contractAcceptResult = await _contractsService.AcceptAsync(contract.ContractId);
                 await _agentsService.SetAsync(contractAcceptResult.Agent);
                 contract = STContractApi.MapToSTContract(contractAcceptResult.Contract);
             }
@@ -132,6 +132,12 @@ public class FulfillContractCommandV2(
                 ArgumentNullException.ThrowIfNull(goalModel, nameof(goalModel));
                 ship = ship with { GoalModel = goalModel };
             }
+
+            if (ship.Registration.Role == ShipRegistrationRolesEnum.COMMAND.ToString())
+            {
+                ship = ship with { GoalModel = null, ShipCommand = null };
+                return new ShipStatus(ship, $"Resetting after fulfill contract.", DateTime.UtcNow);
+            }
         }
 
         if (currentWaypoint.Symbol == goalModel.BuyWaypointSymbol 
@@ -191,8 +197,19 @@ public class FulfillContractCommandV2(
         var tradeSymbol = contract.Terms.Deliver[0].TradeSymbol;
         var tradeModels = await _tradesService.GetTradeModelsAsyncWithBurn2([WaypointsService.ExtractSystemFromWaypoint(contract.Terms.Deliver[0].DestinationSymbol)], originWaypoint, fuelMax, fuelCurrent);
         var tradeModelsOnTradeSymbol = tradeModels.Where(tm => tm.TradeSymbol == tradeSymbol).FirstOrDefault();
+        var exportWaypointSymbol = tradeModelsOnTradeSymbol?.ExportWaypointSymbol;
+        if (tradeModelsOnTradeSymbol is null)
+        {
+            var system = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(originWaypoint));
+            var marketplaceWaypoint = system.Waypoints.FirstOrDefault(w => w.Marketplace?.Exports.Any(e => e.Symbol == contract.Terms.Deliver[0].TradeSymbol) == true);
+            if (marketplaceWaypoint is null)
+            {
+                marketplaceWaypoint = system.Waypoints.First(w => w.Marketplace?.Exchange.Any(e => e.Symbol == contract.Terms.Deliver[0].TradeSymbol) == true);
+            }
+            exportWaypointSymbol = marketplaceWaypoint.Symbol;
+        }
 
-        return new GoalModel(tradeSymbol, tradeModelsOnTradeSymbol.ExportWaypointSymbol, contract.Terms.Deliver[0].DestinationSymbol);
+        return new GoalModel(tradeSymbol, exportWaypointSymbol, contract.Terms.Deliver[0].DestinationSymbol);
     }
 
     private async Task<STContract?> GetLatestUnfulfilledContract()

@@ -49,7 +49,7 @@ public class MarketWatchCommand(
             await _shipsService.DockAsync(ship.Symbol);
         }
         var currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol);
-        if (currentWaypoint.RefreshDateTimeUtc is null || currentWaypoint.RefreshDateTimeUtc < DateTime.UtcNow.AddMinutes(-20))
+        if (currentWaypoint.RefreshDateTimeUtc is null || currentWaypoint.RefreshDateTimeUtc < DateTime.UtcNow.AddMinutes(-60))
         {
             await _waypointsService.GetAsync(ship.Nav.WaypointSymbol, refresh: true);
             //await Task.Delay(500);

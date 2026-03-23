@@ -6,4 +6,5 @@ public interface ISystemsService
 {
     Task<IReadOnlyList<STSystem>> GetAsync();
     Task<STSystem> GetAsync(string systemSymbol, bool refresh = false);
+    Task<List<STSystem>> GetAsync(List<string> systemSymbols);
 }

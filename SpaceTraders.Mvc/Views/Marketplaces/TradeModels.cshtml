@@ -9,7 +9,7 @@
     List<PathModel> pathModels = await Model.PathModelsTask;
 }
 
-<h3>Best Trade Models</h3>
+<h3>Best Trade Models <small>(<a href="/marketplaces/trademodels/reset">reset</a>)</small></h3>
 
 @{
     var tradeModelsGrouped = tradeModelsOrdered.GroupBy(tm => tm.TradeSymbol);
@@ -30,7 +30,8 @@
         <option value="@waypointSymbol">@waypointSymbol</option>
     }
 </datalist>
-
+<br/>
+<h3>Best Trades By Symbol (@tradeModelsGrouped.Count())</h3>
 <table class="table">
     <thead>
         <tr>
@@ -68,7 +69,7 @@
 </table>
 
 <br/></br>
-<h3>Trade Models</h3>
+<h3>Trade Models (@tradeModelsOrdered.Count())</h3>
 <table class="table">
     <thead>
         <tr>

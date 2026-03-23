@@ -77,8 +77,33 @@ public class PathsCacheMongoService(IMongoCollectionFactory _collectionFactory) 
         var collection = _collectionFactory.GetCollection<NavigationFactorModel>();
         await collection.InsertOneAsync(navigationFactorModel);
     }
+
+    public async Task<List<PathModelWithBurn>?> GetMemoizeSystemTravel(string key)
+    {
+        var collection = _collectionFactory.GetCollection<PathModelWithBurnMemoize>();
+        var filter = Builders<PathModelWithBurnMemoize>.Filter.Eq(p => p.Key, key);
+
+        var projection = Builders<PathModelWithBurnMemoize>.Projection.Exclude("_id");
+        var pathModels = await collection
+            .Find(filter)
+            .Project<PathModelWithBurnMemoize>(projection)
+            .SingleOrDefaultAsync();
+        return pathModels?.PathModels;
+    }
+
+    public async Task SetMemoizeSystemTravel(string key, List<PathModelWithBurn> systemPath)
+    {
+        var collection = _collectionFactory.GetCollection<PathModelWithBurnMemoize>();
+        var filter = Builders<PathModelWithBurnMemoize>.Filter.Eq(p => p.Key, key);
+
+        var projection = Builders<PathModelWithBurnMemoize>.Projection.Exclude("_id");
+        await collection.DeleteOneAsync(filter);
+        await collection.InsertOneAsync(new PathModelWithBurnMemoize(key, systemPath));
+    }
 }
 
 public record SystemPathCacheModel(string Key, string DestinationWaypoint, List<string> Waypoints, int FuelCost) {}
 
 public record NavigationFactorModel(string Key, decimal NavigationFactor, int TimeCost);
+
+public record PathModelWithBurnMemoize(string Key, List<PathModelWithBurn> PathModels);

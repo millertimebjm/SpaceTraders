@@ -19,7 +19,8 @@ public interface IPathsCacheService
 
     Task ClearAllCachedSystemPaths();
 
-    public Task<(decimal? NavigationFactor, int? TimeCost)> GetNavigationFactor(string exportSymbol, string importSymbol, int fuelMax, int fuelCurrent);
-
-    public Task SetNavigationFactor(string exportSymbol, string importSymbol, int fuelMax, int fuelCurrent, decimal factor, int timeCost);
+    Task<(decimal? NavigationFactor, int? TimeCost)> GetNavigationFactor(string exportSymbol, string importSymbol, int fuelMax, int fuelCurrent);
+    Task SetNavigationFactor(string exportSymbol, string importSymbol, int fuelMax, int fuelCurrent, decimal factor, int timeCost);
+    Task<List<PathModelWithBurn>?> GetMemoizeSystemTravel(string key);
+    Task SetMemoizeSystemTravel(string key, List<PathModelWithBurn> systemPath);
 }

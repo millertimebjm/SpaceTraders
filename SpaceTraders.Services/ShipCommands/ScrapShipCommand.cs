@@ -2,6 +2,7 @@ using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Paths;
+using SpaceTraders.Services.Paths.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.ShipStatuses.Interfaces;
@@ -19,7 +20,8 @@ public class ScrapShipCommand(
     IAgentsService _agentsService,
     ITransactionsCacheService _transactionsService,
     IShipsService _shipsService,
-    IShipStatusesCacheService _shipStatusesCacheService
+    IShipStatusesCacheService _shipStatusesCacheService,
+    IPathsService _pathsService
 ) : IShipCommandsService
 {
     public async Task<ShipStatus> Run(
@@ -78,9 +80,9 @@ public class ScrapShipCommand(
         if (goalModel is null)
         {
             var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
-            var waypoints = system.Waypoints.ToList();
-            var pathModelsWithBurn = PathsService.BuildSystemPathWithCostWithBurn(waypoints, ship.Nav.WaypointSymbol, ship.Fuel.Capacity, ship.Fuel.Current);
+            var pathModelsWithBurn = await _pathsService.BuildSystemPathWithCostWithBurn2([system.Symbol], ship.Nav.WaypointSymbol, ship.Fuel.Capacity, ship.Fuel.Current);
             
+            var waypoints = system.Waypoints.ToList();
             var shipyardWaypointSymbols = waypoints.Where(w => w.Shipyard is not null).Select(w => w.Symbol).ToList();
             var shipyardWaypointPathModels = pathModelsWithBurn.Where(pm => shipyardWaypointSymbols.Contains(pm.WaypointSymbol));
             goalModel = new GoalModel(null, null, shipyardWaypointPathModels.First().WaypointSymbol);

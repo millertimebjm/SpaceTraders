@@ -105,7 +105,8 @@ public class BuyAndSellCommandV2(
                 ship = ship with { Nav = nav };
             }
 
-            if (ship.Fuel.Current < ship.Fuel.Capacity)
+            if (ship.Fuel.Current < ship.Fuel.Capacity
+                && currentWaypoint.Marketplace?.TradeGoods.Any(tg => tg.Symbol == TradeSymbolsEnum.FUEL.ToString()) == true)
             {
                 var refuelResponse = await _shipCommandsHelperService.Refuel(ship, currentWaypoint);
                 ship = ship with { Fuel = refuelResponse.Fuel };

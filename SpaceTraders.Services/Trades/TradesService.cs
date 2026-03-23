@@ -2,14 +2,18 @@ using System.Collections.Concurrent;
 using MongoDB.Driver;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Paths;
+using SpaceTraders.Services.Paths.Interfaces;
+using SpaceTraders.Services.Systems;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Trades.Interfaces;
+using SpaceTraders.Services.Waypoints;
 
 namespace SpaceTraders.Services.Trades;
 
 public class TradesService(
     ITradesCacheService _tradesCacheService,
-    ISystemsService _systemsService
+    ISystemsService _systemsService,
+    IPathsService _pathsService
 ) : ITradesService
 {
     public async Task UpdateTradeModelAsync(string waypointSymbol, IReadOnlyList<TradeGood> tradeGoods)
@@ -20,10 +24,12 @@ public class TradesService(
             await _tradesCacheService.UpdateExistingTradeModelsAsync(waypointSymbol, tradeGoods);
             return;
         }
+        // TODO: Should not get here for already seen systems
         var tradeModels = await _tradesCacheService.GetTradeModelsAsync();
         var systems = await _systemsService.GetAsync();
-        var waypoints = systems.SelectMany(s => s.Waypoints).ToList();
-        var pathModels = PathsService.BuildSystemPathWithCostWithBurn(waypoints, waypointSymbol, 600, 600);
+        var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(waypointSymbol));
+        var systemSymbols = traversableSystems.Select(s => s.Symbol).ToList();
+        var pathModels = await _pathsService.BuildSystemPathWithCostWithBurn2(systemSymbols, waypointSymbol, 600, 600);
 
         List<TradeModel> newTradeModels = [];
         var exports = tradeGoods.Where(tg => (tg.Type == TradeGoodTypeEnum.EXPORT.ToString() || tg.Type == TradeGoodTypeEnum.EXCHANGE.ToString()) && tg.Symbol != TradeSymbolsEnum.FUEL.ToString() && tg.Symbol != TradeSymbolsEnum.ANTIMATTER.ToString()).ToList();
@@ -113,17 +119,23 @@ public class TradesService(
         if (tradeModels is null || !tradeModels.Any())
         {
             tradeModels = await BuildTradeModelWithBurnAsync2();
-            await _tradesCacheService.SaveTradeModelsAsync(tradeModels);
+            if (tradeModels.Any())
+            {
+                await _tradesCacheService.SaveTradeModelsAsync(tradeModels);
+            }
         }
         return tradeModels.ToList();
     }
 
-    public async Task TradeModelRefreshIfNone()
+    public async Task TradeModelRefreshIfNone(bool refresh = false)
     {
-        if (!await _tradesCacheService.AnyTradeModelAsync())
+        if (!await _tradesCacheService.AnyTradeModelAsync() || refresh)
         {
             var tradeModels = await BuildTradeModelWithBurnAsync2();
-            await _tradesCacheService.SaveTradeModelsAsync(tradeModels);
+            if (tradeModels.Any())
+            {
+                await _tradesCacheService.SaveTradeModelsAsync(tradeModels);
+            }
         }
     }
 
@@ -133,9 +145,11 @@ public class TradesService(
 
         var localTradeModels = tradeModels.Where(tm => systemSymbols.Any(s => tm.ExportWaypointSymbol.StartsWith(s)) && systemSymbols.Any(s => tm.ImportWaypointSymbol.StartsWith(s))).ToList();
         var systems = await _systemsService.GetAsync();
+        var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(originWaypointSymbol));
         var systemsIncluded = systems.Where(s => systemSymbols.Contains(s.Symbol));
         var waypoints = systemsIncluded.SelectMany(s => s.Waypoints).ToList();
-        var pathModels = PathsService.BuildSystemPathWithCostWithBurn(waypoints, originWaypointSymbol, fuelMax, fuelCurrent);
+        //var pathModels = PathsService.BuildSystemPathWithCostWithBurn(waypoints, originWaypointSymbol, fuelMax, fuelCurrent);
+        var pathModels = await _pathsService.BuildSystemPathWithCostWithBurn2(systemsIncluded.Select(s => s.Symbol).ToList(), originWaypointSymbol, fuelMax, fuelCurrent);
         List<TradeModel> tradeModelsWithOriginTimeCost = [];
         foreach (var localTradeModel in localTradeModels)
         {
@@ -163,7 +177,7 @@ public class TradesService(
         await Parallel.ForEachAsync(marketplaceWaypointExports, async (marketplaceWaypointExport, CancellationToken) =>
         //foreach (var marketplaceWaypointExport in marketplaceWaypointExports)
         {
-            var paths = PathsService.BuildSystemPathWithCostWithBurn(waypoints, marketplaceWaypointExport.Symbol, 600, 600);
+            var paths = await _pathsService.BuildSystemPathWithCostWithBurn2(systems.Select(s => s.Symbol).ToList(), marketplaceWaypointExport.Symbol, 600, 600);
             var exports = marketplaceWaypointExport.Marketplace.TradeGoods.Where(tg => tg.Type == TradeGoodTypeEnum.EXPORT.ToString() && tg.Symbol != TradeSymbolsEnum.FUEL.ToString() && tg.Symbol != TradeSymbolsEnum.ANTIMATTER.ToString()).ToList();
             foreach (var export in exports)
             {

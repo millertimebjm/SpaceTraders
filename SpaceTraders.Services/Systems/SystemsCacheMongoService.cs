@@ -18,6 +18,18 @@ public class SystemsCacheMongoService(IMongoCollectionFactory _collectionFactory
             .ToListAsync();
     }
 
+    public async Task<List<STSystem>> GetAsync(List<string> systemSymbols)
+    {
+        var collection = _collectionFactory.GetCollection<STSystem>();
+        var filter = Builders<STSystem>.Filter.In(s => s.Symbol, systemSymbols);
+
+        var projection = Builders<STSystem>.Projection.Exclude("_id");
+        return await collection
+            .Find(filter)
+            .Project<STSystem>(projection)
+            .ToListAsync();
+    }
+
     public async Task<STSystem> GetAsync(string systemSymbol, bool refresh = false)
     {
         var filter = Builders<STSystem>
@@ -39,8 +51,11 @@ public class SystemsCacheMongoService(IMongoCollectionFactory _collectionFactory
             .Filter
             .Eq(s => s.Symbol, system.Symbol);
         var collection = _collectionFactory.GetCollection<STSystem>();
-        await collection.DeleteOneAsync(filter, CancellationToken.None);
-        await collection.InsertOneAsync(system);
+        await collection.ReplaceOneAsync(
+            filter, 
+            system, 
+            new ReplaceOptions { IsUpsert = true }, 
+            CancellationToken.None);
     }
     public async Task SetAsync(Waypoint waypoint)
     {
