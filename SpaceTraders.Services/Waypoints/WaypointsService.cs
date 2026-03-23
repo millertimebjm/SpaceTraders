@@ -29,8 +29,8 @@ public class WaypointsService(
         waypoint.RefreshDateTimeUtc = DateTime.UtcNow;
         await _waypointsCacheService.SetAsync(waypoint);
         
-        await _tradesService.TradeModelRefreshIfNone();
-        //await _tradesService.SaveTradeModelWithBurnAsync2ByMarketplaceSetup(waypoint);
+        //await _tradesService.TradeModelRefreshIfNone();
+        await _tradesService.SaveTradeModelWithBurnAsync2ByMarketplaceSetup(waypoint);
 
         return waypoint;
     }

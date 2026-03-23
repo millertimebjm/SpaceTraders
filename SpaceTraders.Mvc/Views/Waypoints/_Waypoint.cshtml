@@ -92,11 +92,11 @@
                         <li>
                             @if (currentShip is not null)
                             {
-                                <text><a href="/waypoints/@jumpSystem">@jumpSystem</a> <a href="/ships/@currentShip.Symbol/jumps/@jumpSystem">(jump)</a>&nbsp;</text>
+                                <text><a href="/waypoints/@jumpSystem">@jumpSystem</a> <a href="/ships/@currentShip.Symbol/jumps/@jumpSystem">(jump)</a></text>
                             }
                             else
                             {
-                                <text><a href="/systems/@WaypointsService.ExtractSystemFromWaypoint(jumpSystem)">@WaypointsService.ExtractSystemFromWaypoint(jumpSystem)</a>&nbsp;</text>
+                                <text><a href="/waypoints/@jumpSystem">@jumpSystem</a></text>
                             }
                         </li>
                     }

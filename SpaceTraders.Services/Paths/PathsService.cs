@@ -294,7 +294,11 @@ public class PathsService(
 
         while (workingCopySystemSymbols.Any())
         {
-            var currentSystemJumpGateWaypoint = currentSystem.Waypoints.Single(w => w.JumpGate is not null);
+            var currentSystemJumpGateWaypoint = currentSystem.Waypoints.SingleOrDefault(w => w.JumpGate is not null);
+            if (currentSystemJumpGateWaypoint is null)
+            {
+                
+            }
             var jumpGateConnectionSystemSymbols = currentSystemJumpGateWaypoint.JumpGate.Connections.Select(c => WaypointsService.ExtractSystemFromWaypoint(c)).ToList();
             var connectedSystemSymbols = systemSymbols.Where(ss => jumpGateConnectionSystemSymbols.Contains(ss)).ToList();
             var connectedSystems = systems.Where(s => connectedSystemSymbols.Contains(s.Symbol) && workingCopySystemSymbols.Contains(s.Symbol)).ToList();
@@ -302,7 +306,12 @@ public class PathsService(
             foreach (var connectedSystem in connectedSystems)
             {
                 var connectedSystemJumpGate = connectedSystem.Waypoints.SingleOrDefault(w => w.JumpGate is not null)?.Symbol;
-                if (connectedSystemJumpGate is null) continue;
+                if (connectedSystemJumpGate is null) 
+                {
+                    workingCopySystemSymbols.Remove(connectedSystem.Symbol);
+                    continue;
+                }
+
                 var inSystemPathModels = await MemoizeSystemTravel(connectedSystemJumpGate, maxFuel, currentFuel);
                 var expandSystemPathModels = AddNewSystemTravel(pathModels.Single(p => p.WaypointSymbol == currentSystemJumpGateWaypoint.Symbol), inSystemPathModels);
                 pathModels.AddRange(expandSystemPathModels);

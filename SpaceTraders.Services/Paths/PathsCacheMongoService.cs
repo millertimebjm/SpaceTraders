@@ -70,14 +70,6 @@ public class PathsCacheMongoService(IMongoCollectionFactory _collectionFactory) 
         return (navigationFactorModel?.NavigationFactor, navigationFactorModel?.TimeCost);
     }
 
-    public async Task SetNavigationFactor(string exportSymbol, string importSymbol, int fuelMax, int fuelCurrent, decimal navigationFactor, int timeCost)
-    {
-        var key = $"{exportSymbol}-{importSymbol}-{fuelMax}-{fuelCurrent}";
-        var navigationFactorModel = new NavigationFactorModel(key, navigationFactor, timeCost);
-        var collection = _collectionFactory.GetCollection<NavigationFactorModel>();
-        await collection.InsertOneAsync(navigationFactorModel);
-    }
-
     public async Task<List<PathModelWithBurn>?> GetMemoizeSystemTravel(string key)
     {
         var collection = _collectionFactory.GetCollection<PathModelWithBurnMemoize>();
@@ -97,8 +89,11 @@ public class PathsCacheMongoService(IMongoCollectionFactory _collectionFactory) 
         var filter = Builders<PathModelWithBurnMemoize>.Filter.Eq(p => p.Key, key);
 
         var projection = Builders<PathModelWithBurnMemoize>.Projection.Exclude("_id");
-        await collection.DeleteOneAsync(filter);
-        await collection.InsertOneAsync(new PathModelWithBurnMemoize(key, systemPath));
+        await collection.ReplaceOneAsync(
+            filter, 
+            new PathModelWithBurnMemoize(key, systemPath),
+            new ReplaceOptions {IsUpsert = true},
+            CancellationToken.None);
     }
 }
 

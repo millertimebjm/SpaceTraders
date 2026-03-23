@@ -14,7 +14,7 @@
             }
             @foreach (var tradeGood in tradeGoods)
             {
-                <text><li>@tradeGood.Symbol @tradeGood.Type (Sell @tradeGood.SellPrice, Buy @tradeGood.PurchasePrice, Supply @tradeGood.Supply, Volume @tradeGood.TradeVolume) <a href="/marketplaces/@Model.Symbol/buy/@tradeGood.Symbol"></a></li></text>
+                <text><li>@tradeGood.Symbol @tradeGood.Type (Buy @tradeGood.PurchasePrice, Sell @tradeGood.SellPrice, Supply @tradeGood.Supply, Activity @tradeGood.Activity, Volume @tradeGood.TradeVolume) <a href="/marketplaces/@Model.Symbol/buy/@tradeGood.Symbol"></a></li></text>
             }
         </ul>
     }
