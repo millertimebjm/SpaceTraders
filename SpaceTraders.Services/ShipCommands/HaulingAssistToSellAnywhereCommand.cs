@@ -5,6 +5,7 @@ using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.Shipyards;
+using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Transactions.Interfaces;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
@@ -15,7 +16,8 @@ public class HaulingAssistToSellAnywhereCommand(
     IWaypointsService _waypointsService,
     IAgentsService _agentsService,
     ITransactionsCacheService _transactionsService,
-    IShipsService _shipsService
+    IShipsService _shipsService,
+    ISystemsService _systemsService
 ) : IShipCommandsService
 {
     private const int MAX_LOOP_COUNT = 20;
@@ -43,6 +45,14 @@ public class HaulingAssistToSellAnywhereCommand(
                 if (ship.Nav.Status == NavStatusEnum.IN_TRANSIT.ToString())
                 {
                     ship = await _shipsService.GetAsync(ship.Symbol);
+                }
+
+                var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
+                if (system.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction))
+                {
+                    ship = ship with { ShipCommand = null };
+                    shipStatus = shipStatus with { Ship = ship, DateTimeOfLastInstruction = DateTime.UtcNow, LastMessage = "Jump gate is done, done with hauling assist." };
+                    return shipStatus;
                 }
 
                 ship = ship with { Cooldown = new Cooldown(ship.Symbol, 60, 60, DateTime.UtcNow.AddSeconds(60)) };

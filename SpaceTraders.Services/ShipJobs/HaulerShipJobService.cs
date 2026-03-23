@@ -24,10 +24,10 @@ public class HaulerShipJobService(
         {
             return new ShipCommand(ship.Symbol, ShipCommandEnum.SupplyConstruction);
         }
-        // if (await IsHaulingAssist(ships, ship))
-        // {
-        //     return new ShipCommand(ship.Symbol, ShipCommandEnum.HaulingAssistToSellAnywhere);
-        // }
+        if (await IsHaulingAssist(ships, ship))
+        {
+            return new ShipCommand(ship.Symbol, ShipCommandEnum.HaulingAssistToSellAnywhere);
+        }
         return new ShipCommand(ship.Symbol, ShipCommandEnum.BuyToSell);
     }
 
@@ -36,8 +36,8 @@ public class HaulerShipJobService(
         var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
         if (system.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction)) return false;
         
-        if (ships.Any(s => s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.BuyToSell)
-            && ships.Count(s => s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.HaulingAssistToSellAnywhere) < 3)
+        if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()) > 3
+            && !ships.Any(s => s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.HaulingAssistToSellAnywhere))
         {
             return true;
         }

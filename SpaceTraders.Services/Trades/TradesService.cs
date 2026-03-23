@@ -76,7 +76,7 @@ public class TradesService(
     {
         decimal exportMultiplier = export switch
         {
-            SupplyEnum.ABUNDANT => 5,
+            SupplyEnum.ABUNDANT => 8,
             SupplyEnum.HIGH => 3,
             SupplyEnum.MODERATE => 0.7m,
             SupplyEnum.LIMITED => 0.5m,
