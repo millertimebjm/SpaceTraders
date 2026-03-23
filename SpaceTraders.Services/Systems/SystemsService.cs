@@ -37,104 +37,75 @@ public class SystemsService(
     }
 
     public static IEnumerable<STSystem> Traverse(IEnumerable<STSystem> systems, string startingSystemString, int maxDepth = 5)
-{
-    var traversableSystems = new List<STSystem>();
-    var startingSystem = systems.Single(s => s.Symbol == startingSystemString);
-    
-    // Use a Queue of tuples to track (System, Depth)
-    var systemsToTraverse = new Queue<(STSystem System, int Depth)>();
-    systemsToTraverse.Enqueue((startingSystem, 0));
-    
-    // Use a HashSet for O(1) lookups to avoid duplicates/infinite loops
-    var visitedSymbols = new HashSet<string> { startingSystem.Symbol };
-
-    while (systemsToTraverse.Count != 0)
-    {
-        var (nextSystem, currentDepth) = systemsToTraverse.Dequeue();
-        traversableSystems.Add(nextSystem);
-
-        // If we've reached the max depth, don't enqueue its neighbors
-        if (currentDepth >= maxDepth) continue;
-
-        var jumpGateWaypoints = nextSystem.Waypoints.Where(w => !w.IsUnderConstruction && w.JumpGate is not null);
-        
-        foreach (var jumpGateWaypoint in jumpGateWaypoints)
-        {
-            foreach (var connection in jumpGateWaypoint.JumpGate!.Connections)
-            {
-                var connectionSymbol = WaypointsService.ExtractSystemFromWaypoint(connection);
-                var connectionSystem = systems.SingleOrDefault(s => s.Symbol == connectionSymbol);
-                
-                if (connectionSystem is null || visitedSymbols.Contains(connectionSystem.Symbol)) 
-                    continue;
-
-                // Check if the connection has a path back or is a valid jump gate
-                var hasValidGate = connectionSystem.Waypoints.Any(w => 
-                    !w.IsUnderConstruction && 
-                    w.JumpGate is not null &&
-                    w.JumpGate.Connections.Any(c => WaypointsService.ExtractSystemFromWaypoint(c) == nextSystem.Symbol));
-
-                if (hasValidGate)
-                {
-                    visitedSymbols.Add(connectionSystem.Symbol);
-                    systemsToTraverse.Enqueue((connectionSystem, currentDepth + 1));
-                }
-            }
-        }
-    }
-    return traversableSystems;
-}
-
-    public static List<(STSystem, STSystem, bool)> TraverseLinks(IEnumerable<STSystem> systems, string startingSystemString)
     {
         var traversableSystems = new List<STSystem>();
-        // from system, to system, reachable
-        var systemLinks = new List<(STSystem, STSystem, bool)>();
         var startingSystem = systems.Single(s => s.Symbol == startingSystemString);
-        var systemsToTraverse = new Queue<STSystem>();
-        systemsToTraverse.Enqueue(startingSystem);
         
+        // Use a Queue of tuples to track (System, Depth)
+        var systemsToTraverse = new Queue<(STSystem System, int Depth)>();
+        systemsToTraverse.Enqueue((startingSystem, 0));
+        
+        // Use a HashSet for O(1) lookups to avoid duplicates/infinite loops
+        var visitedSymbols = new HashSet<string> { startingSystem.Symbol };
+
         while (systemsToTraverse.Count != 0)
         {
-            var nextSystem = systemsToTraverse.Dequeue();
+            var (nextSystem, currentDepth) = systemsToTraverse.Dequeue();
             traversableSystems.Add(nextSystem);
+
+            // If we've reached the max depth, don't enqueue its neighbors
+            if (currentDepth >= maxDepth) continue;
+
+            var jumpGateWaypoints = nextSystem.Waypoints.Where(w => !w.IsUnderConstruction && w.JumpGate is not null);
             
-            var jumpGateWaypoints = nextSystem.Waypoints.Where(w => !w.IsUnderConstruction && w.JumpGate is not null).ToList();
             foreach (var jumpGateWaypoint in jumpGateWaypoints)
             {
-                foreach (var connection in jumpGateWaypoint.JumpGate.Connections)
+                foreach (var connection in jumpGateWaypoint.JumpGate!.Connections)
                 {
-                    var connectionSystem = systems.SingleOrDefault(s => s.Symbol == WaypointsService.ExtractSystemFromWaypoint(connection));
-                    var connectionSystemJumpGates = connectionSystem?.Waypoints.Where(w => !w.IsUnderConstruction && w.JumpGate is not null).ToList() ?? [];
+                    var connectionSymbol = WaypointsService.ExtractSystemFromWaypoint(connection);
+                    var connectionSystem = systems.SingleOrDefault(s => s.Symbol == connectionSymbol);
                     
-                    foreach (var connectionSystemWaypoint in connectionSystem?.Waypoints.Where(w => !w.IsUnderConstruction && w.JumpGate is not null).ToList() ?? [])
+                    if (connectionSystem is null || visitedSymbols.Contains(connectionSystem.Symbol)) 
+                        continue;
+
+                    // Check if the connection has a path back or is a valid jump gate
+                    var hasValidGate = connectionSystem.Waypoints.Any(w => 
+                        !w.IsUnderConstruction && 
+                        w.JumpGate is not null &&
+                        w.JumpGate.Connections.Any(c => WaypointsService.ExtractSystemFromWaypoint(c) == nextSystem.Symbol));
+
+                    if (hasValidGate)
                     {
-                        if (connectionSystemWaypoint.JumpGate.Connections.Select(c => WaypointsService.ExtractSystemFromWaypoint(c)).Contains(nextSystem.Symbol)
-                            && !traversableSystems.Any(ts => ts.Symbol == connectionSystem.Symbol)
-                            && !systemsToTraverse.Any(stt => stt.Symbol == connectionSystem.Symbol))
-                        {
-                            systemsToTraverse.Enqueue(connectionSystem);
-                            systemLinks.Add((nextSystem, connectionSystem, true));
-                        }
+                        visitedSymbols.Add(connectionSystem.Symbol);
+                        systemsToTraverse.Enqueue((connectionSystem, currentDepth + 1));
                     }
                 }
             }
         }
+        return traversableSystems;
+    }
 
-        var jumpGateWaypointsUnreachable = systems.SelectMany(s => s.Waypoints).Where(w => w.IsUnderConstruction && w.JumpGate is not null);;
-        foreach (var jumpGateWaypoint in jumpGateWaypointsUnreachable)
+    public static List<(STSystem leftSystem, STSystem rightSystem, bool traversable)> TraverseLinks(List<STSystem> systems, string startingSystemString)
+    {
+        var startingSystem = systems.Single(s => s.Symbol == startingSystemString);
+        List<(STSystem leftSystem, STSystem rightSystem, bool traversable)> links = [];
+        foreach (var system in systems)
         {
+            var jumpGateWaypoint = system.Waypoints.Single(w => w.JumpGate is not null);
             foreach (var connection in jumpGateWaypoint.JumpGate.Connections)
             {
-                var connectionSystem = systems.SingleOrDefault(s => s.Symbol == WaypointsService.ExtractSystemFromWaypoint(connection));
-                var currentSystem = systems.Single(s => s.Symbol == WaypointsService.ExtractSystemFromWaypoint(jumpGateWaypoint.Symbol));
-                if (connectionSystem is not null && !systemLinks.Any(sl => sl.Item2.Symbol == currentSystem.Symbol && sl.Item1.Symbol == connectionSystem.Symbol))
+                var connectedSystem = systems.SingleOrDefault(s => s.Symbol == WaypointsService.ExtractSystemFromWaypoint(connection));
+                if (connectedSystem is null) continue; 
+
+                var traversable = !jumpGateWaypoint.IsUnderConstruction && connectedSystem.Waypoints.Any(w => w.JumpGate is not null && w.IsUnderConstruction);
+                if (!links.Contains((system, connectedSystem, traversable))
+                    && !links.Contains((connectedSystem, system, traversable)))
                 {
-                    systemLinks.Add((currentSystem, connectionSystem, false));
+                    links.Add((system, connectedSystem, traversable));
                 }
             }
         }
 
-        return systemLinks;
+        return links;
     }
 }
