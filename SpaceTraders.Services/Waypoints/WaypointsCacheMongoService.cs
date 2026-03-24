@@ -1,5 +1,6 @@
 using MongoDB.Driver;
 using SpaceTraders.Models;
+using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.MongoCache.Interfaces;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Trades;
@@ -63,7 +64,8 @@ public class WaypointsCacheMongoService(
     public async Task SetAsync(Waypoint waypoint)
     {
         Task updateTradeModelTask = Task.CompletedTask;
-        if (waypoint.Marketplace?.TradeGoods is not null)
+        if (waypoint.Marketplace?.TradeGoods is not null
+            && waypoint.Marketplace?.TradeGoods.Any(tg => tg.Symbol != TradeSymbolsEnum.FUEL.ToString() && tg.Symbol != TradeSymbolsEnum.ANTIMATTER.ToString()) == true)
         {
             updateTradeModelTask = _tradesService.UpdateTradeModelAsync(waypoint.Symbol, waypoint.Marketplace.TradeGoods);
         }

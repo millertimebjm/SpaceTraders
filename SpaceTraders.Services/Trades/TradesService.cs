@@ -28,7 +28,7 @@ public class TradesService(
         // TODO: Should not get here for already seen systems
         var tradeModels = await _tradesCacheService.GetTradeModelsAsync();
         var systems = await _systemsService.GetAsync();
-        var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(waypointSymbol));
+        var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(waypointSymbol), int.MaxValue);
         var systemSymbols = traversableSystems.Select(s => s.Symbol).ToList();
         var pathModels = await _pathsService.BuildSystemPathWithCostWithBurn2(systemSymbols, waypointSymbol, 600, 600);
 
@@ -55,9 +55,19 @@ public class TradesService(
         var imports = tradeGoods.Where(tg => (tg.Type == TradeGoodTypeEnum.IMPORT.ToString() || tg.Type == TradeGoodTypeEnum.EXCHANGE.ToString()) && tg.Symbol != TradeSymbolsEnum.FUEL.ToString() && tg.Symbol != TradeSymbolsEnum.ANTIMATTER.ToString()).ToList();
         foreach (var import in imports)
         {
-            foreach (var tradeModel in tradeModels.Where(tm => tm.TradeSymbol == import.Symbol).ToList())
+            var importTradeModels = tradeModels.Where(tm => tm.TradeSymbol == import.Symbol).ToList();
+            foreach (var tradeModel in importTradeModels)
             {
+                if (tradeModel is null)
+                {
+                    
+                }
                 if (tradeModel.ExportBuyPrice > import.SellPrice) continue;
+                var pathModel = pathModels.SingleOrDefault(pm => pm.WaypointSymbol == tradeModel.ImportWaypointSymbol);
+                if (pathModel is null)
+                {
+                    Console.WriteLine("tradeModel.ImportWaypointSymbol: " + tradeModel.ImportWaypointSymbol);
+                }
                 var newTradeModel = tradeModel with
                 {
                     ImportWaypointSymbol = waypointSymbol,
@@ -65,7 +75,7 @@ public class TradesService(
                     ImportSupplyEnum = Enum.Parse<SupplyEnum>(import.Supply),
                     ImportTradeVolume = import.TradeVolume,
                     NavigationFactor = 0,
-                    TimeCost = pathModels.Single(pm => pm.WaypointSymbol == tradeModel.ImportWaypointSymbol).TimeCost,
+                    TimeCost = pathModel.TimeCost
                 };
                 newTradeModel = newTradeModel with { NavigationFactor = GetTradeModelNavigationFactorWithBurn2(newTradeModel.ExportBuyPrice, newTradeModel.ImportSellPrice, newTradeModel.ExportSupplyEnum, newTradeModel.ImportSupplyEnum, newTradeModel.TimeCost) };
                 newTradeModels.Add(newTradeModel);

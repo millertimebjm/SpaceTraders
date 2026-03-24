@@ -37,9 +37,9 @@ public class ShipsController(
         // var shipsApi = await _shipsService.GetAsync();
         // foreach (var ship in ships)
         // {
-        //     if (ship.Cargo is null)
+        //     if (ship.Fuel is null)
         //     {
-        //         var newShip = ship with {Cargo = shipsApi.Single(s => s.Symbol == ship.Symbol).Cargo};
+        //         var newShip = ship with {Fuel = shipsApi.Single(s => s.Symbol == ship.Symbol).Fuel};
         //         var newShipStatus = shipStatuses.Single(ss => ss.Ship.Symbol == newShip.Symbol);
         //         newShipStatus = newShipStatus with { Ship = newShip };
         //         await _shipStatusesCacheService.SetAsync(newShipStatus);

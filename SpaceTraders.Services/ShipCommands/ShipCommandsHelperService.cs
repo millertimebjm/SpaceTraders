@@ -494,7 +494,7 @@ public class ShipCommandsHelperService(
         Cooldown cooldown = ship.Cooldown;
 
         var systems = await _systemsService.GetAsync();
-        var traversableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol);
+        var traversableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol, int.MaxValue);
         var paths = await _pathsService.BuildSystemPathWithCostWithBurn2(traversableSystems.Select(s => s.Symbol).ToList(), ship.Nav.WaypointSymbol, ship.Fuel.Capacity, ship.Fuel.Current);
         var path = paths.Single(p => p.WaypointSymbol == waypointSymbol);
         if (path.PathWaypoints.Count() == 1) return (nav, fuel, cooldown);

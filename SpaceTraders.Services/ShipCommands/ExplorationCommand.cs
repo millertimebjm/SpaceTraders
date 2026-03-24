@@ -34,17 +34,10 @@ public class ExplorationCommand(
         {
             if (currentWaypoint.Traits.Any(t => t.Symbol == WaypointTraitsEnum.UNCHARTED.ToString()))
             {
-                try
-                {
-                    var chartWaypointResult = await _shipsService.ChartAsync(ship.Symbol);
-                    currentWaypoint = chartWaypointResult.Waypoint;
-                    await _waypointsCacheService.SetAsync(currentWaypoint);
-                    await _agentsService.SetAsync(chartWaypointResult.Agent);
-                }
-                catch
-                {
-
-                }
+                var chartWaypointResult = await _shipsService.ChartAsync(ship.Symbol);
+                currentWaypoint = chartWaypointResult.Waypoint;
+                await _waypointsCacheService.SetAsync(currentWaypoint);
+                await _agentsService.SetAsync(chartWaypointResult.Agent);
             }
         }
         else
