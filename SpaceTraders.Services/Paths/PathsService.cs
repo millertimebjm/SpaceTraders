@@ -281,11 +281,11 @@ public class PathsService(
         for (int i = 0; i < maxRetries; i++)
         {
             systems = await _systemsService.GetAsync(systemSymbols);
-            if (systems.Any()) break;
+            if (systems.Count == systemSymbols.Count) break;
             
             await Task.Delay(200);
         }
-        var currentSystem = systems.Single(s => s.Symbol == WaypointsService.ExtractSystemFromWaypoint(originWaypoint)); 
+        var currentSystem = systems.Single(s => s.Symbol == WaypointsService.ExtractSystemFromWaypoint(originWaypoint));
         var pathModels = BuildSystemPathWithCostWithBurn(currentSystem.Waypoints.ToList(), originWaypoint, maxFuel, currentFuel);
 
         var workingCopySystemSymbols = systemSymbols.ToList();

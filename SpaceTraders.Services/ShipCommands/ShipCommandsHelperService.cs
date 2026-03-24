@@ -237,66 +237,6 @@ public class ShipCommandsHelperService(
         return await _shipsService.DockAsync(ship.Symbol);
     }
 
-    public async Task<(Nav?, string?)> DockForBuyAndSell(Ship ship, Waypoint currentWaypoint)
-    {
-        throw new NotImplementedException();
-        // string? goal = ship.Goal;
-        // if (ship.Nav.Status == NavStatusEnum.DOCKED.ToString())
-        // {
-        //     return (null, goal);
-        // }
-
-        // var shouldDock = false;
-
-        // // Need fuel and fuel is available at this waypoint
-        // if (ship.Fuel.Current < ship.Fuel.Capacity
-        //     && currentWaypoint.Marketplace?.TradeGoods?.Any(e => e.Symbol == InventoryEnum.FUEL.ToString()) == true)
-        // {
-        //     shouldDock = true;
-        // }
-        // // Have cargo and the market wants any of it
-        // else
-        // {
-        //     var tradeModels = await _tradesService.GetTradeModelsAsync();
-        //     TradeModel? bestTrade = null;
-        //     if (ship.Cargo.Units > 0)
-        //     {
-        //         var systems = await _systemsService.GetAsync();
-        //         var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(currentWaypoint.Symbol));
-        //         var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
-        //         var paths = await _pathsService.BuildSystemPathWithCost(currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
-        //         var reachableWaypoints = waypoints.Where(w => paths.Select(p => p.WaypointSymbol).Contains(w.Symbol)).ToList();
-        //         var sellModels = _tradesService.BuildSellModel(reachableWaypoints);
-        //         var inventoryToSell = ship.Cargo.Inventory.OrderByDescending(i => i.Units).ThenBy(i => i.Symbol).First().Symbol;
-        //         sellModels = sellModels.Where(tm => tm.TradeSymbol == inventoryToSell).ToList();
-        //         var bestSellModel = _tradesService.GetBestSellModel(sellModels);
-        //         if (bestSellModel.WaypointSymbol == currentWaypoint.Symbol) shouldDock = true;
-        //     }
-        //     else
-        //     {
-        //         if (ship.Goal is not null)
-        //         {
-        //             tradeModels = tradeModels.Where(tm => tm.TradeSymbol == ship.Goal).ToList();
-        //         }
-
-        //         bestTrade = _tradesService.GetBestTrade(tradeModels);
-        //         if (bestTrade is null) return (null, goal);
-        //         if (bestTrade.ExportWaypointSymbol == currentWaypoint.Symbol) 
-        //         {
-        //             goal = bestTrade.TradeSymbol;
-        //             shouldDock = true;
-        //         }
-        //     }
-        // }
-
-        // if (!shouldDock)
-        // {
-        //     return (null, goal);
-        // }
-
-        // return (await _shipsService.DockAsync(ship.Symbol), goal);
-    }
-
     public async Task<Nav?> DockForBuyOrFulfill(
         Ship ship, 
         Waypoint currentWaypoint, 
@@ -453,7 +393,6 @@ public class ShipCommandsHelperService(
                 {
                     await _surveysCacheService.DeleteAsync(surveys.First().Signature);
                 }
-                //await Task.Delay(1000);
             }
         }
         return (null, null);

@@ -10,7 +10,6 @@ public interface IShipCommandsHelperService
     Task<Nav?> DockForFuel(Ship ship, Waypoint currentWaypoint);
     Task<Nav?> DockForShipyard(Ship ship, Waypoint currentWaypoint);
     Task<Nav?> DockForMiningToSellAnywhere(Ship ship, Waypoint currentWaypoint);
-    Task<(Nav?, string?)> DockForBuyAndSell(Ship ship, Waypoint currentWaypoint);
     Task<Nav?> DockForSupplyConstruction(Ship ship, Waypoint currentWaypoint, Waypoint constructionWaypoint);
     Task<(Nav?, Fuel?)> NavigateToEndWaypoint(Ship ship, Waypoint currentWaypoint, Waypoint endWaypoint);
     Task<(Nav?, Fuel?)> NavigateToStartWaypoint(Ship ship, Waypoint currentWaypoint, Waypoint startWaypoint);

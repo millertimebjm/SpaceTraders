@@ -73,7 +73,6 @@ public class SystemsCacheMongoService(IMongoCollectionFactory _collectionFactory
         waypoints.Add(waypoint);
         system = system with { Waypoints = waypoints };
 
-        await collection.DeleteOneAsync(filter, CancellationToken.None);
-        await collection.InsertOneAsync(system);
+        await collection.ReplaceOneAsync(filter, system, new ReplaceOptions { IsUpsert = true }, CancellationToken.None);
     }
 }

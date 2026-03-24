@@ -30,7 +30,10 @@ public class WaypointsService(
         await _waypointsCacheService.SetAsync(waypoint);
         
         //await _tradesService.TradeModelRefreshIfNone();
-        await _tradesService.SaveTradeModelWithBurnAsync2ByMarketplaceSetup(waypoint);
+        if (waypoint.Marketplace is not null && waypoint.Marketplace.TradeGoods is not null && waypoint.Marketplace.TradeGoods.Any())
+        {
+            await _tradesService.SaveTradeModelWithBurnAsync2ByMarketplaceSetup(waypoint);
+        }
 
         return waypoint;
     }

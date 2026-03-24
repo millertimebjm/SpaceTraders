@@ -9,5 +9,7 @@ public record GalaxyLineViewModel(
     int EndY,
     string Color,
     int Width,
-    int[] Dotted
+    int[] Dotted,
+    string Start,
+    string End
 );

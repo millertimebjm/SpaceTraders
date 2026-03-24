@@ -86,7 +86,7 @@
                 var links = SystemsService.TraverseLinks(systems.ToList(), headquartersSystemSymbol);
                 foreach (var link in links)
                 {
-                    galaxyLineViewModels.Add(new (link.Item1.X + xOffset, link.Item1.Y + yOffset, link.Item2.X + xOffset, link.Item2.Y + yOffset, "#ffffff", 1, link.Item3 ? [] : [5,5]));
+                    galaxyLineViewModels.Add(new (link.Item1.X + xOffset, link.Item1.Y + yOffset, link.Item2.X + xOffset, link.Item2.Y + yOffset, "#ffffff", 4, !link.Item3 ? [] : [20,20], link.leftSystem.Symbol, link.rightSystem.Symbol));
                 }
             }
             const systemLines = @(Html.Raw(JsonSerializer.Serialize(galaxyLineViewModels, new JsonSerializerOptions { PropertyNamingPolicy = JsonNamingPolicy.CamelCase, Encoder = JavaScriptEncoder.UnsafeRelaxedJsonEscaping })))
@@ -272,7 +272,7 @@
 
                 // Draw Grid Border
                 ctx.strokeStyle = "#00ffcc";
-                ctx.lineWidth = 2;
+                ctx.lineWidth = 4;
                 ctx.strokeRect(0, 0, GRID_SIZE, GRID_SIZE);
 
                 // Draw lines

@@ -59,25 +59,10 @@ public class SurveysCacheEfService(SpaceTraderDbContext _context) : ISurveysCach
             await _context.Surveys.AddAsync(new SurveyCacheModel(survey.Signature, survey.Symbol, JsonSerializer.Serialize(survey)));
         }
         await _context.SaveChangesAsync();
-        // var collection = _collectionFactory.GetCollection<Survey>();
-
-        // var filter = Builders<Survey>
-        //     .Filter
-        //     .Eq(s => s.Signature, survey.Signature);
-        // var projection = Builders<Survey>.Projection.Exclude("_id");
-        // await collection.DeleteOneAsync(filter, CancellationToken.None);
-        // await collection.InsertOneAsync(survey, new InsertOneOptions() { }, CancellationToken.None);
     }
 
     public async Task DeleteAsync(string signature)
     {
         await _context.Surveys.Where(s => s.Signature == signature).ExecuteDeleteAsync();
-        
-        // var collection = _collectionFactory.GetCollection<Survey>();
-
-        // var filter = Builders<Survey>
-        //     .Filter
-        //     .Eq(s => s.Signature, signature);
-        // await collection.DeleteOneAsync(filter, CancellationToken.None);
     }
 }

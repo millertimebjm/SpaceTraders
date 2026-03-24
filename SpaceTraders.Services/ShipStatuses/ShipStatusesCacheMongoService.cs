@@ -36,22 +36,18 @@ public class ShipStatusesCacheMongoService(IMongoCollectionFactory _collectionFa
             .Filter
             .Eq(s => s.Ship.Symbol, shipStatus.Ship.Symbol);
         var collection = _collectionFactory.GetCollection<ShipStatus>();
-        await collection.DeleteOneAsync(filter, CancellationToken.None);
-        await collection.InsertOneAsync(shipStatus);
+        await collection.ReplaceOneAsync(filter, shipStatus, new ReplaceOptions { IsUpsert = true }, CancellationToken.None);
     }
 
     public async Task SetAsync(List<ShipStatus> shipStatuses)
     {
-        var filter = Builders<ShipStatus>
-            .Filter.Empty;
         var collection = _collectionFactory.GetCollection<ShipStatus>();
-        await collection.DeleteManyAsync(filter, CancellationToken.None);
-        await collection.InsertManyAsync(shipStatuses);
-    }
-
-    public async Task DeleteAsync()
-    {
-        var collection = _collectionFactory.GetCollection<ShipStatus>();
-        await collection.DeleteManyAsync(FilterDefinition<ShipStatus>.Empty, CancellationToken.None);
+        foreach (var shipStatus in shipStatuses)
+        {
+            var filter = Builders<ShipStatus>.Filter.Eq(ss => ss.Ship.Symbol, shipStatus.Ship.Symbol);
+            await collection.ReplaceOneAsync(filter, shipStatus, new ReplaceOptions { IsUpsert = true }, CancellationToken.None);
+        }
+        var removeFilter = Builders<ShipStatus>.Filter.Nin(s => s.Ship.Symbol, shipStatuses.Select(ss => ss.Ship.Symbol).ToList());
+        await collection.DeleteManyAsync(removeFilter);
     }
 }

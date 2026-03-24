@@ -85,23 +85,23 @@ public class SystemsService(
         return traversableSystems;
     }
 
-    public static List<(STSystem leftSystem, STSystem rightSystem, bool traversable)> TraverseLinks(List<STSystem> systems, string startingSystemString)
+    public static List<(STSystem leftSystem, STSystem rightSystem, bool dottedLine)> TraverseLinks(List<STSystem> systems, string startingSystemString)
     {
         var startingSystem = systems.Single(s => s.Symbol == startingSystemString);
-        List<(STSystem leftSystem, STSystem rightSystem, bool traversable)> links = [];
+        List<(STSystem leftSystem, STSystem rightSystem, bool dottedLine)> links = [];
         foreach (var system in systems)
         {
             var jumpGateWaypoint = system.Waypoints.Single(w => w.JumpGate is not null);
             foreach (var connection in jumpGateWaypoint.JumpGate.Connections)
             {
                 var connectedSystem = systems.SingleOrDefault(s => s.Symbol == WaypointsService.ExtractSystemFromWaypoint(connection));
-                if (connectedSystem is null) continue; 
+                if (connectedSystem is null) continue;
 
-                var traversable = !jumpGateWaypoint.IsUnderConstruction && connectedSystem.Waypoints.Any(w => w.JumpGate is not null && w.IsUnderConstruction);
-                if (!links.Contains((system, connectedSystem, traversable))
-                    && !links.Contains((connectedSystem, system, traversable)))
+                var dottedLine = jumpGateWaypoint.IsUnderConstruction || connectedSystem.Waypoints.Any(w => w.JumpGate is not null && w.IsUnderConstruction);
+                if (!links.Any(l => l.leftSystem.Symbol == system.Symbol && l.rightSystem.Symbol == connectedSystem.Symbol)
+                    && !links.Any(l => l.rightSystem.Symbol == system.Symbol && l.leftSystem.Symbol == connectedSystem.Symbol))
                 {
-                    links.Add((system, connectedSystem, traversable));
+                    links.Add((system, connectedSystem, dottedLine));
                 }
             }
         }

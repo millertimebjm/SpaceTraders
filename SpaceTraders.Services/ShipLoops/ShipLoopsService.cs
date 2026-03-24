@@ -85,6 +85,9 @@ public class ShipLoopsService(
         var account = await _accountService.GetAsync();
         _configuration[$"SpaceTrader:" + ConfigurationEnums.AgentToken.ToString()] = account.Token;
 
+        //var system = await _systemsService.GetAsync("X1-UT56", refresh: true);        
+        await JumpGateWaypointsRefresh();
+
         var tradeModels = await _tradesService.GetTradeModelsWithCacheAsync();
         
         var ships = await _shipsService.GetAsync();
@@ -194,6 +197,16 @@ public class ShipLoopsService(
                 var waitInMilliseconds = (int)(serverStatus.ServerResets.Next - now).TotalMilliseconds;
                 await Task.Delay(waitInMilliseconds);
             }
+        }
+    }
+
+    private async Task JumpGateWaypointsRefresh()
+    {
+        var systems = await _systemsService.GetAsync();
+        var jumpGateWaypoints = systems.SelectMany(s => s.Waypoints).Where(w => w.Type == WaypointTypesEnum.JUMP_GATE.ToString() && w.JumpGate is null);
+        foreach (var jumpGateWaypoint in jumpGateWaypoints)
+        {
+            var waypoint = await _waypointsService.GetAsync(jumpGateWaypoint.Symbol, refresh: true);
         }
     }
 

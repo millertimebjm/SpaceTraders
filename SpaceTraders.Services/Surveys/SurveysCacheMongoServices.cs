@@ -45,8 +45,9 @@ public class SurveysCacheMongoService(IMongoCollectionFactory _collectionFactory
             .Filter
             .Eq(s => s.Signature, survey.Signature);
         var projection = Builders<Survey>.Projection.Exclude("_id");
-        await collection.DeleteOneAsync(filter, CancellationToken.None);
-        await collection.InsertOneAsync(survey, new InsertOneOptions() { }, CancellationToken.None);
+        // await collection.DeleteOneAsync(filter, CancellationToken.None);
+        // await collection.InsertOneAsync(survey, new InsertOneOptions() { }, CancellationToken.None);
+        await collection.ReplaceOneAsync(filter, survey, new ReplaceOptions { IsUpsert = true }, CancellationToken.None);
     }
 
     public async Task DeleteAsync(string signature)

@@ -1,9 +1,6 @@
-using SpaceTraders.Model.Exceptions;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
-using SpaceTraders.Services.Paths;
-using SpaceTraders.Services.Paths.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.Shipyards;
@@ -23,8 +20,7 @@ public class BuyAndSellCommandV2(
     IAgentsService _agentsService,
     ITransactionsCacheService _transactionsService,
     ITradesService _tradesService,
-    IShipsService _shipsService,
-    IPathsService _pathsService
+    IShipsService _shipsService
 ) : IShipCommandsService
 {
     public async Task<ShipStatus> Run(

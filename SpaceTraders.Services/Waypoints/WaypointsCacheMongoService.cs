@@ -72,8 +72,7 @@ public class WaypointsCacheMongoService(
             .Filter
             .Eq(w => w.Symbol, waypoint.Symbol);
         var waypointCollection = _mongoCollectionFactory.GetCollection<Waypoint>();
-        await waypointCollection.DeleteOneAsync(filter, CancellationToken.None);
-        await waypointCollection.InsertOneAsync(waypoint);
+        await waypointCollection.ReplaceOneAsync(filter, waypoint, new ReplaceOptions { IsUpsert = true }, CancellationToken.None);
         await _systemsCacheService.SetAsync(waypoint);
 
         await updateTradeModelTask;

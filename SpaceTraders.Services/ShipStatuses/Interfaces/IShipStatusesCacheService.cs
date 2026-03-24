@@ -8,5 +8,4 @@ public interface IShipStatusesCacheService
     Task<ShipStatus> GetAsync(string shipSymbol);
     Task SetAsync(ShipStatus shipStatus);
     Task SetAsync(List<ShipStatus> shipStatuses);
-    Task DeleteAsync();
 }

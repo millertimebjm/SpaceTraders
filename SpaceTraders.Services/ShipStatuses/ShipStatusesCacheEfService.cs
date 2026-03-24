@@ -49,20 +49,11 @@ public class ShipStatusesCacheEfService(SpaceTraderDbContext _context) : IShipSt
             await _context.ShipStatuses.AddAsync(new ShipStatusCacheModel(shipStatus.Ship.Symbol, JsonSerializer.Serialize(shipStatus)));
         }
         await _context.SaveChangesAsync();
-
-        // var filter = Builders<ShipStatus>
-        //     .Filter
-        //     .Eq(s => s.Ship.Symbol, shipStatus.Ship.Symbol);
-        // var collection = _collectionFactory.GetCollection<ShipStatus>();
-        // await collection.DeleteOneAsync(filter, CancellationToken.None);
-        // await collection.InsertOneAsync(shipStatus);
     }
 
     public async Task DeleteAsync()
     {
         await _context.ShipStatuses.ExecuteDeleteAsync();
-        // var collection = _collectionFactory.GetCollection<ShipStatus>();
-        // await collection.DeleteManyAsync(FilterDefinition<ShipStatus>.Empty, CancellationToken.None);
     }
 
     public Task SetAsync(List<ShipStatus> shipStatuses)

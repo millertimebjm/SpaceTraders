@@ -43,14 +43,16 @@ public class ContractsCacheMongoService(
         var collection = _collectionFactory.GetCollection<STContract>();
         var projection = Builders<STContract>.Projection.Exclude("_id");
 
-        await collection.DeleteOneAsync(filter, CancellationToken.None);
-        await collection.InsertOneAsync(contract, options: null, CancellationToken.None);
+        await collection.ReplaceOneAsync(filter, contract, new ReplaceOptions { IsUpsert = true }, CancellationToken.None);
     }
 
     public async Task SetAsync(IEnumerable<STContract> contracts)
     {
         var collection = _collectionFactory.GetCollection<STContract>();
-        await collection.DeleteManyAsync(FilterDefinition<STContract>.Empty);
-        await collection.InsertManyAsync(contracts);
+        foreach (var contract in contracts)
+        {
+            var filter = Builders<STContract>.Filter.Eq(c => c.ContractId, contract.ContractId);
+            await collection.ReplaceOneAsync(filter, contract, new ReplaceOptions { IsUpsert = true }, CancellationToken.None);
+        }
     }
 }
