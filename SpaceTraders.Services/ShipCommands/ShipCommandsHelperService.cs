@@ -489,8 +489,8 @@ public class ShipCommandsHelperService(
 
     public async Task<(Nav?, Fuel?, Cooldown)> NavigateHelper(Ship ship, string waypointSymbol)
     {
-        Nav? nav = null;
-        Fuel? fuel = null;
+        Nav? nav = ship.Nav;
+        Fuel? fuel = ship.Fuel;
         Cooldown cooldown = ship.Cooldown;
 
         var systems = await _systemsService.GetAsync();

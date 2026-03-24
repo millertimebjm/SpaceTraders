@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
@@ -50,15 +51,6 @@ public class ShipLoopsService(
         {
             await _accountService.RegisterAsync();
         }
-        
-        // var serverStatus = await _serverStatusService.GetAsync();
-        // if (serverStatus.ServerResets.Next.AddHours(-1) < DateTime.UtcNow)
-        // {
-        //     _logger.LogInformation("Waiting for next reset.");
-        //     await Task.Delay(DateTime.UtcNow - serverStatus.ServerResets.Next);
-        //     await _collectionFactory.DeleteDatabaseAsync();
-        //     await _accountService.RegisterAsync();
-        // }
 
         var serverStatus = await _serverStatusService.GetAsync();
         var resetTime = serverStatus.ServerResets.Next;
@@ -103,6 +95,7 @@ public class ShipLoopsService(
             await _shipStatusesCacheService.SetAsync(shipStatuses);
         }
 
+        //List<(TimeSpan ExecutionTime, DateTime ExecutionCompletionUtc)> executionAverageCalculator = [];
         while (!cts.IsCancellationRequested)
         {
             shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
@@ -112,8 +105,6 @@ public class ShipLoopsService(
             {
                 shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
             }
-
-            
 
             shipStatuses = shipStatuses
                 .OrderBy(s => {
@@ -128,6 +119,7 @@ public class ShipLoopsService(
                 var ship = shipStatus.Ship;
                 if (ShipsService.GetShipCooldown(ship) is not null) continue;
 
+                Stopwatch processingTimeStart = Stopwatch.StartNew();
                 if (ship.ShipCommand is null)
                 {
                     var shipJobsService = _shipJobsFactory.Get(shipStatus.Ship);
@@ -185,6 +177,7 @@ public class ShipLoopsService(
                     shipStatuses[i] = shipStatus;
                 }
                 await _shipStatusesCacheService.SetAsync(shipStatuses[i]);
+                //executionAverageCalculator.Add((processingTimeStart.Elapsed, DateTime.UtcNow));
             }
 
             _logger.LogInformation("Time until server reset: {hours} Hours", Math.Round((serverStatus.ServerResets.Next - DateTime.UtcNow).TotalHours));
@@ -258,13 +251,5 @@ public class ShipLoopsService(
                 await _waypointsService.GetAsync(waypoint.Symbol, refresh: true);
             }
         }
-    }
-
-    public static DateTime? MinimumDate(DateTime? d1, DateTime? d2)
-    {
-        if (d1 is null) return d2;
-        if (d2 is null) return d1;
-        if (d1 < d2) return d1;
-        return d2;
     }
 }
