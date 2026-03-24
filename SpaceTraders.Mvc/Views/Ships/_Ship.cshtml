@@ -30,10 +30,6 @@
     <li><b>Mounts:</b> @string.Join(",", ship.Mounts.Select(m => m.Symbol))</li>
     <li><b>Cargo:</b> @ship.Cargo.Units/@ship.Cargo.Capacity</li>
     <ul>
-        @if (ship.Cargo is null)
-        {
-            Console.WriteLine(ship);
-        }
         @foreach (var inventory in ship.Cargo.Inventory)
         {
             <li>@inventory.Symbol (@inventory.Units/@ship.Cargo.Capacity) <a href="/ships/@ship.Symbol/sell/@inventory.Symbol">Sell</a> <a href="/ships/@ship.Symbol/jettison/@inventory.Symbol">Jettison</a></li>

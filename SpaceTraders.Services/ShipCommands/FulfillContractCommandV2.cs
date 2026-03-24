@@ -195,8 +195,9 @@ public class FulfillContractCommandV2(
     private async Task<GoalModel> SetGoalModelByContract(STContract contract, string originWaypoint, int fuelMax, int fuelCurrent)
     {
         var tradeSymbol = contract.Terms.Deliver[0].TradeSymbol;
-        var tradeModels = await _tradesService.GetTradeModelsAsyncWithBurn2([WaypointsService.ExtractSystemFromWaypoint(contract.Terms.Deliver[0].DestinationSymbol)], originWaypoint, fuelMax, fuelCurrent);
-        var tradeModelsOnTradeSymbol = tradeModels.Where(tm => tm.TradeSymbol == tradeSymbol).FirstOrDefault();
+        var systems = await _systemsService.GetAsync();
+        var tradeModels = await _tradesService.GetTradeModelsAsyncWithBurn2(systems.Select(s => s.Symbol).ToList(), originWaypoint, fuelMax, fuelCurrent);
+        var tradeModelsOnTradeSymbol = tradeModels.FirstOrDefault(tm => tm.TradeSymbol == tradeSymbol);
         var exportWaypointSymbol = tradeModelsOnTradeSymbol?.ExportWaypointSymbol;
         if (tradeModelsOnTradeSymbol is null)
         {
