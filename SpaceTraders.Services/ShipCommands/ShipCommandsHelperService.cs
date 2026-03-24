@@ -1042,14 +1042,19 @@ public class ShipCommandsHelperService(
         return (contract, cargo, agent);
     }
 
-    public async Task<bool> CheckRemotePurchaseShip(IEnumerable<Ship> ships, string shipyardWaypoint, ShipTypesEnum shipType)
+    public async Task<bool> CheckRemotePurchaseShip(IEnumerable<Ship> ships, string shipyardWaypointSymbol, ShipTypesEnum shipType)
     {
-        if (ships.Any(s => s.Nav.WaypointSymbol == shipyardWaypoint && s.Nav.Status == NavStatusEnum.DOCKED.ToString()))
+        if (ships.Any(s => s.Nav.WaypointSymbol == shipyardWaypointSymbol && s.Nav.Status == NavStatusEnum.DOCKED.ToString()))
         {
-            var purchaseShipResponse = await _shipyardsService.PurchaseShipAsync(shipyardWaypoint, shipType.ToString());
-            await _shipStatusesCacheService.SetAsync(new ShipStatus(purchaseShipResponse.Ship, $"Newly purchase ship.", DateTime.UtcNow));
-            await _agentsService.SetAsync(purchaseShipResponse.Agent);            
-            return true;
+            var shipyardWaypoint = await _waypointsService.GetAsync(shipyardWaypointSymbol);
+            var agent = await _agentsService.GetAsync();
+            if (shipyardWaypoint.Shipyard.ShipFrames.Single(st => st.Type == shipType.ToString()).PurchasePrice + 200_000 < (agent.Credits))
+            {
+                var purchaseShipResponse = await _shipyardsService.PurchaseShipAsync(shipyardWaypointSymbol, shipType.ToString());
+                await _shipStatusesCacheService.SetAsync(new ShipStatus(purchaseShipResponse.Ship, $"Newly purchase ship.", DateTime.UtcNow));
+                await _agentsService.SetAsync(purchaseShipResponse.Agent);            
+                return true;
+            }
         }
         return false;
     }
