@@ -14,6 +14,11 @@
 {
     <h3 style="text-align: center;">Last Update: @ViewHelperService.HumanReadableTimeSpan(DateTime.UtcNow - lastInstruction.Value)</h3>
 }
+@{
+    var numberOfWaitingShips = Model.Count(m => ShipsService.GetShipCooldown(m.Ship) is null);
+}
+<h3 style="text-align: center;">Ships Waiting for Instructions: @numberOfWaitingShips/@Model.Count()</h3>
+
 
 @{
     var commandShips = Model

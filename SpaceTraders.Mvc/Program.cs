@@ -11,6 +11,8 @@ using SpaceTraders.Services.Constructions.Interfaces;
 using SpaceTraders.Services.Contracts;
 using SpaceTraders.Services.Contracts.Interfaces;
 using SpaceTraders.Services.EntityFrameworkCache;
+using SpaceTraders.Services.HttpHelpers;
+using SpaceTraders.Services.HttpHelpers.Interfaces;
 using SpaceTraders.Services.JumpGates;
 using SpaceTraders.Services.JumpGates.Interfaces;
 using SpaceTraders.Services.Marketplaces;
@@ -71,7 +73,8 @@ builder.Services.AddScoped<IServerStatusApiService, ServerStatusApiService>();
 builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IAccountApiService, AccountApiService>();
 builder.Services.AddScoped<IContractsApiService, ContractsApiService>();
-builder.Services.AddScoped<IDispatcher, RateLimitedDispatcher>();
+builder.Services.AddSingleton<IHttpHelperService, HttpHelperService>();
+//builder.Services.AddSingleton<IApiRequestLimiterService, ApiRequestLimiterCacheService>();
 
 // Cache Services
 builder.Services.AddSingleton<IMongoCollectionFactory, MongoCollectionFactory>();

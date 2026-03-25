@@ -12,6 +12,7 @@ using SpaceTraders.Services.ServerStatusServices.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.ShipJobs.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
+using SpaceTraders.Services.ShipStatuses;
 using SpaceTraders.Services.ShipStatuses.Interfaces;
 using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Systems.Interfaces;
@@ -82,23 +83,32 @@ public class ShipLoopsService(
 
         var tradeModels = await _tradesService.GetTradeModelsWithCacheAsync();
         
-        var ships = await _shipsService.GetAsync();
         var shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
-        shipStatuses = shipStatuses.Where(ss => ships.Select(s => s.Symbol).Contains(ss.Ship.Symbol)).ToList();
-        if (shipStatuses.Any())
+        if (!shipStatuses.Any())
         {
-            await _shipStatusesCacheService.SetAsync(shipStatuses);
+            var ships = await _shipsService.GetAsync();
+            foreach (var ship in ships)
+            {
+                shipStatuses.Add(new ShipStatus(ship, "Ship Statuses reset.", DateTime.UtcNow));
+                await _shipStatusesCacheService.SetAsync(shipStatuses);
+            }
         }
-        else
-        {
-            shipStatuses = ships.Select(s => new ShipStatus(s, "", DateTime.UtcNow)).ToList();
-            await _shipStatusesCacheService.SetAsync(shipStatuses);
-        }
+        // shipStatuses = shipStatuses.Where(ss => ships.Select(s => s.Symbol).Contains(ss.Ship.Symbol)).ToList();
+        // if (shipStatuses.Any())
+        // {
+        //     await _shipStatusesCacheService.SetAsync(shipStatuses);
+        // }
+        // else
+        // {
+        //     shipStatuses = ships.Select(s => new ShipStatus(s, "", DateTime.UtcNow)).ToList();
+        //     await _shipStatusesCacheService.SetAsync(shipStatuses);
+        // }
 
         //List<(TimeSpan ExecutionTime, DateTime ExecutionCompletionUtc)> executionAverageCalculator = [];
         while (!cts.IsCancellationRequested)
         {
             shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
+            var ships = shipStatuses.Select(ss => ss.Ship).ToList();
 
             await UpdateSystemWaypoints(ships);
             if (await BuyNewShipIfPossible(shipStatuses.Select(ss => ss.Ship).ToList()))

@@ -179,6 +179,11 @@ public class BuyAndSellCommandV2(
             var inventory = ship.Cargo.Inventory.OrderByDescending(i => i.Units).FirstOrDefault();
             var validSellModels = sellModels.Where(sm => sm.TradeSymbol == inventory.Symbol).ToList();
             var bestSellModel = validSellModels.OrderByDescending(sm => sm.NavigationFactor).FirstOrDefault();
+            if (bestSellModel is null)
+            {
+                var exceptionWaypoint = traversableSystems.SelectMany(s => s.Waypoints).FirstOrDefault(s => s.Marketplace?.Imports.Any(i => i.Symbol == inventory.Symbol) == true);
+                return new GoalModel(inventory.Symbol, null, exceptionWaypoint.Symbol);
+            }
             return new GoalModel(bestSellModel.TradeSymbol, null, bestSellModel.WaypointSymbol);
         }
         else

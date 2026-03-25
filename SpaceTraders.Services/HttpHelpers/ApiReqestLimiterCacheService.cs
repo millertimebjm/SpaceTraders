@@ -1,87 +1,90 @@
-using MongoDB.Driver;
-using SpaceTraders.Services.HttpHelpers.Interfaces;
-using SpaceTraders.Services.MongoCache.Interfaces;
+// using MongoDB.Driver;
+// using SpaceTraders.Services.HttpHelpers.Interfaces;
+// using SpaceTraders.Services.MongoCache.Interfaces;
 
-namespace SpaceTraders.Services.HttpHelpers;
+// namespace SpaceTraders.Services.HttpHelpers;
 
-public class ApiRequestLimiterCacheService : IApiRequestLimiterService
-{
-    private readonly IMongoCollection<Token> _tokens;
+// public class ApiRequestLimiterCacheService : IApiRequestLimiterService
+// {
+//     private readonly IMongoCollection<Token> _tokens;
 
-    public ApiRequestLimiterCacheService(IMongoCollectionFactory collectionFactory)
-    {
-        _tokens = collectionFactory.GetCollection<Token>();
-        // Optimization: Create an Index on AgentId and Timestamp (Ascending)
-        var indexKeys = Builders<Token>.IndexKeys.Ascending(t => t.Timestamp);
-        _tokens.Indexes.CreateOne(new CreateIndexModel<Token>(indexKeys));
-    }
+//     public ApiRequestLimiterCacheService(IMongoCollectionFactory collectionFactory)
+//     {
+//         _tokens = collectionFactory.GetCollection<Token>();
+//         // Optimization: Create an Index on AgentId and Timestamp (Ascending)
+//         var indexKeys = Builders<Token>.IndexKeys.Ascending(t => t.Timestamp);
+//         _tokens.Indexes.CreateOne(new CreateIndexModel<Token>(indexKeys));
+//     }
 
-    public async Task WaitUntilReadyAsync(CancellationToken ct = default)
-    {
-        // 1. Get the reserved time from MongoDB
-        DateTime reservedTime = await RequestToken();
+//     public async Task WaitUntilReadyAsync(CancellationToken ct = default)
+//     {
+//         // 1. Get the reserved time from MongoDB
+//         DateTime reservedTime = await RequestToken();
 
-        // 2. Calculate how long we need to wait from "Now"
-        var delay = reservedTime - DateTime.UtcNow;
+//         // 2. Calculate how long we need to wait from "Now"
+//         var delay = reservedTime - DateTime.UtcNow;
 
-        if (delay > TimeSpan.Zero)
-        {
-            // 3. Pause the execution until our "slot" arrives
-            await Task.Delay(delay, ct);
-        }
-    }
+//         if (delay > TimeSpan.Zero)
+//         {
+//             // 3. Pause the execution until our "slot" arrives
+//             await Task.Delay(delay, ct);
+//         }
+//     }
 
-    public async Task<DateTime> RequestToken()
-{
-    var now = DateTime.UtcNow;
-    var window1s = now.AddSeconds(-1);
-    var window1m = now.AddMinutes(-1);
+//     public async Task<DateTime> RequestToken()
+//     {
+//         var now = DateTime.UtcNow;
+//         var window1s = now.AddSeconds(-1);
+//         var window1m = now.AddMinutes(-1);
 
-    // 1. Get the most recent token and the counts in one "pass" (or close to it)
-    // We need to know the latest scheduled time to ensure we append to the end of the "line"
-    var projection = Builders<Token>.Projection.Exclude("_id");
-    var lastToken = await _tokens.Find(FilterDefinition<Token>.Empty)
-        .SortByDescending(t => t.Timestamp)
-        .Project<Token>(projection)
-        .FirstOrDefaultAsync();
+//         // CRITICAL: Delete tokens older than 1 minute so they don't bloat your counts
+//         await _tokens.DeleteManyAsync(t => t.Timestamp < window1m);
 
-    long countSec = await _tokens.CountDocumentsAsync(t => t.Timestamp > window1s);
-    long countMin = await _tokens.CountDocumentsAsync(t => t.Timestamp > window1m);
+//         var projection = Builders<Token>.Projection.Exclude("_id");
+//         // Get the most recent scheduled token
+//         var lastToken = await _tokens.Find(FilterDefinition<Token>.Empty)
+//             .SortByDescending(t => t.Timestamp)
+//             .Project<Token>(projection)
+//             .FirstOrDefaultAsync();
 
-    DateTime nextAvailable;
+//         long countSec = await _tokens.CountDocumentsAsync(t => t.Timestamp > window1s);
+//         long countMin = await _tokens.CountDocumentsAsync(t => t.Timestamp > window1m);
 
-    if (countSec < 2 && countMin < 30)
-    {
-        // If the "last token" in the DB is in the past, we can go 'now'
-        // If it's in the future (reserved by another app), we must follow it.
-        nextAvailable = (lastToken == null || lastToken.Timestamp < now) 
-                        ? now 
-                        : lastToken.Timestamp.AddMilliseconds(501);
-    }
-    else
-    {
-        // We are throttled. We must find the specific token that is "blocking" us.
-        // If it's the 1-minute limit, we wait for the 30th oldest token to expire.
-        // If it's the 1-second limit, we wait for the 2nd oldest.
-        int skipCount = countMin >= 30 ? 29 : 1; 
+//         DateTime nextAvailable;
 
-        var blockingToken = await _tokens.Find(t => t.Timestamp > window1m)
-            .SortBy(t => t.Timestamp)
-            .Skip(skipCount)
-            .Project<Token>(projection)
-            .FirstOrDefaultAsync();
+//         // If we haven't hit any limits...
+//         if (countSec < 2 && countMin < 30)
+//         {
+//             // If the last scheduled token is way in the past, start at 'now'
+//             // Otherwise, stack it 501ms after the last one to respect the 2/s limit
+//             nextAvailable = (lastToken == null || lastToken.Timestamp < now) 
+//                             ? now 
+//                             : lastToken.Timestamp.AddMilliseconds(501);
+//         }
+//         else
+//         {
+//             // Identify which limit we hit
+//             bool isMinuteLimit = countMin >= 30;
+            
+//             // Find the oldest token in the window that needs to "expire"
+//             var blockingToken = await _tokens.Find(t => t.Timestamp > (isMinuteLimit ? window1m : window1s))
+//                 .SortBy(t => t.Timestamp)
+//                 .Project<Token>(projection)
+//                 .FirstOrDefaultAsync();
 
-        // The next slot is the blocking token's time + the required gap
-        var waitBase = countMin >= 30 ? blockingToken.Timestamp.AddMinutes(1) : blockingToken.Timestamp.AddMilliseconds(501);
-        
-        // Ensure we don't accidentally schedule BEFORE the latest existing token
-        var absoluteMin = lastToken?.Timestamp.AddMilliseconds(501) ?? now;
-        nextAvailable = waitBase > absoluteMin ? waitBase : absoluteMin;
-    }
+//             // Calculate when that slot opens up
+//             var waitBase = isMinuteLimit 
+//                 ? blockingToken.Timestamp.AddMinutes(1) 
+//                 : blockingToken.Timestamp.AddSeconds(1); 
+                
+//             // Ensure we never schedule a token earlier than 501ms after the previous one
+//             var absoluteMin = lastToken.Timestamp.AddMilliseconds(501);
+//             nextAvailable = waitBase > absoluteMin ? waitBase : absoluteMin;
+//         }
 
-    await _tokens.InsertOneAsync(new Token(nextAvailable));
-    return nextAvailable;
-}
-}
+//         await _tokens.InsertOneAsync(new Token(nextAvailable));
+//         return nextAvailable;
+//     }
+// }
 
-public record Token(DateTime Timestamp);
+// public record Token(DateTime Timestamp);

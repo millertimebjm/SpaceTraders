@@ -430,7 +430,7 @@ public class TradesService(
         List<Waypoint> marketplaceWaypoints,
         ConcurrentBag<TradeModel> tradeModels)
     {
-        var systemSymbolsWithinOneJump = GetSystemSymbolsWithinOneJump(systems, marketplaceWaypointExport.Symbol);
+        var systemSymbolsWithinOneJump = GetSystemSymbolsWithinOneJump(systems, WaypointsService.ExtractSystemFromWaypoint(marketplaceWaypointExport.Symbol));
         var marketplaceWaypointsWithinOneSystem = marketplaceWaypoints.Where(w => systemSymbolsWithinOneJump.Contains(WaypointsService.ExtractSystemFromWaypoint(w.Symbol))).ToList();
         // reduce all other waypoints to within one system
 
@@ -558,13 +558,48 @@ public class TradesService(
         return tradeModels;
     }
 
+    public async Task<List<SellModel>> GetSellModelsAsyncWithBurn3(List<string> systemSymbols, string originWaypointSymbol, int fuelMax, int fuelCurrent)
+    {
+        var tradeModels = await GetTradeModelsWithCacheAsync();
+        var localSystemSymbols = await GetSystemSymbolsWithinOneJump(systemSymbols, WaypointsService.ExtractSystemFromWaypoint(originWaypointSymbol));
+
+        var localSellModels = tradeModels
+            .Where(tm => localSystemSymbols.Any(s => tm.ImportWaypointSymbol.StartsWith(s)))
+            .Select(tm => new SellModel(tm.TradeSymbol, tm.ImportWaypointSymbol, tm.ImportSellPrice, tm.ImportSupplyEnum, tm.ImportTradeVolume, 0, 0))
+            .ToList();
+        // var systems = await _systemsService.GetAsync();
+        // var systemsIncluded = systems.Where(s => systemSymbols.Contains(s.Symbol)).ToList();
+        // var waypoints = systemsIncluded.SelectMany(s => s.Waypoints).ToList();
+        // var pathModels = PathsService.BuildSystemPathWithCostWithBurn(waypoints, originWaypointSymbol, fuelMax, fuelCurrent);
+        var pathModels = await _pathsService.BuildSystemPathWithCostWithBurn2(localSystemSymbols, originWaypointSymbol, fuelMax, fuelCurrent);
+        List<SellModel> tradeModelsWithOriginTimeCost = [];
+        foreach (var localSellModel in localSellModels)
+        {
+            var pathModel = pathModels.Single(pm => pm.WaypointSymbol == localSellModel.WaypointSymbol);
+            var newLocalSellModel = localSellModel with { TimeCost = localSellModel.TimeCost + pathModel.TimeCost };
+            newLocalSellModel = newLocalSellModel with { NavigationFactor = GetSellModelNavigationFactorWithBurn2(newLocalSellModel.SellPrice, newLocalSellModel.SupplyEnum, newLocalSellModel.TimeCost) };
+            tradeModelsWithOriginTimeCost.Add(newLocalSellModel);
+        }
+
+        var sellModelsWithOriginTimeCostGrouped = tradeModelsWithOriginTimeCost.GroupBy(tm => tm.TradeSymbol);
+        var bestSellModelBySymbol = sellModelsWithOriginTimeCostGrouped.Select(tmg => tmg.OrderBy(tm => tm.TimeCost).First()).ToList();
+        return bestSellModelBySymbol.OrderByDescending(tm => tm.NavigationFactor).ToList();
+    }
+
     private List<string> GetSystemSymbolsWithinOneJump(IReadOnlyList<STSystem> systems, string originSystemSymbol)
     {
         var systemLinks = SystemsService.TraverseLinks(systems.ToList(), originSystemSymbol);
         var nearbySystemSymbols = systemLinks.Where(sl => sl.leftSystem.Symbol == originSystemSymbol || sl.rightSystem.Symbol == originSystemSymbol);
-        var nearbySystems = systemLinks.Select(sl => sl.leftSystem.Symbol).ToList();
-        nearbySystems.AddRange(systemLinks.Select(sl => sl.rightSystem.Symbol));
+        var nearbySystems = nearbySystemSymbols.Select(sl => sl.leftSystem.Symbol).ToList();
+        nearbySystems.AddRange(nearbySystemSymbols.Select(sl => sl.rightSystem.Symbol));
         return nearbySystems.Distinct().ToList();
+    }
+
+    private async Task<List<string>> GetSystemSymbolsWithinOneJump(List<string> systemSymbols, string originSystemSymbol)
+    {
+        var systems = await _systemsService.GetAsync();
+        var limitedySystems = systems.Where(s => systemSymbols.Contains(s.Symbol)).ToList();
+        return GetSystemSymbolsWithinOneJump(limitedySystems, originSystemSymbol);
     }
 }
 

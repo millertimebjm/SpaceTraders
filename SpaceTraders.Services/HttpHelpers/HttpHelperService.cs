@@ -6,7 +6,7 @@ using SpaceTraders.Services.HttpHelpers.Interfaces;
 namespace SpaceTraders.Services.HttpHelpers;
 
 public class HttpHelperService(
-    IApiRequestLimiterService _limiterService,
+    //IApiRequestLimiterService _limiterService,
     IHttpClientFactory _httpClientFactory) : IHttpHelperService
 {
     private const int DELAY_IN_MILLISECONDS = 410;
@@ -17,11 +17,13 @@ public class HttpHelperService(
     {
         logger.LogInformation("{url}", url);
         var httpClient = _httpClientFactory.CreateClient();
-        await _limiterService.WaitUntilReadyAsync(CancellationToken.None);
+        // logger.LogInformation("Before WaitUntilReadyAsync...");
+        // await _limiterService.WaitUntilReadyAsync(CancellationToken.None);
+        // logger.LogInformation("After WaitUntilReadyAsync.");
         var response = await httpClient.GetAsync(url);
         var responseString = await response.Content.ReadAsStringAsync();
         logger.LogInformation("{responseString}", responseString);
-        //await Task.Delay(DELAY_IN_MILLISECONDS);
+        await Task.Delay(DELAY_IN_MILLISECONDS);
         try
         {
             response.EnsureSuccessStatusCode();
@@ -162,10 +164,12 @@ public class HttpHelperService(
     {
         logger.LogInformation("{url}", request.RequestUri);
         var httpClient = _httpClientFactory.CreateClient();
-        await _limiterService.WaitUntilReadyAsync(CancellationToken.None);
+        // logger.LogInformation("Before WaitUntilReadyAsync...");
+        // await _limiterService.WaitUntilReadyAsync(CancellationToken.None);
+        // logger.LogInformation("After WaitUntilReadyAsync.");
         var response = await httpClient.SendAsync(request);
         logger.LogInformation("{responseString}", await response.Content.ReadAsStringAsync());
-        //await Task.Delay(DELAY_IN_MILLISECONDS);
+        await Task.Delay(DELAY_IN_MILLISECONDS);
         try
         {
             response.EnsureSuccessStatusCode();
