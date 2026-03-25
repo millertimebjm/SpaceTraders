@@ -8,14 +8,14 @@ using SpaceTraders.Models.Enums;
 using SpaceTraders.Models.Results;
 using SpaceTraders.Services.Accounts.Interfaces;
 using SpaceTraders.Services.HttpHelpers;
+using SpaceTraders.Services.HttpHelpers.Interfaces;
 
 namespace SpaceTraders.Services.Accounts;
 
 public class AccountApiService(
     IConfiguration _configuration, 
-    HttpClient _httpClient, 
     ILogger<AccountApiService> _logger,
-    IDispatcher _dispatcher) : IAccountApiService
+    IHttpHelperService _httpHelperService) : IAccountApiService
 {
     private const string _apiUrl = "https://api.spacetraders.io/v2/register";
     private string Token
@@ -46,7 +46,8 @@ public class AccountApiService(
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
         request.Content = JsonContent.Create(new { symbol, faction });
         //var response = await _dispatcher.SendAsync(request);
-        var response = await HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        //var response = await HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        var response = await _httpHelperService.HttpSendHelper( request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Account not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<AccountRegistrationResult>>();
         return data.Datum;

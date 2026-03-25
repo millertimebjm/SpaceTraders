@@ -7,16 +7,16 @@ using SpaceTraders.Dispatcher;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.HttpHelpers;
+using SpaceTraders.Services.HttpHelpers.Interfaces;
 using SpaceTraders.Services.JumpGates.Interfaces;
 using SpaceTraders.Services.Waypoints;
 
 namespace SpaceTraders.Services.JumpGates;
 
 public class JumpGatesServices(
-    HttpClient _httpClient,
     IConfiguration _configuration,
-    IDispatcher _dispatcher,
-    ILogger<JumpGatesServices> _logger
+    ILogger<JumpGatesServices> _logger,
+    IHttpHelperService _httpHelperService
 ) : IJumpGatesServices
 {
     private string ApiUrl
@@ -57,7 +57,7 @@ public class JumpGatesServices(
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
         // var response = await _dispatcher.SendAsync(request);
         //var response = await _httpClient.SendAsync(request);
-        var response = await HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        var response = await _httpHelperService.HttpSendHelper(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Account not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<JumpGate>>();
         return data.Datum;

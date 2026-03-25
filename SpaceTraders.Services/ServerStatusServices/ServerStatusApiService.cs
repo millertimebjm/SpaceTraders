@@ -6,15 +6,15 @@ using SpaceTraders.Dispatcher;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.HttpHelpers;
+using SpaceTraders.Services.HttpHelpers.Interfaces;
 using SpaceTraders.Services.ServerStatusServices.Interfaces;
 
 namespace SpaceTraders.Services.ServerStatusServices;
 
 public class ServerStatusApiService(
     IConfiguration _configuration, 
-    HttpClient _httpClient, 
     ILogger<ServerStatusApiService> _logger,
-    IDispatcher _dispatcher) : IServerStatusApiService
+    IHttpHelperService _httpHelperService) : IServerStatusApiService
 {
     private string Token
     {
@@ -44,7 +44,7 @@ public class ServerStatusApiService(
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
         //var response = await _dispatcher.SendAsync(request);
         //var response = await _httpClient.SendAsync(request);
-        var response = await HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        var response = await _httpHelperService.HttpSendHelper(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Server Status not retrieved");
         return await response.Content.ReadFromJsonAsync<ServerStatus>();
     }

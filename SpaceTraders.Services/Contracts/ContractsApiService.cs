@@ -8,6 +8,7 @@ using SpaceTraders.Models.Enums;
 using SpaceTraders.Models.Results;
 using SpaceTraders.Services.Contracts.Interfaces;
 using SpaceTraders.Services.HttpHelpers;
+using SpaceTraders.Services.HttpHelpers.Interfaces;
 
 namespace SpaceTraders.Services.Contracts;
 
@@ -15,7 +16,7 @@ public class ContractsApiService(
     IConfiguration _configuration,
     HttpClient _httpClient,
     ILogger<ContractsApiService> _logger,
-    IDispatcher _dispatcher
+    IHttpHelperService _httpHelperService
 ) : IContractsApiService
 {
     private const string DIRECTORY_PATH = "/v2/my/contracts";
@@ -50,9 +51,12 @@ public class ContractsApiService(
         do
         {
             var url = urlBuilder.ToString() + $"?page={page}&limit=20";
-            latestPull = await HttpHelperService.HttpGetHelper<Data<STContractApi>>(
+            // latestPull = await HttpHelperService.HttpGetHelper<Data<STContractApi>>(
+            //     url,
+            //     _httpClient,
+            //     _logger);
+            latestPull = await _httpHelperService.HttpGetHelper<Data<STContractApi>>(
                 url,
-                _httpClient,
                 _logger);
             allData.AddRange(latestPull.DataList);
             page++;
@@ -90,7 +94,8 @@ public class ContractsApiService(
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
         // var response = await _dispatcher.SendAsync(request);
         //var response = await _httpClient.SendAsync(request);
-        var response = await HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        // var response = await HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        var response = await _httpHelperService.HttpSendHelper(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Contract not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<ContractAcceptResult>>();
         return data.Datum;
@@ -116,7 +121,8 @@ public class ContractsApiService(
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
         //var response = await _dispatcher.SendAsync(request);
         //var response = await _httpClient.SendAsync(request);
-        var response = await HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        // var response = await HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        var response = await _httpHelperService.HttpSendHelper(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Contract not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<ContractFulfillResult>>();
         return data.Datum;
@@ -148,7 +154,7 @@ public class ContractsApiService(
         request.Content = JsonContent.Create(new { shipSymbol, tradeSymbol, units });
         //var response = await _dispatcher.SendAsync(request);
         //var response = await _httpClient.SendAsync(request);
-        var response = await HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        var response = await _httpHelperService.HttpSendHelper(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Contract not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<ContractDeliverResult>>();
         return data.Datum;
@@ -174,7 +180,7 @@ public class ContractsApiService(
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
         //var response = await _dispatcher.SendAsync(request);
         //var response = await _httpClient.SendAsync(request);
-        var response = await HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        var response = await _httpHelperService.HttpSendHelper(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Contract not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<ContractNegotiateResult>>();
         return data.Datum;

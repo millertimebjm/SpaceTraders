@@ -7,6 +7,7 @@ using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Constructions.Interfaces;
 using SpaceTraders.Services.HttpHelpers;
+using SpaceTraders.Services.HttpHelpers.Interfaces;
 using SpaceTraders.Services.JumpGates.Interfaces;
 using SpaceTraders.Services.Marketplaces.Interfaces;
 using SpaceTraders.Services.Shipyards.Interfaces;
@@ -15,14 +16,13 @@ using SpaceTraders.Services.Waypoints.Interfaces;
 namespace SpaceTraders.Services.Waypoints;
 
 public class WaypointsApiService(
-    HttpClient _httpClient,
     IConfiguration _configuration,
     ILogger<WaypointsApiService> _logger,
     IShipyardsService _shipyardsService,
     IMarketplacesService _marketplacesService,
     IJumpGatesServices _jumpGatesService,
     IConstructionsService _constructionsService,
-    IDispatcher _dispatcher
+    IHttpHelperService _httpHelperService
 ) : IWaypointsApiService
 {
     private string ApiUrl
@@ -55,7 +55,7 @@ public class WaypointsApiService(
         //     new AuthenticationHeaderValue("Bearer", Token);
         //var waypointsData = await HttpHelperService.HttpGetHelper<DataSingle<Waypoint>>(url.ToString(), _httpClient, _logger);
         var request = new HttpRequestMessage(HttpMethod.Get, url.ToString());
-        var response = await HttpHelpers.HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        var response = await _httpHelperService.HttpSendHelper(request, _logger);
         var waypointsData = await response.Content.ReadFromJsonAsync<DataSingle<Waypoint>>();
         if (waypointsData is null) throw new HttpRequestException("System Data not retrieved.");
         if (waypointsData.Datum is null) throw new HttpRequestException("System not retrieved");
@@ -112,7 +112,7 @@ public class WaypointsApiService(
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
         //var response = await _dispatcher.SendAsync(request);
         //var response = await _httpClient.SendAsync(request);
-        var response = await HttpHelpers.HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        var response = await _httpHelperService.HttpSendHelper(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("System not retrieved");
         var data = await response.Content.ReadFromJsonAsync<Data<Waypoint>>();
         return data.DataList;
@@ -135,7 +135,7 @@ public class WaypointsApiService(
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
         //var response = await _dispatcher.SendAsync(request);
         //var response = await _httpClient.SendAsync(request);
-        var response = await HttpHelpers.HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        var response = await _httpHelperService.HttpSendHelper(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("System not retrieved");
         var data = await response.Content.ReadFromJsonAsync<Data<Waypoint>>();
         return data.DataList;

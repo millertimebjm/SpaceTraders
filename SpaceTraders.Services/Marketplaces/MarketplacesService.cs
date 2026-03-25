@@ -7,6 +7,7 @@ using SpaceTraders.Dispatcher;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.HttpHelpers;
+using SpaceTraders.Services.HttpHelpers.Interfaces;
 using SpaceTraders.Services.Marketplaces.Interfaces;
 using SpaceTraders.Services.ShipLogs.Interfaces;
 using SpaceTraders.Services.Waypoints;
@@ -14,11 +15,10 @@ using SpaceTraders.Services.Waypoints;
 namespace SpaceTraders.Services.Marketplaces;
 
 public class MarketplacesService(
-    HttpClient _httpClient,
     IConfiguration _configuration,
     ILogger<MarketplacesService> _logger,
     IShipLogsService _shipLogsService,
-    IDispatcher _dispatcher
+    IHttpHelperService _httpHelperService
 ) : IMarketplacesService
 {
     public const string SPACETRADER_PREFIX = "SpaceTrader:";
@@ -63,7 +63,7 @@ public class MarketplacesService(
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
         //var response = await _dispatcher.SendAsync(request);
         //var response = await _httpClient.SendAsync(request);
-        var response = await HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        var response = await _httpHelperService.HttpSendHelper(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Contract not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<Marketplace>>();
         return data.Datum;
@@ -94,7 +94,7 @@ public class MarketplacesService(
         request.Content = JsonContent.Create(new { symbol = InventoryEnum.FUEL.ToString() });
         //var response = await _dispatcher.SendAsync(request);
         //var response = await _httpClient.SendAsync(request);
-        var response = await HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        var response = await _httpHelperService.HttpSendHelper(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Ship not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<RefuelResponse>>();
         await AddRefuelShipLog(shipSymbol, data.Datum.Transaction);
@@ -146,7 +146,7 @@ public class MarketplacesService(
         request.Content = JsonContent.Create(new { symbol = inventory, units });
         //var response = await _dispatcher.SendAsync(request);
         //var response = await _httpClient.SendAsync(request);
-        var response = await HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        var response = await _httpHelperService.HttpSendHelper(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Ship not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<SellCargoResponse>>();
         await AddSellShipLog(shipSymbol, inventory, units, data.Datum.Transaction);
@@ -198,7 +198,7 @@ public class MarketplacesService(
         request.Content = JsonContent.Create(new { symbol = inventory, units });
         //var response = await _dispatcher.SendAsync(request);
         //var response = await _httpClient.SendAsync(request);
-        var response = await HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        var response = await _httpHelperService.HttpSendHelper(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Ship not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<PurchaseCargoResult>>();
         await AddPurchaseShipLog(shipSymbol, inventory, units, data.Datum.Transaction);

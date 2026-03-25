@@ -9,6 +9,7 @@ using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.HttpHelpers;
+using SpaceTraders.Services.HttpHelpers.Interfaces;
 using SpaceTraders.Services.MongoCache.Interfaces;
 
 namespace SpaceTraders.Services.Agents;
@@ -16,8 +17,8 @@ namespace SpaceTraders.Services.Agents;
 public class AgentsService(
     ILogger<AgentsService> _logger,
     IConfiguration _configuration,
-    HttpClient _httpClient,
-    IAgentsCacheService _agentsCacheService) : IAgentsService
+    IAgentsCacheService _agentsCacheService,
+    IHttpHelperService _httpHelperService) : IAgentsService
 {
     private const string DIRECTORY_PATH = "/v2/my/agent";
 
@@ -70,7 +71,8 @@ public class AgentsService(
         var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
         //var response = await _dispatcher.SendAsync(request);
-        var response = await HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        // var response = await HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        var response = await _httpHelperService.HttpSendHelper(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Agent not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<Agent>>();
         return data.Datum;

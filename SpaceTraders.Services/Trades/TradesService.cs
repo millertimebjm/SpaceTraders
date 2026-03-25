@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using DnsClient.Internal;
+using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
@@ -14,7 +16,8 @@ namespace SpaceTraders.Services.Trades;
 public class TradesService(
     ITradesCacheService _tradesCacheService,
     ISystemsService _systemsService,
-    IPathsService _pathsService
+    IPathsService _pathsService,
+    ILogger<TradesService> _logger
 ) : ITradesService
 {
     public async Task UpdateTradeModelAsync(string waypointSymbol, IReadOnlyList<TradeGood> tradeGoods)
@@ -152,6 +155,7 @@ public class TradesService(
 
     public async Task<List<TradeModel>> GetTradeModelsAsyncWithBurn2(List<string> systemSymbols, string originWaypointSymbol, int fuelMax, int fuelCurrent)
     {
+        _logger.LogInformation("Starting GetTradeModelsAsyncWithBurn2...");
         var tradeModels = await GetTradeModelsWithCacheAsync();
 
         var localTradeModels = tradeModels.Where(tm => systemSymbols.Any(s => tm.ExportWaypointSymbol.StartsWith(s)) && systemSymbols.Any(s => tm.ImportWaypointSymbol.StartsWith(s))).ToList();
@@ -172,11 +176,13 @@ public class TradesService(
 
         var tradeModelsWithOriginTimeCostGrouped = tradeModelsWithOriginTimeCost.GroupBy(tm => tm.TradeSymbol);
         var bestTradeModelBySymbol = tradeModelsWithOriginTimeCostGrouped.Select(tmg => tmg.OrderByDescending(tm => tm.NavigationFactor).First()).ToList();
+        _logger.LogInformation("Completed GetTradeModelsAsyncWithBurn2.");
         return bestTradeModelBySymbol.OrderByDescending(tm => tm.TimeCost).ToList();
     }
 
     private async Task<List<TradeModel>> BuildTradeModelWithBurnAsync2()
     {
+        _logger.LogInformation("Starting BuildTradeModelWithBurnAsync2...");
         var systems = await _systemsService.GetAsync();
         var waypoints = systems.SelectMany(s => s.Waypoints).ToList();
         var marketplaceWaypoints = waypoints.Where(w => w.Marketplace is not null && w.Marketplace.TradeGoods is not null).ToList();
@@ -189,6 +195,8 @@ public class TradesService(
             await BuildTradeModelWithBurnAsync2ByMarketplace(marketplaceWaypointExport, systems, marketplaceWaypoints, tradeModels);
         });
         //}
+        _logger.LogInformation("Completed BuildTradeModelWithBurnAsync2.");
+
         return tradeModels.ToList();
     }
 
@@ -207,8 +215,10 @@ public class TradesService(
 
     public async Task SaveTradeModelWithBurnAsync2ByMarketplaceSetup(Waypoint marketplaceWaypoint)
     {
+        _logger.LogInformation("Starting SaveTradeModelWithBurnAsync2ByMarketplaceSetup...");
         var tradeModels = await BuildTradeModelWithBurnAsync2ByMarketplaceSetup(marketplaceWaypoint);
         await _tradesCacheService.ReplaceExistingTradeModelsAsync(tradeModels);
+        _logger.LogInformation("Completed SaveTradeModelWithBurnAsync2ByMarketplaceSetup.");
     }
 
     private async Task<ConcurrentBag<TradeModel>> BuildTradeModelWithBurnAsync2ByMarketplace(
@@ -412,6 +422,149 @@ public class TradesService(
         if (cost <= 1200) return .5m;
         if (cost <= 2400) return .25m;
         return .1m;
+    }
+
+    private async Task<ConcurrentBag<TradeModel>> BuildTradeModelWithBurnAsync3ByMarketplace(
+        Waypoint marketplaceWaypointExport,
+        IReadOnlyList<STSystem> systems,
+        List<Waypoint> marketplaceWaypoints,
+        ConcurrentBag<TradeModel> tradeModels)
+    {
+        var systemSymbolsWithinOneJump = GetSystemSymbolsWithinOneJump(systems, marketplaceWaypointExport.Symbol);
+        var marketplaceWaypointsWithinOneSystem = marketplaceWaypoints.Where(w => systemSymbolsWithinOneJump.Contains(WaypointsService.ExtractSystemFromWaypoint(w.Symbol))).ToList();
+        // reduce all other waypoints to within one system
+
+        var paths = await _pathsService.BuildSystemPathWithCostWithBurn2(systems.Where(s => systemSymbolsWithinOneJump.Contains(s.Symbol)).Select(s => s.Symbol).ToList(), marketplaceWaypointExport.Symbol, 600, 600);
+        var exports = marketplaceWaypointExport.Marketplace.TradeGoods.Where(tg => tg.Type == TradeGoodTypeEnum.EXPORT.ToString() && tg.Symbol != TradeSymbolsEnum.FUEL.ToString() && tg.Symbol != TradeSymbolsEnum.ANTIMATTER.ToString()).ToList();
+        foreach (var export in exports)
+        {
+            var imports = marketplaceWaypointsWithinOneSystem.Where(w => marketplaceWaypointExport.Symbol != w.Symbol && w.Marketplace.Imports.Any(i => i.Symbol == export.Symbol)).ToList();
+            foreach (var marketplaceWaypointImport in imports)
+            {
+                var timeCost = paths.Single(p => p.WaypointSymbol == marketplaceWaypointImport.Symbol).TimeCost;
+                var marketplaceWaypointImports = marketplaceWaypointImport.Marketplace.TradeGoods.Where(tg => tg.Type == TradeGoodTypeEnum.IMPORT.ToString() && tg.Symbol == export.Symbol).ToList();
+                foreach (var import in marketplaceWaypointImports)
+                {
+                    var navigationFactor = GetTradeModelNavigationFactorWithBurn2(
+                        export.PurchasePrice,
+                        import.SellPrice,
+                        Enum.Parse<SupplyEnum>(export.Supply),
+                        Enum.Parse<SupplyEnum>(import.Supply),
+                        timeCost);
+                    tradeModels.Add(new TradeModel(
+                        export.Symbol,
+                        marketplaceWaypointExport.Symbol,
+                        export.PurchasePrice,
+                        Enum.Parse<SupplyEnum>(export.Supply),
+                        export.TradeVolume,
+                        marketplaceWaypointImport.Symbol,
+                        import.SellPrice,
+                        Enum.Parse<SupplyEnum>(import.Supply),
+                        import.TradeVolume,
+                        navigationFactor,
+                        timeCost
+                    ));
+                }
+            }
+            var exchangeMarketplaceWaypoints = marketplaceWaypointsWithinOneSystem.Where(w => marketplaceWaypointExport.Symbol != w.Symbol && w.Marketplace.Exchange.Any(i => i.Symbol == export.Symbol)).ToList();
+            foreach (var marketplaceWaypointExchange in exchangeMarketplaceWaypoints)
+            {
+                var timeCost = paths.Single(p => p.WaypointSymbol == marketplaceWaypointExchange.Symbol).TimeCost;
+                var tradeGoodImports = marketplaceWaypointExchange.Marketplace.TradeGoods.Where(tg => tg.Type == TradeGoodTypeEnum.EXCHANGE.ToString() && tg.Symbol == export.Symbol);
+                foreach (var import in tradeGoodImports)
+                {
+                    var navigationFactor = GetTradeModelNavigationFactorWithBurn2(
+                        export.PurchasePrice,
+                        import.SellPrice,
+                        Enum.Parse<SupplyEnum>(export.Supply),
+                        Enum.Parse<SupplyEnum>(import.Supply),
+                        timeCost);
+                    tradeModels.Add(new TradeModel(
+                        export.Symbol,
+                        marketplaceWaypointExport.Symbol,
+                        export.PurchasePrice,
+                        Enum.Parse<SupplyEnum>(export.Supply),
+                        export.TradeVolume,
+                        marketplaceWaypointExchange.Symbol,
+                        import.SellPrice,
+                        Enum.Parse<SupplyEnum>(import.Supply),
+                        import.TradeVolume,
+                        navigationFactor,
+                        timeCost
+                    ));
+                }
+            }
+        }
+        var exchanges = marketplaceWaypointExport.Marketplace.TradeGoods.Where(tg => tg.Type == TradeGoodTypeEnum.EXCHANGE.ToString() && tg.Symbol != TradeSymbolsEnum.FUEL.ToString() && tg.Symbol != TradeSymbolsEnum.ANTIMATTER.ToString()).ToList();
+        foreach (var exchange in exchanges)
+        {
+            var imports = marketplaceWaypointsWithinOneSystem.Where(w => marketplaceWaypointExport.Symbol != w.Symbol && w.Marketplace.Imports.Any(i => i.Symbol == exchange.Symbol)).ToList();
+            foreach (var marketplaceWaypointImport in imports)
+            {
+                var timeCost = paths.Single(p => p.WaypointSymbol == marketplaceWaypointImport.Symbol).TimeCost;
+                var marketplaceWaypointImports = marketplaceWaypointImport.Marketplace.TradeGoods.Where(tg => tg.Type == TradeGoodTypeEnum.IMPORT.ToString() && tg.Symbol == exchange.Symbol).ToList();
+                foreach (var import in marketplaceWaypointImports)
+                {
+                    var navigationFactor = GetTradeModelNavigationFactorWithBurn2(
+                        exchange.PurchasePrice,
+                        import.SellPrice,
+                        Enum.Parse<SupplyEnum>(exchange.Supply),
+                        Enum.Parse<SupplyEnum>(import.Supply),
+                        timeCost);
+                    tradeModels.Add(new TradeModel(
+                        exchange.Symbol,
+                        marketplaceWaypointExport.Symbol,
+                        exchange.PurchasePrice,
+                        Enum.Parse<SupplyEnum>(exchange.Supply),
+                        exchange.TradeVolume,
+                        marketplaceWaypointImport.Symbol,
+                        import.SellPrice,
+                        Enum.Parse<SupplyEnum>(import.Supply),
+                        import.TradeVolume,
+                        navigationFactor,
+                        timeCost
+                    ));
+                }
+            }
+            var otherExchangeMarketplaceWaypoints = marketplaceWaypointsWithinOneSystem.Where(w => marketplaceWaypointExport.Symbol != w.Symbol && w.Marketplace.Exchange.Any(i => i.Symbol == exchange.Symbol)).ToList();
+            foreach (var otherMarketplaceWaypointExchange in otherExchangeMarketplaceWaypoints)
+            {
+                var timeCost = paths.Single(p => p.WaypointSymbol == otherMarketplaceWaypointExchange.Symbol).TimeCost;
+                var tradeGoodImports = otherMarketplaceWaypointExchange.Marketplace.TradeGoods.Where(tg => tg.Type == TradeGoodTypeEnum.EXCHANGE.ToString() && tg.Symbol == exchange.Symbol);
+                foreach (var otherExchange in tradeGoodImports)
+                {
+                    var navigationFactor = GetTradeModelNavigationFactorWithBurn2(
+                        exchange.PurchasePrice,
+                        otherExchange.SellPrice,
+                        Enum.Parse<SupplyEnum>(exchange.Supply),
+                        Enum.Parse<SupplyEnum>(otherExchange.Supply),
+                        timeCost);
+                    tradeModels.Add(new TradeModel(
+                        exchange.Symbol,
+                        marketplaceWaypointExport.Symbol,
+                        exchange.PurchasePrice,
+                        Enum.Parse<SupplyEnum>(exchange.Supply),
+                        exchange.TradeVolume,
+                        otherMarketplaceWaypointExchange.Symbol,
+                        otherExchange.SellPrice,
+                        Enum.Parse<SupplyEnum>(otherExchange.Supply),
+                        otherExchange.TradeVolume,
+                        navigationFactor,
+                        timeCost
+                    ));
+                }
+            }
+        }
+        return tradeModels;
+    }
+
+    private List<string> GetSystemSymbolsWithinOneJump(IReadOnlyList<STSystem> systems, string originSystemSymbol)
+    {
+        var systemLinks = SystemsService.TraverseLinks(systems.ToList(), originSystemSymbol);
+        var nearbySystemSymbols = systemLinks.Where(sl => sl.leftSystem.Symbol == originSystemSymbol || sl.rightSystem.Symbol == originSystemSymbol);
+        var nearbySystems = systemLinks.Select(sl => sl.leftSystem.Symbol).ToList();
+        nearbySystems.AddRange(systemLinks.Select(sl => sl.rightSystem.Symbol));
+        return nearbySystems.Distinct().ToList();
     }
 }
 

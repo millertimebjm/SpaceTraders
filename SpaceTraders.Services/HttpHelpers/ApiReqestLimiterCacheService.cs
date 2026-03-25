@@ -12,14 +12,14 @@ public class ApiRequestLimiterCacheService : IApiRequestLimiterService
     {
         _tokens = collectionFactory.GetCollection<Token>();
         // Optimization: Create an Index on AgentId and Timestamp (Ascending)
-        var indexKeys = Builders<Token>.IndexKeys.Ascending(t => t.AgentId).Ascending(t => t.Timestamp);
+        var indexKeys = Builders<Token>.IndexKeys.Ascending(t => t.Timestamp);
         _tokens.Indexes.CreateOne(new CreateIndexModel<Token>(indexKeys));
     }
 
-    public async Task WaitUntilReadyAsync(string agentId, CancellationToken ct = default)
+    public async Task WaitUntilReadyAsync(CancellationToken ct = default)
     {
         // 1. Get the reserved time from MongoDB
-        DateTime reservedTime = await RequestToken(agentId);
+        DateTime reservedTime = await RequestToken();
 
         // 2. Calculate how long we need to wait from "Now"
         var delay = reservedTime - DateTime.UtcNow;
@@ -31,7 +31,7 @@ public class ApiRequestLimiterCacheService : IApiRequestLimiterService
         }
     }
 
-    public async Task<DateTime> RequestToken(string agentId)
+    public async Task<DateTime> RequestToken()
 {
     var now = DateTime.UtcNow;
     var window1s = now.AddSeconds(-1);
@@ -39,12 +39,14 @@ public class ApiRequestLimiterCacheService : IApiRequestLimiterService
 
     // 1. Get the most recent token and the counts in one "pass" (or close to it)
     // We need to know the latest scheduled time to ensure we append to the end of the "line"
-    var lastToken = await _tokens.Find(t => t.AgentId == agentId)
+    var projection = Builders<Token>.Projection.Exclude("_id");
+    var lastToken = await _tokens.Find(FilterDefinition<Token>.Empty)
         .SortByDescending(t => t.Timestamp)
+        .Project<Token>(projection)
         .FirstOrDefaultAsync();
 
-    long countSec = await _tokens.CountDocumentsAsync(t => t.AgentId == agentId && t.Timestamp > window1s);
-    long countMin = await _tokens.CountDocumentsAsync(t => t.AgentId == agentId && t.Timestamp > window1m);
+    long countSec = await _tokens.CountDocumentsAsync(t => t.Timestamp > window1s);
+    long countMin = await _tokens.CountDocumentsAsync(t => t.Timestamp > window1m);
 
     DateTime nextAvailable;
 
@@ -63,9 +65,10 @@ public class ApiRequestLimiterCacheService : IApiRequestLimiterService
         // If it's the 1-second limit, we wait for the 2nd oldest.
         int skipCount = countMin >= 30 ? 29 : 1; 
 
-        var blockingToken = await _tokens.Find(t => t.AgentId == agentId && t.Timestamp > window1m)
+        var blockingToken = await _tokens.Find(t => t.Timestamp > window1m)
             .SortBy(t => t.Timestamp)
             .Skip(skipCount)
+            .Project<Token>(projection)
             .FirstOrDefaultAsync();
 
         // The next slot is the blocking token's time + the required gap
@@ -76,9 +79,9 @@ public class ApiRequestLimiterCacheService : IApiRequestLimiterService
         nextAvailable = waitBase > absoluteMin ? waitBase : absoluteMin;
     }
 
-    await _tokens.InsertOneAsync(new Token(agentId, nextAvailable));
+    await _tokens.InsertOneAsync(new Token(nextAvailable));
     return nextAvailable;
 }
 }
 
-public record Token(string AgentId, DateTime Timestamp);
+public record Token(DateTime Timestamp);

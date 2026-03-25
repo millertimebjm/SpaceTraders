@@ -8,6 +8,7 @@ using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Constructions.Interfaces;
 using SpaceTraders.Services.HttpHelpers;
+using SpaceTraders.Services.HttpHelpers.Interfaces;
 using SpaceTraders.Services.ShipLogs.Interfaces;
 using SpaceTraders.Services.Waypoints;
 
@@ -18,7 +19,7 @@ public class ConstructionsService(
     IConfiguration _configuration,
     ILogger<IConstructionsService> _logger,
     IShipLogsService _shipLogsService,
-    IDispatcher _dispatcher
+    IHttpHelperService _httpHelperService
 ) : IConstructionsService
 {
     private string ApiUrl
@@ -48,9 +49,9 @@ public class ConstructionsService(
         var url = urlBuilder.ToString();
         _httpClient.DefaultRequestHeaders.Authorization =
             new AuthenticationHeaderValue("Bearer", Token);
-        var data = await HttpHelperService.HttpGetHelper<DataSingle<Construction>>(
+        // var data = await HttpHelperService.HttpGetHelper<DataSingle<Construction>>(
+        var data = await _httpHelperService.HttpGetHelper<DataSingle<Construction>>(
             url,
-            _httpClient,
             _logger);
         if (data.Datum is null) throw new HttpRequestException("Construction not retrieved");
         return data.Datum;
@@ -91,7 +92,8 @@ public class ConstructionsService(
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
         request.Content = JsonContent.Create(new { shipSymbol, tradeSymbol = inventory, units });
         //var response = await _dispatcher.SendAsync(request);
-        var response = await HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        // var response = await HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        var response = await _httpHelperService.HttpSendHelper(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Construction not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<SupplyResult>>();
         await AddSupplyShipLog(shipSymbol, waypointSymbol, inventory, units);

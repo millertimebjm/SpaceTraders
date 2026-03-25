@@ -11,6 +11,8 @@ using SpaceTraders.Services.Constructions.Interfaces;
 using SpaceTraders.Services.Contracts;
 using SpaceTraders.Services.Contracts.Interfaces;
 using SpaceTraders.Services.EntityFrameworkCache;
+using SpaceTraders.Services.HttpHelpers;
+using SpaceTraders.Services.HttpHelpers.Interfaces;
 using SpaceTraders.Services.Interfaces;
 using SpaceTraders.Services.JumpGates;
 using SpaceTraders.Services.JumpGates.Interfaces;
@@ -75,7 +77,8 @@ public static class DependencyInjectionHelperService
         services.AddSingleton<IAccountService, AccountService>();
         services.AddSingleton<IAccountApiService, AccountApiService>();
         services.AddSingleton<IContractsApiService, ContractsApiService>();
-        services.AddSingleton<IDispatcher, RateLimitedDispatcher>();
+        services.AddSingleton<IHttpHelperService, HttpHelperService>();
+        services.AddSingleton<IApiRequestLimiterService, ApiRequestLimiterCacheService>();
 
         // Ship Commands
         services.AddSingleton<MiningToSellAnywhereCommand>();

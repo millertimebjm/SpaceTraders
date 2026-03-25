@@ -7,16 +7,16 @@ using SpaceTraders.Dispatcher;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.HttpHelpers;
+using SpaceTraders.Services.HttpHelpers.Interfaces;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.Systems;
 
 public class SystemsApiService(
-    HttpClient _httpClient,
     IConfiguration _configuration,
     ILogger<SystemsService> _logger,
-    IDispatcher _dispatcher
+    IHttpHelperService _httpHelperService
 ) : ISystemsApiService
 {
     private const string DIRECTORY_PATH = "/v2/systems/";
@@ -61,7 +61,7 @@ public class SystemsApiService(
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
         //var response = await _dispatcher.SendAsync(request);
         //var response = await _httpClient.SendAsync(request);
-        var response = await HttpHelpers.HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        var response = await _httpHelperService.HttpSendHelper(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("System not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<STSystem>>();
         return data.Datum;

@@ -1,23 +1,27 @@
 using System.Net.Http.Json;
 using Microsoft.Extensions.Logging;
 using SpaceTraders.Model.Exceptions;
+using SpaceTraders.Services.HttpHelpers.Interfaces;
 
 namespace SpaceTraders.Services.HttpHelpers;
 
-public class HttpHelperService
+public class HttpHelperService(
+    IApiRequestLimiterService _limiterService,
+    IHttpClientFactory _httpClientFactory) : IHttpHelperService
 {
     private const int DELAY_IN_MILLISECONDS = 410;
 
-    public async static Task<T> HttpGetHelper<T>(
+    public async Task<T> HttpGetHelper<T>(
         string url,
-        HttpClient httpClient,
         ILogger logger)
     {
         logger.LogInformation("{url}", url);
+        var httpClient = _httpClientFactory.CreateClient();
+        await _limiterService.WaitUntilReadyAsync(CancellationToken.None);
         var response = await httpClient.GetAsync(url);
         var responseString = await response.Content.ReadAsStringAsync();
         logger.LogInformation("{responseString}", responseString);
-        await Task.Delay(DELAY_IN_MILLISECONDS);
+        //await Task.Delay(DELAY_IN_MILLISECONDS);
         try
         {
             response.EnsureSuccessStatusCode();
@@ -37,130 +41,131 @@ public class HttpHelperService
         }
     }
 
-    public async static Task HttpGetHelper(
-        string url,
-        HttpClient httpClient,
-        ILogger logger)
-    {
-        logger.LogInformation("{url}", url);
-        var response = await httpClient.GetAsync(url);
-        logger.LogInformation("{responseString}", await response.Content.ReadAsStringAsync());
-        await Task.Delay(DELAY_IN_MILLISECONDS);
-        try
-        {
-            response.EnsureSuccessStatusCode();
-        }
-        catch (HttpRequestException ex)
-        {
-            string responseBody = null;
-            if (response != null)
-            {
-                // Read the response body (if any) from the failed response
-                responseBody = await response.Content.ReadAsStringAsync();
-            }
-            var detailedMessage = $"HTTP request failed. Status code: {response?.StatusCode}";
-            throw new SpaceTraderResultException(detailedMessage, ex, responseBody);
-        }
-    }
+    // public async static Task HttpGetHelper(
+    //     string url,
+    //     HttpClient httpClient,
+    //     ILogger logger)
+    // {
+    //     logger.LogInformation("{url}", url);
+    //     var response = await httpClient.GetAsync(url);
+    //     logger.LogInformation("{responseString}", await response.Content.ReadAsStringAsync());
+    //     await Task.Delay(DELAY_IN_MILLISECONDS);
+    //     try
+    //     {
+    //         response.EnsureSuccessStatusCode();
+    //     }
+    //     catch (HttpRequestException ex)
+    //     {
+    //         string responseBody = null;
+    //         if (response != null)
+    //         {
+    //             // Read the response body (if any) from the failed response
+    //             responseBody = await response.Content.ReadAsStringAsync();
+    //         }
+    //         var detailedMessage = $"HTTP request failed. Status code: {response?.StatusCode}";
+    //         throw new SpaceTraderResultException(detailedMessage, ex, responseBody);
+    //     }
+    // }
 
-    internal static async Task<T> HttpPostHelper<T>(
-        string url,
-        HttpClient httpClient,
-        HttpContent? content,
-        ILogger logger)
-    {
-        logger.LogInformation("{url}", url);
-        var response = await httpClient.PostAsync(url, content);
-        logger.LogInformation("{responseString}", await response.Content.ReadAsStringAsync());
-        await Task.Delay(DELAY_IN_MILLISECONDS);
-        try
-        {
-            response.EnsureSuccessStatusCode();
-            var data = await response.Content.ReadFromJsonAsync<T>();
-            if (data is null) throw new HttpRequestException("HttpPost returned null data.");
-            return data;
-        }
-        catch (HttpRequestException ex)
-        {
-            string responseBody = null;
-            if (response != null)
-            {
-                // Read the response body (if any) from the failed response
-                responseBody = await response.Content.ReadAsStringAsync();
-            }
-            var detailedMessage = $"HTTP request failed. Status code: {response?.StatusCode}";
-            throw new SpaceTraderResultException(detailedMessage, ex, responseBody);
-        }
-    }
+    // internal static async Task<T> HttpPostHelper<T>(
+    //     string url,
+    //     HttpClient httpClient,
+    //     HttpContent? content,
+    //     ILogger logger)
+    // {
+    //     logger.LogInformation("{url}", url);
+    //     var response = await httpClient.PostAsync(url, content);
+    //     logger.LogInformation("{responseString}", await response.Content.ReadAsStringAsync());
+    //     await Task.Delay(DELAY_IN_MILLISECONDS);
+    //     try
+    //     {
+    //         response.EnsureSuccessStatusCode();
+    //         var data = await response.Content.ReadFromJsonAsync<T>();
+    //         if (data is null) throw new HttpRequestException("HttpPost returned null data.");
+    //         return data;
+    //     }
+    //     catch (HttpRequestException ex)
+    //     {
+    //         string responseBody = null;
+    //         if (response != null)
+    //         {
+    //             // Read the response body (if any) from the failed response
+    //             responseBody = await response.Content.ReadAsStringAsync();
+    //         }
+    //         var detailedMessage = $"HTTP request failed. Status code: {response?.StatusCode}";
+    //         throw new SpaceTraderResultException(detailedMessage, ex, responseBody);
+    //     }
+    // }
 
-    internal static async Task<T> HttpPatchHelper<T>(
-        string url,
-        HttpClient httpClient,
-        HttpContent? content,
-        ILogger logger)
-    {
-        logger.LogInformation("{url}", url);
-        var response = await httpClient.PatchAsync(url, content);
-        logger.LogInformation("{responseString}", await response.Content.ReadAsStringAsync());
-        await Task.Delay(DELAY_IN_MILLISECONDS);
-        try
-        {
-            response.EnsureSuccessStatusCode();
-            var data = await response.Content.ReadFromJsonAsync<T>();
-            if (data is null) throw new HttpRequestException("HttpPost returned null data.");
-            return data;
-        }
-        catch (HttpRequestException ex)
-        {
-            string responseBody = null;
-            if (response != null)
-            {
-                // Read the response body (if any) from the failed response
-                responseBody = await response.Content.ReadAsStringAsync();
-            }
-            var detailedMessage = $"HTTP request failed. Status code: {response?.StatusCode}";
-            throw new SpaceTraderResultException(detailedMessage, ex, responseBody);
-        }
-    }
+    // internal static async Task<T> HttpPatchHelper<T>(
+    //     string url,
+    //     HttpClient httpClient,
+    //     HttpContent? content,
+    //     ILogger logger)
+    // {
+    //     logger.LogInformation("{url}", url);
+    //     var response = await httpClient.PatchAsync(url, content);
+    //     logger.LogInformation("{responseString}", await response.Content.ReadAsStringAsync());
+    //     await Task.Delay(DELAY_IN_MILLISECONDS);
+    //     try
+    //     {
+    //         response.EnsureSuccessStatusCode();
+    //         var data = await response.Content.ReadFromJsonAsync<T>();
+    //         if (data is null) throw new HttpRequestException("HttpPost returned null data.");
+    //         return data;
+    //     }
+    //     catch (HttpRequestException ex)
+    //     {
+    //         string responseBody = null;
+    //         if (response != null)
+    //         {
+    //             // Read the response body (if any) from the failed response
+    //             responseBody = await response.Content.ReadAsStringAsync();
+    //         }
+    //         var detailedMessage = $"HTTP request failed. Status code: {response?.StatusCode}";
+    //         throw new SpaceTraderResultException(detailedMessage, ex, responseBody);
+    //     }
+    // }
 
-    internal static async Task<T> HttpSendHelper<T>(
-        HttpClient httpClient,
+    // internal static async Task<T> HttpSendHelper<T>(
+    //     HttpClient httpClient,
+    //     HttpRequestMessage request,
+    //     ILogger logger)
+    // {
+    //     logger.LogInformation("{url}", request.RequestUri);
+    //     var response = await httpClient.SendAsync(request);
+    //     logger.LogInformation("{responseString}", await response.Content.ReadAsStringAsync());
+    //     await Task.Delay(DELAY_IN_MILLISECONDS);
+    //     try
+    //     {
+    //         response.EnsureSuccessStatusCode();
+    //         var data = await response.Content.ReadFromJsonAsync<T>();
+    //         if (data is null) throw new HttpRequestException("HttpPost returned null data.");
+    //         return data;
+    //     }
+    //     catch (HttpRequestException ex)
+    //     {
+    //         string responseBody = null;
+    //         if (response != null)
+    //         {
+    //             // Read the response body (if any) from the failed response
+    //             responseBody = await response.Content.ReadAsStringAsync();
+    //         }
+    //         var detailedMessage = $"HTTP request failed. Status code: {response?.StatusCode}";
+    //         throw new SpaceTraderResultException(detailedMessage, ex, responseBody);
+    //     }
+    // }
+
+    public async Task<HttpResponseMessage> HttpSendHelper(
         HttpRequestMessage request,
         ILogger logger)
     {
         logger.LogInformation("{url}", request.RequestUri);
+        var httpClient = _httpClientFactory.CreateClient();
+        await _limiterService.WaitUntilReadyAsync(CancellationToken.None);
         var response = await httpClient.SendAsync(request);
         logger.LogInformation("{responseString}", await response.Content.ReadAsStringAsync());
-        await Task.Delay(DELAY_IN_MILLISECONDS);
-        try
-        {
-            response.EnsureSuccessStatusCode();
-            var data = await response.Content.ReadFromJsonAsync<T>();
-            if (data is null) throw new HttpRequestException("HttpPost returned null data.");
-            return data;
-        }
-        catch (HttpRequestException ex)
-        {
-            string responseBody = null;
-            if (response != null)
-            {
-                // Read the response body (if any) from the failed response
-                responseBody = await response.Content.ReadAsStringAsync();
-            }
-            var detailedMessage = $"HTTP request failed. Status code: {response?.StatusCode}";
-            throw new SpaceTraderResultException(detailedMessage, ex, responseBody);
-        }
-    }
-
-    internal static async Task<HttpResponseMessage> HttpSendHelper(
-        HttpClient httpClient,
-        HttpRequestMessage request,
-        ILogger logger)
-    {
-        logger.LogInformation("{url}", request.RequestUri);
-        var response = await httpClient.SendAsync(request);
-        logger.LogInformation("{responseString}", await response.Content.ReadAsStringAsync());
-        await Task.Delay(DELAY_IN_MILLISECONDS);
+        //await Task.Delay(DELAY_IN_MILLISECONDS);
         try
         {
             response.EnsureSuccessStatusCode();

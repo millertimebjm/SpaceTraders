@@ -6,16 +6,16 @@ using SpaceTraders.Dispatcher;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.HttpHelpers;
+using SpaceTraders.Services.HttpHelpers.Interfaces;
 using SpaceTraders.Services.Shipyards.Interfaces;
 using SpaceTraders.Services.Waypoints;
 
 namespace SpaceTraders.Services.Shipyards;
 
 public class ShipyardsService(
-    HttpClient _httpClient,
     IConfiguration _configuration,
     ILogger<ShipyardsService> _logger,
-    IDispatcher _dispatcher
+    IHttpHelperService _httpHelperService
 ) : IShipyardsService
 {
     private string ApiUrl
@@ -58,7 +58,7 @@ public class ShipyardsService(
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
         //var response = await _dispatcher.SendAsync(request);
         //var response = await _httpClient.SendAsync(request);
-        var response = await HttpHelpers.HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        var response = await _httpHelperService.HttpSendHelper(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Shipyard not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<Shipyard>>();
         return data.Datum;
@@ -87,7 +87,7 @@ public class ShipyardsService(
         request.Content = JsonContent.Create(new { shipType, waypointSymbol });
         //var response = await _dispatcher.SendAsync(request);
         //var response = await _httpClient.SendAsync(request);
-        var response = await HttpHelpers.HttpHelperService.HttpSendHelper(_httpClient, request, _logger);
+        var response = await _httpHelperService.HttpSendHelper(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Purchase Ship not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<PurchaseShipResponse>>();
         return data.Datum;
