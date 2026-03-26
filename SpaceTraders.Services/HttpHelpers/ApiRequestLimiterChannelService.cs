@@ -1,8 +1,9 @@
-﻿using System.Threading.Channels;
+using System.Threading.Channels;
+using SpaceTraders.Services.HttpHelpers.Interfaces;
 
-namespace SpaceTraders.Dispatcher;
+namespace SpaceTraders.Services.HttpHelpers;
 
-public class RateLimitedDispatcher(HttpClient _httpClient) : IDispatcher
+public class ApiRequestLimiterChannelService(HttpClient _httpClient) : IApiRequestLimiterService
 {
     private readonly Channel<ApiCall> _queue = Channel.CreateUnbounded<ApiCall>();
     //private readonly int MAX_BURST_CALLS = 28; // buffer for 30 max burst calls
@@ -13,9 +14,9 @@ public class RateLimitedDispatcher(HttpClient _httpClient) : IDispatcher
     private int _callsInWindow = 0;
     //private int _burstCallsInWindow = 0;
 
-    public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request)
+    public async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
     {
-        var apiCall = new ApiCall(request, new());
+        var apiCall = new ApiCall(request, new(), ct);
         await _queue.Writer.WriteAsync(apiCall);
         return await apiCall.TaskCompletionSource.Task;
     }
@@ -101,3 +102,8 @@ public class RateLimitedDispatcher(HttpClient _httpClient) : IDispatcher
         _callsInWindow = 1;
     }
 }
+
+public record ApiCall(
+    HttpRequestMessage Request, 
+    TaskCompletionSource<HttpResponseMessage> TaskCompletionSource,
+    CancellationToken Ct);

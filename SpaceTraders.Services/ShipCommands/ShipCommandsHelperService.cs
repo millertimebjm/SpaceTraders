@@ -52,6 +52,7 @@ public class ShipCommandsHelperService(
         }
         var agent = await _agentsService.GetAsync();
         var tradeGood = currentWaypoint.Marketplace.TradeGoods.Single(tg => tg.Symbol == tradeSymbol);
+        SupplyEnum? newTradeGoodSupply;
 
         PurchaseCargoResult? purchaseCargoResult = null;
         do
@@ -68,7 +69,13 @@ public class ShipCommandsHelperService(
             await _transactionsService.SetAsync(purchaseCargoResult.Transaction);
 
             currentWaypoint = await _waypointsService.GetAsync(currentWaypoint.Symbol, refresh: true);
-        } while ((int)Enum.Parse<SupplyEnum>(currentWaypoint.Marketplace.TradeGoods.Single(tg => tg.Symbol == tradeGood.Symbol).Supply) > (int)SupplyEnum.MODERATE
+            tradeGood = currentWaypoint.Marketplace?.TradeGoods?.SingleOrDefault(tg => tg.Symbol == tradeGood.Symbol);
+            if (tradeGood is null) 
+            {
+                break;
+            }
+            newTradeGoodSupply = Enum.Parse<SupplyEnum>(tradeGood.Supply);
+        } while ((int)newTradeGoodSupply > (int)SupplyEnum.MODERATE
             && ship.Cargo.Capacity - ship.Cargo.Units > 0 && ship.Cargo.Units < maxQuantity);
 
         return purchaseCargoResult;

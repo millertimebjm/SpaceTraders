@@ -125,14 +125,14 @@ public class ShipLoopsService(
                 .ToList();
             var shipStatusesToDoWork = shipStatuses.Where(ss => ShipsService.GetShipCooldown(ss.Ship) is null).ToList();
 
-            // await Parallel.ForEachAsync(shipStatusesToDoWork, new ParallelOptions {MaxDegreeOfParallelism = 10}, async (shipStatusToDoWork, ct) => 
-            // {
-            //     await DoShipWork(shipStatusToDoWork, shipStatuses);
-            // });
-            foreach (var shipStatusToDoWork in shipStatusesToDoWork)
+            await Parallel.ForEachAsync(shipStatusesToDoWork, new ParallelOptions {MaxDegreeOfParallelism = 10}, async (shipStatusToDoWork, ct) => 
             {
                 await DoShipWork(shipStatusToDoWork, shipStatuses);
-            }
+            });
+            // foreach (var shipStatusToDoWork in shipStatusesToDoWork)
+            // {
+            //     await DoShipWork(shipStatusToDoWork, shipStatuses);
+            // }
 
             _logger.LogInformation("Time until server reset: {hours} Hours", Math.Round((serverStatus.ServerResets.Next - DateTime.UtcNow).TotalHours));
 
@@ -192,7 +192,6 @@ public class ShipLoopsService(
                 ship = shipStatus.Ship;
                 ship = ship with { Error = null };
                 shipStatus = shipStatus with { Ship = ship };
-                await _shipStatusesCacheService.SetAsync(shipStatus);
             }
         }
         catch (SpaceTraderResultException ex)
@@ -210,7 +209,7 @@ public class ShipLoopsService(
             };
             shipStatus = shipStatus with { Ship = ship };
         }
-        await _shipStatusesCacheService.SetAsync(shipStatuses);
+        await _shipStatusesCacheService.SetAsync(shipStatus);
         //executionAverageCalculator.Add((processingTimeStart.Elapsed, DateTime.UtcNow));
     }
 

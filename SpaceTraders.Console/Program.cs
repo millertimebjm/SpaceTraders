@@ -5,6 +5,7 @@ using Serilog;
 using SpaceTraders.Console;
 using SpaceTraders.Dispatcher;
 using SpaceTraders.Models.Enums;
+using SpaceTraders.Services.HttpHelpers.Interfaces;
 using SpaceTraders.Services.Interfaces;
 using SpaceTraders.Services.ShipLogs.Interfaces;
 
@@ -71,7 +72,7 @@ public class Program
 
         _ = Task.Run(async () =>
         {
-            var dispatcher = serviceBuilder.Services.GetRequiredService<IDispatcher>();
+            var dispatcher = serviceBuilder.Services.GetRequiredService<IApiRequestLimiterService>();
             await dispatcher.ProcessQueueAsync(CancellationToken.None);
         });
 

@@ -78,7 +78,7 @@ public static class DependencyInjectionHelperService
         services.AddSingleton<IAccountApiService, AccountApiService>();
         services.AddSingleton<IContractsApiService, ContractsApiService>();
         services.AddSingleton<IHttpHelperService, HttpHelperService>();
-        services.AddSingleton<IApiRequestLimiterService, ApiRequestLimiterPollyService>();
+        services.AddSingleton<IApiRequestLimiterService, ApiRequestLimiterChannelService>();
 
         // Ship Commands
         services.AddSingleton<MiningToSellAnywhereCommand>();
