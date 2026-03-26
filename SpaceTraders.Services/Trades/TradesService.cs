@@ -158,11 +158,12 @@ public class TradesService(
         _logger.LogInformation("Starting GetTradeModelsAsyncWithBurn2...");
         var tradeModels = await GetTradeModelsWithCacheAsync();
 
-        var localTradeModels = tradeModels.Where(tm => systemSymbols.Any(s => tm.ExportWaypointSymbol.StartsWith(s)) && systemSymbols.Any(s => tm.ImportWaypointSymbol.StartsWith(s))).ToList();
         var systems = await _systemsService.GetAsync();
-        var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(originWaypointSymbol));
-        var systemsIncluded = systems.Where(s => systemSymbols.Contains(s.Symbol));
-        var waypoints = systemsIncluded.SelectMany(s => s.Waypoints).ToList();
+        var traversableSystemsWithinOneJump = GetSystemSymbolsWithinOneJump(systems, WaypointsService.ExtractSystemFromWaypoint(originWaypointSymbol));
+        var localTradeModels = tradeModels.Where(tm => traversableSystemsWithinOneJump.Any(s => tm.ExportWaypointSymbol.StartsWith(s)) && systemSymbols.Any(s => tm.ImportWaypointSymbol.StartsWith(s))).ToList();
+        //var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(originWaypointSymbol));
+        var systemsIncluded = systems.Where(s => traversableSystemsWithinOneJump.Contains(s.Symbol));
+        //var waypoints = systemsIncluded.SelectMany(s => s.Waypoints).ToList();
         //var pathModels = PathsService.BuildSystemPathWithCostWithBurn(waypoints, originWaypointSymbol, fuelMax, fuelCurrent);
         var pathModels = await _pathsService.BuildSystemPathWithCostWithBurn2(systemsIncluded.Select(s => s.Symbol).ToList(), originWaypointSymbol, fuelMax, fuelCurrent);
         List<TradeModel> tradeModelsWithOriginTimeCost = [];
@@ -221,7 +222,7 @@ public class TradesService(
         _logger.LogInformation("Completed SaveTradeModelWithBurnAsync2ByMarketplaceSetup.");
     }
 
-    private async Task<ConcurrentBag<TradeModel>> BuildTradeModelWithBurnAsync2ByMarketplace(
+    private async Task<ConcurrentBag<TradeModel>> BuildTradeModelWithBurnAsync3ByMarketplace(
         Waypoint marketplaceWaypointExport, 
         IReadOnlyList<STSystem> systems, 
         List<Waypoint> marketplaceWaypoints, 
@@ -351,7 +352,7 @@ public class TradesService(
         return tradeModels;
     }
 
-    public async Task<List<SellModel>> GetSellModelsAsyncWithBurn2(List<string> systemSymbols, string originWaypointSymbol, int fuelMax, int fuelCurrent)
+    public async Task<List<SellModel>> GetSellModelsAsyncWithBurn3(List<string> systemSymbols, string originWaypointSymbol, int fuelMax, int fuelCurrent)
     {
         var tradeModels = await GetTradeModelsWithCacheAsync();
 
@@ -424,7 +425,7 @@ public class TradesService(
         return .1m;
     }
 
-    private async Task<ConcurrentBag<TradeModel>> BuildTradeModelWithBurnAsync3ByMarketplace(
+    private async Task<ConcurrentBag<TradeModel>> BuildTradeModelWithBurnAsync2ByMarketplace(
         Waypoint marketplaceWaypointExport,
         IReadOnlyList<STSystem> systems,
         List<Waypoint> marketplaceWaypoints,
@@ -558,7 +559,7 @@ public class TradesService(
         return tradeModels;
     }
 
-    public async Task<List<SellModel>> GetSellModelsAsyncWithBurn3(List<string> systemSymbols, string originWaypointSymbol, int fuelMax, int fuelCurrent)
+    public async Task<List<SellModel>> GetSellModelsAsyncWithBurn2(List<string> systemSymbols, string originWaypointSymbol, int fuelMax, int fuelCurrent)
     {
         var tradeModels = await GetTradeModelsWithCacheAsync();
         var localSystemSymbols = await GetSystemSymbolsWithinOneJump(systemSymbols, WaypointsService.ExtractSystemFromWaypoint(originWaypointSymbol));

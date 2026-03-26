@@ -54,7 +54,7 @@ public class BuyAndSellCommandV2(
                     && s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.BuyToSell)
                 .Select(s => s.GoalModel!.TradeSymbol)
                 .ToList();
-            if (ship.Symbol.Contains("-37"))
+            if (ship.Symbol.Contains("-3A"))
             {
 
             }

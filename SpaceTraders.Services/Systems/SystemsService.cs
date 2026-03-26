@@ -87,7 +87,11 @@ public class SystemsService(
 
     public static List<(STSystem leftSystem, STSystem rightSystem, bool dottedLine)> TraverseLinks(List<STSystem> systems, string startingSystemString)
     {
-        var startingSystem = systems.Single(s => s.Symbol == startingSystemString);
+        var startingSystem = systems.SingleOrDefault(s => s.Symbol == startingSystemString);
+        if (startingSystem is null)
+        {
+            
+        }
         List<(STSystem leftSystem, STSystem rightSystem, bool dottedLine)> links = [];
         foreach (var system in systems)
         {

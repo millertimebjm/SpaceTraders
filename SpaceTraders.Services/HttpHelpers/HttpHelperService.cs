@@ -169,10 +169,10 @@ public class HttpHelperService(
         // await _limiterService.WaitUntilReadyAsync(CancellationToken.None);
         // logger.LogInformation("After WaitUntilReadyAsync.");
 
-        var response = await _httpClient.SendAsync(request);
-        await Task.Delay(DELAY_IN_MILLISECONDS);
+        // var response = await _httpClient.SendAsync(request);
+        // await Task.Delay(DELAY_IN_MILLISECONDS);
 
-        //var response = await _limiterService.SendAsync(request, CancellationToken.None);
+        var response = await _limiterService.SendAsync(request, CancellationToken.None);
         logger.LogInformation("{responseString}", await response.Content.ReadAsStringAsync());
         
         try
