@@ -115,6 +115,7 @@ public class ShipLoopsService(
             {
                 shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
             }
+            await SleepUntilNextShipReady(shipStatuses);
 
             shipStatuses = shipStatuses
                 .OrderBy(s => {
@@ -122,85 +123,95 @@ public class ShipLoopsService(
                     return Convert.ToInt32(parts[1], 16); // Parse as hex
                 })
                 .ToList();
-            for (int i = 0; i < shipStatuses.Count(); i++)
+            var shipStatusesToDoWork = shipStatuses.Where(ss => ShipsService.GetShipCooldown(ss.Ship) is null).ToList();
+
+            // await Parallel.ForEachAsync(shipStatusesToDoWork, new ParallelOptions {MaxDegreeOfParallelism = 10}, async (shipStatusToDoWork, ct) => 
+            // {
+            //     await DoShipWork(shipStatusToDoWork, shipStatuses);
+            // });
+            foreach (var shipStatusToDoWork in shipStatusesToDoWork)
             {
-                var shipStatus = await _shipStatusesCacheService.GetAsync(shipStatuses[i].Ship.Symbol); // Transfer cargo changes another ship's cargo
-                shipStatuses[i] = shipStatus;
-                var ship = shipStatus.Ship;
-                if (ShipsService.GetShipCooldown(ship) is not null) continue;
-
-                Stopwatch processingTimeStart = Stopwatch.StartNew();
-                if (ship.ShipCommand is null)
-                {
-                    var shipJobsService = _shipJobsFactory.Get(shipStatus.Ship);
-                    if (shipJobsService is null)
-                    {
-                        ship = ship with { ShipCommand = null };
-                        shipStatus = shipStatus with { Ship = ship };
-                        await _shipStatusesCacheService.SetAsync(shipStatus);
-                        continue;
-                    }
-
-                    var shipCommand = await shipJobsService.Get(shipStatuses.Select(ss => ss.Ship).ToList(), shipStatus.Ship);
-                    ship = ship with { ShipCommand = shipCommand };
-                    shipStatus = shipStatus with { Ship = ship };
-                    await _shipStatusesCacheService.SetAsync(shipStatus);
-                    shipStatuses[i] = shipStatus;
-                    if (shipCommand is null) continue;
-                }
-
-                var shipCommandService = _shipCommandsServiceFactory.Get(ship.ShipCommand.ShipCommandEnum);
-
-                try
-                {
-                    var shipStatusesDictionary = shipStatuses.ToDictionary(ss => ss.Ship.Symbol, ss => ss.Ship);
-                    var newShipStatus = await shipCommandService.Run(
-                        shipStatus,
-                        shipStatusesDictionary);
-                    if (newShipStatus is null)
-                    {
-                        shipStatuses.Remove(shipStatus);
-                        i--;
-                    }
-                    else
-                    {
-                        shipStatus = newShipStatus;
-                        ship = shipStatus.Ship;
-                        ship = ship with { Error = null };
-                        shipStatus = shipStatus with { Ship = ship };
-                        shipStatuses[i] = shipStatus;
-                    }
-                }
-                catch (SpaceTraderResultException ex)
-                {
-                    var timeSpan = TimeSpan.FromMinutes(2);
-                    ship = await _shipsService.GetAsync(ship.Symbol);
-                    if (ship.Cooldown is null)
-                    {
-                        ship = ship with { Cooldown = new Cooldown(ship.Symbol, (int)timeSpan.TotalSeconds, (int)timeSpan.TotalSeconds, DateTime.UtcNow.Add(timeSpan)) };
-                    }
-                    ship = ship with
-                    {
-                        Error = ex.Message + " " + ex.InnerException.Message + " " + ex.ResponseBody,
-                    };
-                    shipStatus = shipStatus with { Ship = ship };
-                    shipStatuses[i] = shipStatus;
-                }
-                await _shipStatusesCacheService.SetAsync(shipStatuses[i]);
-                //executionAverageCalculator.Add((processingTimeStart.Elapsed, DateTime.UtcNow));
+                await DoShipWork(shipStatusToDoWork, shipStatuses);
             }
 
             _logger.LogInformation("Time until server reset: {hours} Hours", Math.Round((serverStatus.ServerResets.Next - DateTime.UtcNow).TotalHours));
-            await SleepUntilNextShipReady(shipStatuses);
 
             now = DateTime.UtcNow;
-            if (serverStatus.ServerResets.Next.AddHours(-1) < DateTime.UtcNow)
+            if (serverStatus.ServerResets.Next.AddHours(-1) < now)
             {
                 _logger.LogInformation("Waiting for next reset.");
                 var waitInMilliseconds = (int)(serverStatus.ServerResets.Next - now).TotalMilliseconds;
                 await Task.Delay(waitInMilliseconds);
             }
         }
+    }
+
+    private async Task DoShipWork(ShipStatus shipStatus, List<ShipStatus> shipStatuses)
+    {
+        //var shipStatus = await _shipStatusesCacheService.GetAsync(shipStatuses[i].Ship.Symbol); // Transfer cargo changes another ship's cargo
+        //shipStatuses[i] = shipStatus;
+        var ship = shipStatus.Ship;
+        if (ShipsService.GetShipCooldown(ship) is not null) return;
+
+        //Stopwatch processingTimeStart = Stopwatch.StartNew();
+        if (ship.ShipCommand is null)
+        {
+            var shipJobsService = _shipJobsFactory.Get(shipStatus.Ship);
+            if (shipJobsService is null)
+            {
+                ship = ship with { ShipCommand = null };
+                shipStatus = shipStatus with { Ship = ship };
+                await _shipStatusesCacheService.SetAsync(shipStatus);
+                return;
+            }
+
+            var shipCommand = await shipJobsService.Get(shipStatuses.Select(ss => ss.Ship).ToList(), shipStatus.Ship);
+            ship = ship with { ShipCommand = shipCommand };
+            shipStatus = shipStatus with { Ship = ship };
+            await _shipStatusesCacheService.SetAsync(shipStatus);
+            if (shipCommand is null) return;
+        }
+
+        var shipCommandService = _shipCommandsServiceFactory.Get(ship.ShipCommand.ShipCommandEnum);
+
+        try
+        {
+            var shipStatusesDictionary = shipStatuses.ToDictionary(ss => ss.Ship.Symbol, ss => ss.Ship);
+            var newShipStatus = await shipCommandService.Run(
+                shipStatus,
+                shipStatusesDictionary);
+            if (newShipStatus is null)
+            {
+                // shipStatuses.Remove(shipStatus);
+                // i--;
+                await _shipStatusesCacheService.DeleteAsync(shipStatus);
+            }
+            else
+            {
+                shipStatus = newShipStatus;
+                ship = shipStatus.Ship;
+                ship = ship with { Error = null };
+                shipStatus = shipStatus with { Ship = ship };
+                await _shipStatusesCacheService.SetAsync(shipStatus);
+            }
+        }
+        catch (SpaceTraderResultException ex)
+        {
+            var timeSpan = TimeSpan.FromMinutes(2);
+            ship = await _shipsService.GetAsync(ship.Symbol);
+            await _waypointsService.GetAsync(ship.Nav.WaypointSymbol, refresh: true);
+            if (ship.Cooldown is null)
+            {
+                ship = ship with { Cooldown = new Cooldown(ship.Symbol, (int)timeSpan.TotalSeconds, (int)timeSpan.TotalSeconds, DateTime.UtcNow.Add(timeSpan)) };
+            }
+            ship = ship with
+            {
+                Error = ex.Message + " " + ex.InnerException.Message + " " + ex.ResponseBody,
+            };
+            shipStatus = shipStatus with { Ship = ship };
+        }
+        await _shipStatusesCacheService.SetAsync(shipStatuses);
+        //executionAverageCalculator.Add((processingTimeStart.Elapsed, DateTime.UtcNow));
     }
 
     private async Task JumpGateWaypointsRefresh()

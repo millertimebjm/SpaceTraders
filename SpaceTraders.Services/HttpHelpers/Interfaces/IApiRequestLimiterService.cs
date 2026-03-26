@@ -2,5 +2,5 @@ namespace SpaceTraders.Services.HttpHelpers.Interfaces;
 
 public interface IApiRequestLimiterService
 {
-    Task WaitUntilReadyAsync(CancellationToken ct = default);
+    Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct);
 }

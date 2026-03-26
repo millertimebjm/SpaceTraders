@@ -295,10 +295,6 @@ public class PathsService(
         while (workingCopySystemSymbols.Any())
         {
             var currentSystemJumpGateWaypoint = currentSystem.Waypoints.SingleOrDefault(w => w.JumpGate is not null);
-            if (currentSystemJumpGateWaypoint is null)
-            {
-                
-            }
             var jumpGateConnectionSystemSymbols = currentSystemJumpGateWaypoint.JumpGate.Connections.Select(c => WaypointsService.ExtractSystemFromWaypoint(c)).ToList();
             var connectedSystemSymbols = systemSymbols.Where(ss => jumpGateConnectionSystemSymbols.Contains(ss)).ToList();
             var connectedSystems = systems.Where(s => connectedSystemSymbols.Contains(s.Symbol) && workingCopySystemSymbols.Contains(s.Symbol)).ToList();

@@ -25,10 +25,10 @@ public interface IPathsService
     //     int fuelMax,
     //     int startingFuel);
 
-    Task<List<PathModel>> BuildSystemPathWithCost(
-        string originWaypoint, 
-        int maxFuel, 
-        int startingFuel);
+    // Task<List<PathModel>> BuildSystemPathWithCost(
+    //     string originWaypoint, 
+    //     int maxFuel, 
+    //     int startingFuel);
 
     Task<List<PathModelWithBurn>> BuildSystemPathWithCostWithBurn2(List<string> systemSymbols, string originWaypoint, int maxFuel, int currentFuel);
 }

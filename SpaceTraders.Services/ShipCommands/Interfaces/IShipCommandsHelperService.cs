@@ -32,7 +32,6 @@ public interface IShipCommandsHelperService
     Task<PurchaseShipResponse?> PurchaseShip(Ship ship, Waypoint currentWaypoint);
     bool IsFuelNeeded(Ship ship);
     bool IsWaypointFuelAvailable(Waypoint waypoint);
-    Task<Nav?> Dock(Ship ship, Waypoint waypoint);
     bool IsAnyItemToSellAtCurrentWaypoint(Ship ship, Waypoint waypoint);
     Task<Nav?> DockForBuyOrFulfill(
         Ship ship, 
@@ -40,8 +39,6 @@ public interface IShipCommandsHelperService
         string contractWaypointSymbol, 
         string inventorySymbol);
     Task<PurchaseCargoResult?> PurchaseCargoForContract(Ship ship, Waypoint currentWaypoint, string contractTradeSymbol, int amountToBuy);
-    Task<(Nav?, Fuel?, Cooldown?)> NavigateToFulfillContract(Ship ship, Waypoint currentWaypoint, string contractDestinationWaypointSymbol);
-    Task<(STContract?, Cargo?, Agent?)> FulfillContract(Ship ship, STContract contract);
     Task<(string?, ShipTypesEnum?)> ShipToBuy(IEnumerable<Ship> ships);
     Task<bool> CheckRemotePurchaseShip(IEnumerable<Ship> ships, string shipyardWaypoint, ShipTypesEnum shipType);
     Task<Cargo?> TransferCargo(Ship ship, Waypoint currentWaypoint);

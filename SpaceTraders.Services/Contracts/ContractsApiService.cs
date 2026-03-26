@@ -55,9 +55,12 @@ public class ContractsApiService(
             //     url,
             //     _httpClient,
             //     _logger);
-            latestPull = await _httpHelperService.HttpGetHelper<Data<STContractApi>>(
-                url,
-                _logger);
+            // latestPull = await _httpHelperService.HttpGetHelper<Data<STContractApi>>(
+            //     url,
+            //     _logger);
+            var request = new HttpRequestMessage(HttpMethod.Get, url);
+            var response = await _httpHelperService.HttpSendHelper(request, _logger);
+            latestPull = await response.Content.ReadFromJsonAsync<Data<STContractApi>>();
             allData.AddRange(latestPull.DataList);
             page++;
         } while (allData.Count < latestPull.Meta.Total);

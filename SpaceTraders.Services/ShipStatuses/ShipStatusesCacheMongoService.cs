@@ -50,4 +50,12 @@ public class ShipStatusesCacheMongoService(IMongoCollectionFactory _collectionFa
         var removeFilter = Builders<ShipStatus>.Filter.Nin(s => s.Ship.Symbol, shipStatuses.Select(ss => ss.Ship.Symbol).ToList());
         await collection.DeleteManyAsync(removeFilter);
     }
+
+    public async Task DeleteAsync(ShipStatus shipStatus)
+    {
+        var collection = _collectionFactory.GetCollection<ShipStatus>();
+        var filter = Builders<ShipStatus>.Filter.Eq(ss => ss.Ship.Symbol, shipStatus.Ship.Symbol);
+        await collection.DeleteOneAsync(filter, CancellationToken.None);
+    }
+
 }

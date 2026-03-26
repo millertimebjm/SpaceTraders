@@ -4,6 +4,7 @@ namespace SpaceTraders.Services.ShipStatuses.Interfaces;
 
 public interface IShipStatusesCacheService
 {
+    Task DeleteAsync(ShipStatus shipStatus);
     Task<IEnumerable<ShipStatus>> GetAsync();
     Task<ShipStatus> GetAsync(string shipSymbol);
     Task SetAsync(ShipStatus shipStatus);

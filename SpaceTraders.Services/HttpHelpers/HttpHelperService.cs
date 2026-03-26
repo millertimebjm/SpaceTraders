@@ -6,42 +6,43 @@ using SpaceTraders.Services.HttpHelpers.Interfaces;
 namespace SpaceTraders.Services.HttpHelpers;
 
 public class HttpHelperService(
-    //IApiRequestLimiterService _limiterService,
+    IApiRequestLimiterService _limiterService,
     IHttpClientFactory _httpClientFactory) : IHttpHelperService
 {
     private const int DELAY_IN_MILLISECONDS = 410;
 
-    public async Task<T> HttpGetHelper<T>(
-        string url,
-        ILogger logger)
-    {
-        logger.LogInformation("{url}", url);
-        var httpClient = _httpClientFactory.CreateClient();
-        // logger.LogInformation("Before WaitUntilReadyAsync...");
-        // await _limiterService.WaitUntilReadyAsync(CancellationToken.None);
-        // logger.LogInformation("After WaitUntilReadyAsync.");
-        var response = await httpClient.GetAsync(url);
-        var responseString = await response.Content.ReadAsStringAsync();
-        logger.LogInformation("{responseString}", responseString);
-        await Task.Delay(DELAY_IN_MILLISECONDS);
-        try
-        {
-            response.EnsureSuccessStatusCode();
-            var data = await response.Content.ReadFromJsonAsync<T>();
-            if (data is null) throw new HttpRequestException("HttpGet returned null data.");
-            return data;
-        }
-        catch (HttpRequestException ex)
-        {
-            string responseBody = null;
-            if (response != null)
-            {
-                responseBody = await response.Content.ReadAsStringAsync();
-            }
-            var detailedMessage = $"HTTP request failed. Status code: {response?.StatusCode}";
-            throw new SpaceTraderResultException(detailedMessage, ex, responseBody);
-        }
-    }
+    // public async Task<T> HttpGetHelper<T>(
+    //     string url,
+    //     ILogger logger)
+    // {
+    //     logger.LogInformation("{url}", url);
+    //     //var httpClient = _httpClientFactory.CreateClient();
+    //     // logger.LogInformation("Before WaitUntilReadyAsync...");
+    //     // await _limiterService.WaitUntilReadyAsync(CancellationToken.None);
+    //     // logger.LogInformation("After WaitUntilReadyAsync.");
+    //     //var response = await httpClient.GetAsync(url);
+    //     var response = await _limiterService.SendAsync(request, CancellationToken.None);
+    //     var responseString = await response.Content.ReadAsStringAsync();
+    //     logger.LogInformation("{responseString}", responseString);
+    //     await Task.Delay(DELAY_IN_MILLISECONDS);
+    //     try
+    //     {
+    //         response.EnsureSuccessStatusCode();
+    //         var data = await response.Content.ReadFromJsonAsync<T>();
+    //         if (data is null) throw new HttpRequestException("HttpGet returned null data.");
+    //         return data;
+    //     }
+    //     catch (HttpRequestException ex)
+    //     {
+    //         string responseBody = null;
+    //         if (response != null)
+    //         {
+    //             responseBody = await response.Content.ReadAsStringAsync();
+    //         }
+    //         var detailedMessage = $"HTTP request failed. Status code: {response?.StatusCode}";
+    //         throw new SpaceTraderResultException(detailedMessage, ex, responseBody);
+    //     }
+    // }
 
     // public async static Task HttpGetHelper(
     //     string url,
@@ -163,11 +164,12 @@ public class HttpHelperService(
         ILogger logger)
     {
         logger.LogInformation("{url}", request.RequestUri);
-        var httpClient = _httpClientFactory.CreateClient();
+        //var httpClient = _httpClientFactory.CreateClient();
         // logger.LogInformation("Before WaitUntilReadyAsync...");
         // await _limiterService.WaitUntilReadyAsync(CancellationToken.None);
         // logger.LogInformation("After WaitUntilReadyAsync.");
-        var response = await httpClient.SendAsync(request);
+        //var response = await httpClient.SendAsync(request);
+        var response = await _limiterService.SendAsync(request, CancellationToken.None);
         logger.LogInformation("{responseString}", await response.Content.ReadAsStringAsync());
         await Task.Delay(DELAY_IN_MILLISECONDS);
         try

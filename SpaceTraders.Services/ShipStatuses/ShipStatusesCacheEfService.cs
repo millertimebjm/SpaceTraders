@@ -60,4 +60,9 @@ public class ShipStatusesCacheEfService(SpaceTraderDbContext _context) : IShipSt
     {
         throw new NotImplementedException();
     }
+
+    public Task DeleteAsync(ShipStatus shipStatus)
+    {
+        throw new NotImplementedException();
+    }
 }
