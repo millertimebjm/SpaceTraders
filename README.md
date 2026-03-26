@@ -2,6 +2,7 @@
 
 SpaceTraders.io Game REST API
 
+* Solve waypoints without marketplace getting into trade models - unsync between waypoint and system
 * Modify delete and insert to ReplaceOneAsync
 * Fix waypoints getting removed from trade models
 * fix adding trade models at new markets
