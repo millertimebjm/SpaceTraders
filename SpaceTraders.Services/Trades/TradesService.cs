@@ -362,7 +362,7 @@ public class TradesService(
         var systems = await _systemsService.GetAsync();
         var systemsIncluded = systems.Where(s => systemSymbols.Contains(s.Symbol)).ToList();
         var waypoints = systemsIncluded.SelectMany(s => s.Waypoints).ToList();
-        var pathModels = PathsService.BuildSystemPathWithCostWithBurn(waypoints, originWaypointSymbol, fuelMax, fuelCurrent);
+        var pathModels = await _pathsService.BuildSystemPathWithCostWithBurn2(systemsIncluded.Select(s => s.Symbol).ToList(), originWaypointSymbol, fuelMax, fuelCurrent);
         List<SellModel> tradeModelsWithOriginTimeCost = [];
         foreach (var localSellModel in localSellModels)
         {

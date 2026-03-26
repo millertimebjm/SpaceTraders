@@ -54,6 +54,10 @@ public class BuyAndSellCommandV2(
                     && s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.BuyToSell)
                 .Select(s => s.GoalModel!.TradeSymbol)
                 .ToList();
+            if (ship.Symbol.Contains("-37"))
+            {
+
+            }
             goalModel = await GetGoalModelAsync(ship, currentWaypoint, otherShipGoalModelTradeSymbols);
             ship = ship with { GoalModel = goalModel };
         }
@@ -111,6 +115,11 @@ public class BuyAndSellCommandV2(
             }
 
             var sellCargoResult = await _shipCommandsHelperService.Sell(ship, currentWaypoint);
+            if (sellCargoResult is null)
+            {
+                ship = ship with { GoalModel = null };
+                return new ShipStatus(ship, $"Reset Goal Model", DateTime.UtcNow); 
+            }
             await _agentsService.SetAsync(sellCargoResult.Agent);
             await _transactionsService.SetAsync(sellCargoResult.Transaction);
             ship = ship with { Cargo = sellCargoResult.Cargo };

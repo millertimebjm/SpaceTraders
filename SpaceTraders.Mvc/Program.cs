@@ -74,7 +74,7 @@ builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IAccountApiService, AccountApiService>();
 builder.Services.AddScoped<IContractsApiService, ContractsApiService>();
 builder.Services.AddSingleton<IHttpHelperService, HttpHelperService>();
-//builder.Services.AddSingleton<IApiRequestLimiterService, ApiRequestLimiterCacheService>();
+builder.Services.AddSingleton<IApiRequestLimiterService, ApiRequestLimiterPollyService>();
 
 // Cache Services
 builder.Services.AddSingleton<IMongoCollectionFactory, MongoCollectionFactory>();

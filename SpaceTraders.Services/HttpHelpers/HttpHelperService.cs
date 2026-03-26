@@ -7,7 +7,7 @@ namespace SpaceTraders.Services.HttpHelpers;
 
 public class HttpHelperService(
     IApiRequestLimiterService _limiterService,
-    IHttpClientFactory _httpClientFactory) : IHttpHelperService
+    HttpClient _httpClient) : IHttpHelperService
 {
     private const int DELAY_IN_MILLISECONDS = 410;
 
@@ -168,10 +168,13 @@ public class HttpHelperService(
         // logger.LogInformation("Before WaitUntilReadyAsync...");
         // await _limiterService.WaitUntilReadyAsync(CancellationToken.None);
         // logger.LogInformation("After WaitUntilReadyAsync.");
-        //var response = await httpClient.SendAsync(request);
-        var response = await _limiterService.SendAsync(request, CancellationToken.None);
-        logger.LogInformation("{responseString}", await response.Content.ReadAsStringAsync());
+
+        var response = await _httpClient.SendAsync(request);
         await Task.Delay(DELAY_IN_MILLISECONDS);
+
+        //var response = await _limiterService.SendAsync(request, CancellationToken.None);
+        logger.LogInformation("{responseString}", await response.Content.ReadAsStringAsync());
+        
         try
         {
             response.EnsureSuccessStatusCode();

@@ -6,7 +6,7 @@
 @{
     ViewData["Title"] = "Trade Models";
     IReadOnlyList<TradeModel> tradeModelsOrdered = await Model.OrderedModelTradesTask;
-    List<PathModel> pathModels = await Model.PathModelsTask;
+    var pathModels = await Model.PathModelsTask;
 }
 
 <h3>Best Trade Models <small>(<a href="/marketplaces/trademodels/reset">reset</a>)</small></h3>

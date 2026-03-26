@@ -1,7 +1,6 @@
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
-using SpaceTraders.Services.Paths;
 using SpaceTraders.Services.Paths.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
@@ -34,10 +33,17 @@ public class ExplorationCommand(
         {
             if (currentWaypoint.Traits.Any(t => t.Symbol == WaypointTraitsEnum.UNCHARTED.ToString()))
             {
-                var chartWaypointResult = await _shipsService.ChartAsync(ship.Symbol);
-                currentWaypoint = chartWaypointResult.Waypoint;
-                await _waypointsCacheService.SetAsync(currentWaypoint);
-                await _agentsService.SetAsync(chartWaypointResult.Agent);
+                try
+                {
+                    var chartWaypointResult = await _shipsService.ChartAsync(ship.Symbol);
+                    currentWaypoint = chartWaypointResult.Waypoint;
+                    await _waypointsCacheService.SetAsync(currentWaypoint);
+                    await _agentsService.SetAsync(chartWaypointResult.Agent);
+                }
+                catch (Exception ex)
+                {
+                    
+                }
             }
         }
         else
@@ -46,9 +52,7 @@ public class ExplorationCommand(
         }
         
         if (ShipsService.GetShipCooldown(ship) is not null) return shipStatus;
-        //await Task.Delay(500);
         currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol, refresh: true);
-        // Exploration goal can be for marketplace or uncharted
         if (ship.Goal == ship.Nav.WaypointSymbol)
         {
             ship = ship with { Goal = null };

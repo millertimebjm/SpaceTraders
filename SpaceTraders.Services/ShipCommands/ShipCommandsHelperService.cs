@@ -520,7 +520,8 @@ public class ShipCommandsHelperService(
     public async Task<Nav?> Orbit(Ship ship, Waypoint currentWaypoint)
     {
         if (ship.Nav.Status == NavStatusEnum.IN_ORBIT.ToString()
-            || ship.Fuel.Current != ship.Fuel.Capacity)
+            || (ship.Fuel.Current != ship.Fuel.Capacity
+                && currentWaypoint.Marketplace?.TradeGoods.Any(tg => tg.Symbol == TradeSymbolsEnum.FUEL.ToString())== true))
         {
             return null;
         }

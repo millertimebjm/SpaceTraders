@@ -48,6 +48,9 @@ public class MarketplacesController(
         {
             pathWaypointSymbol = agent.Headquarters;
         }
+        var systems = await _systemsService.GetAsync();
+        var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(pathWaypointSymbol), int.MaxValue);
+
         var model = new TradeModelsViewModel(
             Task.Run(async () => {
                 IReadOnlyList<TradeModel> orderedModelTrades;
@@ -65,8 +68,38 @@ public class MarketplacesController(
                 }
                 return orderedModelTrades;
             }),
-            _pathsService.BuildSystemPathWithCost(pathWaypointSymbol!, 600, 600),
+            _pathsService.BuildSystemPathWithCostWithBurn2(traversableSystems.Select(s => s.Symbol).ToList(), pathWaypointSymbol!, 600, 600),
             waypointSymbol ?? "");
+        return View(model);
+    }
+
+    [Route("/marketplaces/trademodelsreport")]
+    public async Task<IActionResult> TradeModelsReport()
+    {
+        var agent = await _agentsService.GetAsync();
+        var systems = await _systemsService.GetAsync();
+        var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters), int.MaxValue);
+        var waypointDictionary = traversableSystems.SelectMany(s => s.Waypoints).ToDictionary(w => w.Symbol, w => w);
+        var tradeModels = await _tradesCacheService.GetTradeModelsAsync();
+
+        List<TradeModel> badTradeModels = [];
+        foreach (var tradeModel in tradeModels)
+        {
+            var buyWaypoint = waypointDictionary[tradeModel.ExportWaypointSymbol];
+            if (buyWaypoint.Marketplace?.TradeGoods?.Any(tg => tg.Symbol == tradeModel.TradeSymbol) == false)
+            {
+                badTradeModels.Add(tradeModel);
+                continue;
+            }
+            var sellWaypoint = waypointDictionary[tradeModel.ImportWaypointSymbol];
+            if (sellWaypoint.Marketplace?.TradeGoods?.Any(tg => tg.Symbol == tradeModel.TradeSymbol) == false)
+            {
+                badTradeModels.Add(tradeModel);
+                continue;
+            }
+        }
+
+        var model = new TradeModelsReportViewModel(Task.FromResult(badTradeModels));
         return View(model);
     }
 

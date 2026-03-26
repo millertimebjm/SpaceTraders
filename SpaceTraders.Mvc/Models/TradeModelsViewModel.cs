@@ -3,5 +3,5 @@ using SpaceTraders.Services.Trades;
 
 public record TradeModelsViewModel(
     Task<IReadOnlyList<TradeModel>> OrderedModelTradesTask, 
-    Task<List<PathModel>> PathModelsTask,
+    Task<List<PathModelWithBurn>> PathModelsTask,
     string WaypointSymbol);

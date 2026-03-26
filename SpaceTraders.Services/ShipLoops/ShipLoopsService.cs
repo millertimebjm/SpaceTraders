@@ -77,13 +77,12 @@ public class ShipLoopsService(
 
         var account = await _accountService.GetAsync();
         _configuration[$"SpaceTrader:" + ConfigurationEnums.AgentToken.ToString()] = account.Token;
-
-        //var system = await _systemsService.GetAsync("X1-UT56", refresh: true);        
+       
         await JumpGateWaypointsRefresh();
 
         var tradeModels = await _tradesService.GetTradeModelsWithCacheAsync();
         
-        var shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
+        var shipStatuses = (await _shipStatusesCacheService.GetAsync()).Where(ss => ss.Ship.Registration.Role != ShipRegistrationRolesEnum.SATELLITE.ToString()).ToList();
         if (!shipStatuses.Any())
         {
             var ships = await _shipsService.GetAsync();
@@ -107,13 +106,13 @@ public class ShipLoopsService(
         //List<(TimeSpan ExecutionTime, DateTime ExecutionCompletionUtc)> executionAverageCalculator = [];
         while (!cts.IsCancellationRequested)
         {
-            shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
+            shipStatuses = (await _shipStatusesCacheService.GetAsync()).Where(ss => ss.Ship.Registration.Role != ShipRegistrationRolesEnum.SATELLITE.ToString()).ToList();
             var ships = shipStatuses.Select(ss => ss.Ship).ToList();
 
             await UpdateSystemWaypoints(ships);
             if (await BuyNewShipIfPossible(shipStatuses.Select(ss => ss.Ship).ToList()))
             {
-                shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
+                shipStatuses = (await _shipStatusesCacheService.GetAsync()).Where(ss => ss.Ship.Registration.Role != ShipRegistrationRolesEnum.SATELLITE.ToString()).ToList();
             }
             await SleepUntilNextShipReady(shipStatuses);
 
@@ -132,7 +131,9 @@ public class ShipLoopsService(
             // foreach (var shipStatusToDoWork in shipStatusesToDoWork)
             // {
             //     await DoShipWork(shipStatusToDoWork, shipStatuses);
+            //     if (cts.IsCancellationRequested) break;
             // }
+
 
             _logger.LogInformation("Time until server reset: {hours} Hours", Math.Round((serverStatus.ServerResets.Next - DateTime.UtcNow).TotalHours));
 
@@ -148,8 +149,6 @@ public class ShipLoopsService(
 
     private async Task DoShipWork(ShipStatus shipStatus, List<ShipStatus> shipStatuses)
     {
-        //var shipStatus = await _shipStatusesCacheService.GetAsync(shipStatuses[i].Ship.Symbol); // Transfer cargo changes another ship's cargo
-        //shipStatuses[i] = shipStatus;
         var ship = shipStatus.Ship;
         if (ShipsService.GetShipCooldown(ship) is not null) return;
 

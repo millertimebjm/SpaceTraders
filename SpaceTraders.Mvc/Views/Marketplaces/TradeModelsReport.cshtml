@@ -1,0 +1,47 @@
+﻿@using SpaceTraders.Models
+@using SpaceTraders.Mvc.Services
+@using SpaceTraders.Services.Marketplaces
+@using SpaceTraders.Services.Trades
+@model TradeModelsReportViewModel
+@{
+    var badTradeModels = await Model.BadTradeModelTask;
+}
+
+<h3>Bad Trade Models <small>(<a href="/marketplaces/trademodels/reset">reset</a>)</small></h3>
+
+<h3>Trade Models (@badTradeModels.Count())</h3>
+<table class="table">
+    <thead>
+        <tr>
+            <th>TradeSymbol</th>
+            <th>Export WP</th>
+            <th>Buy</th>
+            <th style="text-align: center;">Supply</th>
+            <th style="text-align: center;">Volume</th>
+            <th>Import WP</th>
+            <th>Sell</th>
+            <th style="text-align: center;">Supply</th>
+            <th style="text-align: center;">Volume</th>
+            <th style="text-align: center;">Nav</th>
+            <th style="text-align: center;">Time</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var tradeModel in badTradeModels)
+        {
+            <tr>
+                <td>@tradeModel.TradeSymbol</td>
+                <td>@tradeModel.ExportWaypointSymbol</td>
+                <td style="text-align: right;">@tradeModel.ExportBuyPrice</td>
+                <td style="text-align: center;">@tradeModel.ExportSupplyEnum</td>
+                <td style="text-align: right;">@tradeModel.ExportTradeVolume</td>
+                <td>@tradeModel.ImportWaypointSymbol</td>
+                <td style="text-align: right;">@tradeModel.ImportSellPrice</td>
+                <td style="text-align: center;">@tradeModel.ImportSupplyEnum</td>
+                <td style="text-align: right;">@tradeModel.ImportTradeVolume</td>
+                <td style="text-align: right;">@(tradeModel.NavigationFactor)</td>
+                <td style="text-align: right;">@(tradeModel.TimeCost)</td>
+            </tr>
+        }
+    </tbody>
+</table>
