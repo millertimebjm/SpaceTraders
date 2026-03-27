@@ -15,6 +15,17 @@ public class WaypointsCacheMongoService(
     ITradesService _tradesService
 ) : IWaypointsCacheService
 {
+    public async Task<List<Waypoint>> GetAsync()
+    {
+        var collection = _mongoCollectionFactory.GetCollection<Waypoint>();
+
+        var projection = Builders<Waypoint>.Projection.Exclude("_id");
+        return await collection
+            .Find(FilterDefinition<Waypoint>.Empty)
+            .Project<Waypoint>(projection)
+            .ToListAsync();
+    }
+
     public async Task<Waypoint?> GetAsync(string waypointSymbol)
     {
         var filter = Builders<Waypoint>

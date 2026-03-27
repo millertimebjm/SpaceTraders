@@ -4,6 +4,7 @@ namespace SpaceTraders.Services.Waypoints.Interfaces;
 
 public interface IWaypointsService
 {
+    Task<List<Waypoint>> GetAsync();
     Task<Waypoint> GetAsync(
         string waypointSymbol,
         bool refresh = false);

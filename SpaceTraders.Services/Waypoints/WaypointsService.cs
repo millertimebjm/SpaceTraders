@@ -14,6 +14,11 @@ public class WaypointsService(
     ITradesService _tradesService
 ) : IWaypointsService
 {
+    public async Task<List<Waypoint>> GetAsync()
+    {
+        return await _waypointsCacheService.GetAsync();
+    }
+
     public async Task<Waypoint> GetAsync(
         string waypointSymbol,
         bool refresh = false)

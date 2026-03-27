@@ -17,6 +17,7 @@ using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Trades;
 using SpaceTraders.Services.Trades.Interfaces;
 using SpaceTraders.Services.Waypoints;
+using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Mvc.Controllers;
 
@@ -29,7 +30,8 @@ public class MarketplacesController(
     ISystemsService _systemsService,
     IShipLogsService _shipLogsService,
     IShipsService _shipsService,
-    IPathsService _pathsService
+    IPathsService _pathsService,
+    IWaypointsService _waypointsService
 ) : BaseController(_agentsService, _shipstatusesCacheService, _systemsService)
 {
     [Route("/marketplaces/{marketplaceWaypointSymbol}")]
@@ -99,7 +101,16 @@ public class MarketplacesController(
             }
         }
 
-        var model = new TradeModelsReportViewModel(Task.FromResult(badTradeModels));
+        List<Waypoint> badWaypoints = [];
+        var waypoints = await _waypointsService.GetAsync();
+        foreach (var system in systems)
+        {
+            var waypointsInSystem = waypoints.Where(w => WaypointsService.ExtractSystemFromWaypoint(w.Symbol) == system.Symbol).ToList();
+            var badWaypointsInSystem = waypointsInSystem.Where(w => w.Marketplace is null && system.Waypoints.Any(sw => sw.Symbol == w.Symbol && sw.Marketplace is not null));
+            badWaypoints.AddRange(badWaypointsInSystem);
+        }
+
+        var model = new TradeModelsReportViewModel(Task.FromResult(badTradeModels), Task.FromResult(badWaypoints));
         return View(model);
     }
 

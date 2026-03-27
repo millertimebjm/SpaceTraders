@@ -20,6 +20,11 @@ public class WaypointsCacheEfService(
         return JsonSerializer.Deserialize<Waypoint?>(dbWaypointCacheModel.WaypointJson);
     }
 
+    public Task<List<Waypoint>> GetAsync()
+    {
+        throw new NotImplementedException();
+    }
+
     public async Task<IEnumerable<Waypoint>?> GetByTraitAsync(string systemSymbol, string trait)
     {
         var dbWaypointCacheModels = await _context.Waypoints.Where(w => w.SystemSymbol == systemSymbol && w.Traits.Contains($",{trait},")).ToListAsync();

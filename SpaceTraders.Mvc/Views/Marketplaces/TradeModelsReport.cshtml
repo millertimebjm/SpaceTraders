@@ -5,6 +5,7 @@
 @model TradeModelsReportViewModel
 @{
     var badTradeModels = await Model.BadTradeModelTask;
+    var badWaypoints = await Model.BadWaypoints;
 }
 
 <h3>Bad Trade Models <small>(<a href="/marketplaces/trademodels/reset">reset</a>)</small></h3>
@@ -45,3 +46,10 @@
         }
     </tbody>
 </table>
+
+<br/><br/>
+<h3>Bad Waypoints</h3>
+@foreach (var waypoint in badWaypoints)
+{
+    @Html.PartialAsync("~/Waypoints/_Waypoints.cshtml", waypoint)
+}
