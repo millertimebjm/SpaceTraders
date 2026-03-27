@@ -76,6 +76,18 @@ public class PathsCacheMongoService(IMongoCollectionFactory _collectionFactory) 
         var filter = Builders<PathModelWithBurnMemoize>.Filter.Eq(p => p.Key, key);
 
         var projection = Builders<PathModelWithBurnMemoize>.Projection.Exclude("_id");
+
+        var count = await collection
+            .Find(filter)
+            .Project<PathModelWithBurnMemoize>(projection)
+            .CountDocumentsAsync();
+            
+        if (count > 1)
+        {
+            await collection
+                .DeleteOneAsync(filter, CancellationToken.None);
+        }
+
         var pathModels = await collection
             .Find(filter)
             .Project<PathModelWithBurnMemoize>(projection)
