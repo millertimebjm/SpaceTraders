@@ -135,7 +135,7 @@ public class ShipsService(
         var request = new HttpRequestMessage(HttpMethod.Post, url);
         //request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
         request.Content = JsonContent.Create(new { waypointSymbol = waypoint.Symbol });
-        var response = await _httpHelperService.HttpSendHelperWithAccount(request, _logger);
+        var response = await _httpHelperService.HttpSendHelperWithAgent(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Ship not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<Ship>>();
         await AddNavigateLog(ship, data.Datum.Nav, data.Datum.Fuel);
