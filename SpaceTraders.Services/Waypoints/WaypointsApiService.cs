@@ -74,7 +74,7 @@ public class WaypointsApiService(
         if (waypoint.Traits.Select(t => t.Symbol).Contains(WaypointTypesEnum.SHIPYARD.ToString())
             && waypoint.Shipyard is null)
         {
-            shipyardTask = _shipyardsService.GetAsync(waypointSymbol);
+            shipyardTask = _shipyardsService.GetAsync(waypointSymbol)!;
         }
 
         Task<JumpGate?> jumpGateTask = Task.FromResult<JumpGate?>(null);
@@ -82,13 +82,13 @@ public class WaypointsApiService(
             && (waypoint.IsUnderConstruction
                 || waypoint.JumpGate is null))
         {
-            jumpGateTask = _jumpGatesService.GetAsync(waypointSymbol);
+            jumpGateTask = _jumpGatesService.GetAsync(waypointSymbol)!;
         }
 
         Task<Construction?> constructionTask = Task.FromResult<Construction?>(null);
         if (waypoint.IsUnderConstruction)
         {
-            constructionTask = _constructionsService.GetAsync(waypointSymbol);
+            constructionTask = _constructionsService.GetAsync(waypointSymbol)!;
         }
 
         waypoint = waypoint with
@@ -109,15 +109,8 @@ public class WaypointsApiService(
             Query = $"type={type}"
         };
         var url = urlBuilder.ToString();
-        // _httpClient.DefaultRequestHeaders.Authorization =
-        //     new AuthenticationHeaderValue("Bearer", Token);
-        // var data = await HttpHelperService.HttpGetHelper<Data<Waypoint>>(url.ToString(), _httpClient, _logger);
-        // return data.DataList;
-
         var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
-        //var response = await _dispatcher.SendAsync(request);
-        //var response = await _httpClient.SendAsync(request);
         var response = await _httpHelperService.HttpSendHelper(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("System not retrieved");
         var data = await response.Content.ReadFromJsonAsync<Data<Waypoint>>();
@@ -132,15 +125,8 @@ public class WaypointsApiService(
             Query = $"traits={trait}"
         };
         var url = urlBuilder.ToString();
-        // _httpClient.DefaultRequestHeaders.Authorization =
-        //     new AuthenticationHeaderValue("Bearer", Token);
-        // var data = await HttpHelperService.HttpGetHelper<Data<Waypoint>>(url, _httpClient, _logger);
-        // return data.DataList;
-
         var request = new HttpRequestMessage(HttpMethod.Get, url);
         request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
-        //var response = await _dispatcher.SendAsync(request);
-        //var response = await _httpClient.SendAsync(request);
         var response = await _httpHelperService.HttpSendHelper(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("System not retrieved");
         var data = await response.Content.ReadFromJsonAsync<Data<Waypoint>>();

@@ -499,11 +499,11 @@ public class TradesService(
         var exchanges = marketplaceWaypointExport.Marketplace.TradeGoods.Where(tg => tg.Type == TradeGoodTypeEnum.EXCHANGE.ToString() && tg.Symbol != TradeSymbolsEnum.FUEL.ToString() && tg.Symbol != TradeSymbolsEnum.ANTIMATTER.ToString()).ToList();
         foreach (var exchange in exchanges)
         {
-            var imports = marketplaceWaypointsWithinOneSystem.Where(w => marketplaceWaypointExport.Symbol != w.Symbol && w.Marketplace.Imports.Any(i => i.Symbol == exchange.Symbol)).ToList();
+            var imports = marketplaceWaypointsWithinOneSystem.Where(w => marketplaceWaypointExport.Symbol != w.Symbol && w.Marketplace!.Imports.Any(i => i.Symbol == exchange.Symbol)).ToList();
             foreach (var marketplaceWaypointImport in imports)
             {
                 var timeCost = paths.Single(p => p.WaypointSymbol == marketplaceWaypointImport.Symbol).TimeCost;
-                var marketplaceWaypointImports = marketplaceWaypointImport.Marketplace.TradeGoods.Where(tg => tg.Type == TradeGoodTypeEnum.IMPORT.ToString() && tg.Symbol == exchange.Symbol).ToList();
+                var marketplaceWaypointImports = marketplaceWaypointImport.Marketplace!.TradeGoods!.Where(tg => tg.Type == TradeGoodTypeEnum.IMPORT.ToString() && tg.Symbol == exchange.Symbol).ToList();
                 foreach (var import in marketplaceWaypointImports)
                 {
                     var navigationFactor = GetTradeModelNavigationFactorWithBurn2(
