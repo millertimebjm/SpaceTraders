@@ -593,7 +593,12 @@ public class TradesService(
         var nearbySystemSymbols = systemLinks.Where(sl => sl.leftSystem.Symbol == originSystemSymbol || sl.rightSystem.Symbol == originSystemSymbol);
         var nearbySystems = nearbySystemSymbols.Select(sl => sl.leftSystem.Symbol).ToList();
         nearbySystems.AddRange(nearbySystemSymbols.Select(sl => sl.rightSystem.Symbol));
-        return nearbySystems.Distinct().ToList();
+        var distinctSystems = nearbySystems.Distinct().ToList();
+        if (!distinctSystems.Any())
+        {
+            return [originSystemSymbol];
+        }
+        return distinctSystems;
     }
 
     private async Task<List<string>> GetSystemSymbolsWithinOneJump(List<string> systemSymbols, string originSystemSymbol)

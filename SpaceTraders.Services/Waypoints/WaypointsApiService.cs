@@ -55,7 +55,7 @@ public class WaypointsApiService(
         //     new AuthenticationHeaderValue("Bearer", Token);
         //var waypointsData = await HttpHelperService.HttpGetHelper<DataSingle<Waypoint>>(url.ToString(), _httpClient, _logger);
         var request = new HttpRequestMessage(HttpMethod.Get, url.ToString());
-        var response = await _httpHelperService.HttpSendHelper(request, _logger);
+        var response = await _httpHelperService.HttpSendHelperWithAgent(request, _logger);
         var waypointsData = await response.Content.ReadFromJsonAsync<DataSingle<Waypoint>>();
         if (waypointsData is null) throw new HttpRequestException("System Data not retrieved.");
         if (waypointsData.Datum is null) throw new HttpRequestException("System not retrieved");
