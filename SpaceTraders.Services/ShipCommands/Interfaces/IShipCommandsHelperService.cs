@@ -43,4 +43,5 @@ public interface IShipCommandsHelperService
     Task<bool> CheckRemotePurchaseShip(IEnumerable<Ship> ships, string shipyardWaypoint, ShipTypesEnum shipType);
     Task<Cargo?> TransferCargo(Ship ship, Waypoint currentWaypoint);
     Task<(Nav?, Fuel?, Cooldown)> NavigateHelper(Ship ship, string waypointSymbol);
+    Task<GoalModel?> GetShipModuleGoalModel(Ship ship);
 }

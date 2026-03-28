@@ -22,7 +22,9 @@ public class AgentsCacheMongoService(
     public async Task SetAsync(Agent agent)
     {
         var collection = _mongoCollectionFactory.GetCollection<Agent>();
-        await collection.DeleteManyAsync(FilterDefinition<Agent>.Empty, CancellationToken.None);
-        await collection.InsertOneAsync(agent, new InsertOneOptions() { }, CancellationToken.None);
+        //await collection.DeleteManyAsync(FilterDefinition<Agent>.Empty, CancellationToken.None);
+        //await collection.InsertOneAsync(agent, new InsertOneOptions() { }, CancellationToken.None);
+        var filter = Builders<Agent>.Filter.Eq(a => a.Symbol, agent.Symbol);
+        await collection.ReplaceOneAsync(filter, agent, new ReplaceOptions { IsUpsert = true }, CancellationToken.None);
     }
 }

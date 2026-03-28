@@ -16,4 +16,5 @@ public enum ShipLogEnum
     FlightMode,
     FulfillContract,
     Siphon,
+    Error,
 }

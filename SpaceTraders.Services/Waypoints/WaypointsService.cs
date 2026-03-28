@@ -23,16 +23,13 @@ public class WaypointsService(
         string waypointSymbol,
         bool refresh = false)
     {
-        Waypoint? waypoint;
-        if (!refresh)
+        Waypoint? waypoint = await _waypointsCacheService.GetAsync(waypointSymbol);
+        if (waypoint is null || refresh)
         {
-            waypoint = await _waypointsCacheService.GetAsync(waypointSymbol);
-            if (waypoint is not null) return waypoint;
-            _logger.LogWarning("Cache miss: {waypointName}:{waypointSymbol}", nameof(Waypoint), waypointSymbol);
+            waypoint = await _waypointsApiService.GetAsync(waypointSymbol);
+            waypoint.RefreshDateTimeUtc = DateTime.UtcNow;
+            await _waypointsCacheService.SetAsync(waypoint);
         }
-        waypoint = await _waypointsApiService.GetAsync(waypointSymbol);
-        waypoint.RefreshDateTimeUtc = DateTime.UtcNow;
-        await _waypointsCacheService.SetAsync(waypoint);
         
         //await _tradesService.TradeModelRefreshIfNone();
         if (waypoint.Marketplace is not null && waypoint.Marketplace.TradeGoods is not null && waypoint.Marketplace.TradeGoods.Any())

@@ -19,8 +19,10 @@ public class AccountCacheMongoService(IMongoCollectionFactory _collectionFactory
 
     public async Task SetAsync(Account account)
     {
+        var filter = Builders<Account>.Filter.Eq(a => a.Symbol, account.Symbol);
         var collection = _collectionFactory.GetCollection<Account>();
-        await collection.DeleteManyAsync(FilterDefinition<Account>.Empty, CancellationToken.None);
-        await collection.InsertOneAsync(account);
+        //await collection.DeleteManyAsync(FilterDefinition<Account>.Empty, CancellationToken.None);
+        //await collection.InsertOneAsync(account);
+        await collection.ReplaceOneAsync(filter, account, new ReplaceOptions { IsUpsert = true}, CancellationToken.None);
     }
 }

@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using MongoDB.Driver;
@@ -11,6 +12,7 @@ using SpaceTraders.Services.MongoCache.Interfaces;
 using SpaceTraders.Services.ServerStatusServices.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.ShipJobs.Interfaces;
+using SpaceTraders.Services.ShipLogs.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.ShipStatuses;
 using SpaceTraders.Services.ShipStatuses.Interfaces;
@@ -34,7 +36,8 @@ public class ShipLoopsService(
     IAccountService _accountService,
     IConfiguration _configuration,
     IShipCommandsHelperService _shipCommandHelperService,
-    ITradesService _tradesService
+    ITradesService _tradesService,
+    IShipLogsService _shipLogsService
 ) : IShipLoopsService
 {
     public async Task Run()
@@ -195,6 +198,7 @@ public class ShipLoopsService(
         }
         catch (SpaceTraderResultException ex)
         {
+            await AddShipLogsError(ship, ex);
             var timeSpan = TimeSpan.FromMinutes(2);
             ship = await _shipsService.GetAsync(ship.Symbol);
             await _waypointsService.GetAsync(ship.Nav.WaypointSymbol, refresh: true);
@@ -210,6 +214,23 @@ public class ShipLoopsService(
         }
         await _shipStatusesCacheService.SetAsync(shipStatus);
         //executionAverageCalculator.Add((processingTimeStart.Elapsed, DateTime.UtcNow));
+    }
+
+    private async Task AddShipLogsError(Ship ship, Exception ex)
+    {
+        await _shipLogsService.AddAsync(new ShipLog(
+            ship.Symbol, 
+            ShipLogEnum.Error,
+            JsonSerializer.Serialize(new
+            {
+                ship.Nav.WaypointSymbol,
+                ex.Message,
+                ex.InnerException,
+                ex.StackTrace,
+                ex.Data,
+            }),
+            DateTime.UtcNow,
+            DateTime.UtcNow));
     }
 
     private async Task JumpGateWaypointsRefresh()

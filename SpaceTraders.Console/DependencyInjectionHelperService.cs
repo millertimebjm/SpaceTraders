@@ -92,6 +92,7 @@ public static class DependencyInjectionHelperService
         services.AddSingleton<SiphonToSellAnywhereCommand>();
         services.AddSingleton<HaulingAssistToSellAnywhereCommand>();
         services.AddSingleton<ScrapShipCommand>();
+        services.AddSingleton<UpgradeShipModule>();
 
         // Ship Jobs
         services.AddSingleton<HaulerShipJobService>();

@@ -20,7 +20,9 @@ public class ServerStatusCacheMongoService(IMongoCollectionFactory _collectionFa
     public async Task SetAsync(ServerStatus serverStatus)
     {
         var collection = _collectionFactory.GetCollection<ServerStatus>();
-        await collection.DeleteManyAsync(FilterDefinition<ServerStatus>.Empty, CancellationToken.None);
-        await collection.InsertOneAsync(serverStatus);
+        //await collection.DeleteManyAsync(FilterDefinition<ServerStatus>.Empty, CancellationToken.None);
+        //await collection.InsertOneAsync(serverStatus);
+        var filter = Builders<ServerStatus>.Filter.Empty;
+        await collection.ReplaceOneAsync(filter, serverStatus, new ReplaceOptions { IsUpsert = true }, CancellationToken.None);
     }
 }

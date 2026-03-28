@@ -62,19 +62,25 @@ public class WaypointsApiService(
         var waypoint = waypointsData.Datum;
 
         Task<Marketplace?> marketplaceTask = Task.FromResult<Marketplace?>(null);
-        if (waypoint.Traits.Select(t => t.Symbol).Contains(WaypointTypesEnum.MARKETPLACE.ToString()))
+        if (waypoint.Traits.Select(t => t.Symbol).Contains(WaypointTypesEnum.MARKETPLACE.ToString())
+            && (waypoint.Marketplace is null
+                || waypoint.Marketplace.TradeGoods is null
+                || waypoint.Marketplace.TradeGoods.Any(tg => tg.Symbol != TradeSymbolsEnum.FUEL.ToString() && tg.Symbol != TradeSymbolsEnum.ANTIMATTER.ToString())))
         {
             marketplaceTask = _marketplacesService.GetAsync(waypointSymbol);
         }
         
         Task<Shipyard?> shipyardTask = Task.FromResult<Shipyard?>(null);
-        if (waypoint.Traits.Select(t => t.Symbol).Contains(WaypointTypesEnum.SHIPYARD.ToString()))
+        if (waypoint.Traits.Select(t => t.Symbol).Contains(WaypointTypesEnum.SHIPYARD.ToString())
+            && waypoint.Shipyard is null)
         {
             shipyardTask = _shipyardsService.GetAsync(waypointSymbol);
         }
 
         Task<JumpGate?> jumpGateTask = Task.FromResult<JumpGate?>(null);
-        if (waypoint.Type == WaypointTypesEnum.JUMP_GATE.ToString())
+        if (waypoint.Type == WaypointTypesEnum.JUMP_GATE.ToString()
+            && (waypoint.IsUnderConstruction
+                || waypoint.JumpGate is null))
         {
             jumpGateTask = _jumpGatesService.GetAsync(waypointSymbol);
         }

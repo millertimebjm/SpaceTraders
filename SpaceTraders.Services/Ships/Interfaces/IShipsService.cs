@@ -24,4 +24,5 @@ public interface IShipsService
     Task<ScanSystemsResult> ScanSystemsAsync(string shipSymbol);
     Task<TransferCargoResult> TransferCargo(string shipSymbol, string targetShipSymbol, string inventorySymbol, int inventoryAmount);
     Task<ScrapShipResponse> ScrapShipAsync(string symbol);
+    Task<InstallModuleResult> InstallModule(string shipSymbol, string symbol);
 }

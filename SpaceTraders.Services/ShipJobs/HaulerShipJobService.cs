@@ -2,6 +2,7 @@ using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Contracts.Interfaces;
+using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.Systems.Interfaces;
 
 namespace SpaceTraders.Services.ShipJobs.Interfaces;
@@ -9,13 +10,18 @@ namespace SpaceTraders.Services.ShipJobs.Interfaces;
 public class HaulerShipJobService(
     ISystemsService _systemsService,
     IAgentsService _agentsService,
-    IContractsService _contractsService
+    IContractsService _contractsService,
+    IShipCommandsHelperService _shipCommandsHelperService
 ) : IShipJobService
 {
     public async Task<ShipCommand> Get(
         IEnumerable<Ship> ships,
         Ship ship)
     {
+        if ((await _shipCommandsHelperService.GetShipModuleGoalModel(ship)) is not null)
+        {
+            return new ShipCommand(ship.Symbol, ShipCommandEnum.UpgradeShipModule);
+        }
         if (await IsContract(ships, ship))
         {
             return new ShipCommand(ship.Symbol, ShipCommandEnum.FulfillContract);

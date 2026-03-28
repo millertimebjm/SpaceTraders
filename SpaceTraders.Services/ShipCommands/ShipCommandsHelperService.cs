@@ -933,11 +933,11 @@ public class ShipCommandsHelperService(
 
         if (headquartersSystem.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction))
         {
-            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.TRANSPORT.ToString()) < 30)
-            {
-                var shipyard = headquartersSystem.Waypoints.Single(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_LIGHT_SHUTTLE.ToString()) == true);
-                return (shipyard.Symbol, ShipTypesEnum.SHIP_LIGHT_SHUTTLE);
-            }
+            // if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.TRANSPORT.ToString()) < 30)
+            // {
+            //     var shipyard = headquartersSystem.Waypoints.Single(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_LIGHT_SHUTTLE.ToString()) == true);
+            //     return (shipyard.Symbol, ShipTypesEnum.SHIP_LIGHT_SHUTTLE);
+            // }
 
             if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()) < 50)
             {
@@ -1015,5 +1015,26 @@ public class ShipCommandsHelperService(
         await _shipStatusesCacheService.SetAsync(shipStatus);
 
         return ship.Cargo;
+    }
+    public async Task<GoalModel?> GetShipModuleGoalModel(Ship ship)
+    {
+        if (ship.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()
+            && ship.Modules.Any(m => m.Symbol == ShipModuleEnum.MODULE_CARGO_HOLD_II.ToString()))
+        {
+            var moduleToUpgrade = ShipModuleEnum.MODULE_CARGO_HOLD_II.ToString();
+            var systems = await _systemsService.GetAsync();
+            var traversableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol, int.MaxValue);
+            var waypoints = traversableSystems.SelectMany(s => s.Waypoints);
+            var upgradeModuleWaypoints = waypoints.Where(w => 
+                w.Marketplace?.Exchange.Any(e => e.Symbol == TradeSymbolsEnum.MODULE_CARGO_HOLD_III.ToString()) == true
+                || waypoints.Any(w => w.Marketplace?.Imports.Any(e => e.Symbol == TradeSymbolsEnum.MODULE_CARGO_HOLD_III.ToString()) == true)
+                || waypoints.Any(w => w.Marketplace?.Exports.Any(e => e.Symbol == TradeSymbolsEnum.MODULE_CARGO_HOLD_III.ToString()) == true));
+            upgradeModuleWaypoints = upgradeModuleWaypoints.OrderBy(w => w.Symbol); // TODO: Get closest
+            if (upgradeModuleWaypoints.Any())
+            {
+                return new GoalModel(moduleToUpgrade, upgradeModuleWaypoints.First().Symbol, null);
+            }
+        }
+        return null;
     }
 }

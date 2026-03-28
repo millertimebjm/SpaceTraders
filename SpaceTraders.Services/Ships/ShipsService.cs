@@ -759,4 +759,33 @@ public class ShipsService(
         var data = await response.Content.ReadFromJsonAsync<DataSingle<ScrapShipResponse>>();
         return data.Datum;
     }
+
+    public async Task<InstallModuleResult> InstallModule(string shipSymbol, string moduleSymbol)
+    {
+        var urlBuilder = new UriBuilder(ApiUrl)
+        {
+            Path = $"/my/ships/{shipSymbol}/installmodule"
+        };
+        var url = urlBuilder.ToString();
+        // _httpClient.DefaultRequestHeaders.Authorization =
+        //     new AuthenticationHeaderValue("Bearer", Token);
+        // var content = JsonContent.Create(new { tradeSymbol = inventorySymbol, units = inventoryAmount, shipSymbol = targetShipSymbol });
+        // var data = await HttpHelperService.HttpPostHelper<DataSingle<TransferCargoResult>>(
+        //     url,
+        //     _httpClient,
+        //     content,
+        //     _logger);
+        // if (data.Datum is null) throw new HttpRequestException("Scrap not retrieved");
+        // return data.Datum;
+
+        var request = new HttpRequestMessage(HttpMethod.Post, url);
+        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
+        request.Content = JsonContent.Create(new { symbol = moduleSymbol });
+        //var response = await _dispatcher.SendAsync(request);
+        //var response = await _httpClient.SendAsync(request);
+        var response = await _httpHelperService.HttpSendHelper(request, _logger);
+        if (!response.IsSuccessStatusCode) throw new HttpRequestException("Scrap not retrieved");
+        var data = await response.Content.ReadFromJsonAsync<DataSingle<InstallModuleResult>>();
+        return data.Datum;
+    }
 }

@@ -19,4 +19,5 @@ public enum ShipCommandEnum
     SiphonToSellAnywhere,
     HaulingAssistToSellAnywhere,
     ScrapShip,
+    UpgradeShipModule,
 }

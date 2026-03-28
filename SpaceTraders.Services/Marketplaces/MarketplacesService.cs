@@ -43,7 +43,7 @@ public class MarketplacesService(
         }
     }
 
-    public async Task<Marketplace> GetAsync(string marketplaceWaypointSymbol)
+    public async Task<Marketplace?> GetAsync(string marketplaceWaypointSymbol)
     {
         var urlBuilder = new UriBuilder(ApiUrl)
         {
