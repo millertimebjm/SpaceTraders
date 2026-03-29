@@ -52,7 +52,7 @@ public class ShipsService(
                 Query = $"limit=20&page={page}", // limit=20
             };
             var request = new HttpRequestMessage(HttpMethod.Get, url.ToString());
-            var response = await _httpHelperService.HttpSendHelperWithAccount(request, _logger);
+            var response = await _httpHelperService.HttpSendHelperWithAgent(request, _logger);
             var dataShip = await response.Content.ReadFromJsonAsync<Data<Ship>>();
             if (dataShip.DataList is null) throw new HttpRequestException("Ship not retrieved");
             ships.AddRange(dataShip.DataList);

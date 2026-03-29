@@ -85,7 +85,8 @@ public class ShipLoopsService(
 
         var tradeModels = await _tradesService.GetTradeModelsWithCacheAsync();
         
-        var shipStatuses = (await _shipStatusesCacheService.GetAsync()).Where(ss => ss.Ship.Registration.Role != ShipRegistrationRolesEnum.SATELLITE.ToString()).ToList();
+        //var shipStatuses = (await _shipStatusesCacheService.GetAsync()).Where(ss => ss.Ship.Registration.Role != ShipRegistrationRolesEnum.SATELLITE.ToString()).ToList();
+        var shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
         if (!shipStatuses.Any())
         {
             var ships = await _shipsService.GetAsync();
@@ -225,7 +226,6 @@ public class ShipLoopsService(
             {
                 ship.Nav.WaypointSymbol,
                 ex.Message,
-                ex.InnerException,
                 ex.StackTrace,
                 ex.Data,
             }),

@@ -95,7 +95,8 @@ public class SystemsService(
         List<(STSystem leftSystem, STSystem rightSystem, bool dottedLine)> links = [];
         foreach (var system in systems)
         {
-            var jumpGateWaypoint = system.Waypoints.Single(w => w.JumpGate is not null);
+            var jumpGateWaypoint = system.Waypoints.SingleOrDefault(w => w.JumpGate is not null);
+            if (jumpGateWaypoint is null) continue;
             foreach (var connection in jumpGateWaypoint.JumpGate.Connections)
             {
                 var connectedSystem = systems.SingleOrDefault(s => s.Symbol == WaypointsService.ExtractSystemFromWaypoint(connection));
