@@ -110,13 +110,15 @@ public class ShipLoopsService(
         //List<(TimeSpan ExecutionTime, DateTime ExecutionCompletionUtc)> executionAverageCalculator = [];
         while (!cts.IsCancellationRequested)
         {
-            shipStatuses = (await _shipStatusesCacheService.GetAsync()).Where(ss => ss.Ship.Registration.Role != ShipRegistrationRolesEnum.SATELLITE.ToString()).ToList();
+            //shipStatuses = (await _shipStatusesCacheService.GetAsync()).Where(ss => ss.Ship.Registration.Role != ShipRegistrationRolesEnum.SATELLITE.ToString()).ToList();
+            shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
             var ships = shipStatuses.Select(ss => ss.Ship).ToList();
 
             await UpdateSystemWaypoints(ships);
             if (await BuyNewShipIfPossible(shipStatuses.Select(ss => ss.Ship).ToList()))
             {
-                shipStatuses = (await _shipStatusesCacheService.GetAsync()).Where(ss => ss.Ship.Registration.Role != ShipRegistrationRolesEnum.SATELLITE.ToString()).ToList();
+                //shipStatuses = (await _shipStatusesCacheService.GetAsync()).Where(ss => ss.Ship.Registration.Role != ShipRegistrationRolesEnum.SATELLITE.ToString()).ToList();
+                shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
             }
             await SleepUntilNextShipReady(shipStatuses);
 
