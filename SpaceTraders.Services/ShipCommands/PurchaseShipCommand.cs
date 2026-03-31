@@ -20,14 +20,17 @@ public class PurchaseShipCommand(
         Dictionary<string, Ship> shipsDictionary)
     {
         var ship = shipStatus.Ship;
+        if (ShipsService.GetShipCooldown(ship) is not null) return shipStatus;
+
         var currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol);
+        if ((currentWaypoint.Marketplace is not null && currentWaypoint.Marketplace.TradeGoods is null)
+            || (currentWaypoint.Shipyard is not null && currentWaypoint.Shipyard.ShipFrames is null))
+        {
+            currentWaypoint = await _waypointsService.GetAsync(currentWaypoint.Symbol, refresh: true);
+        }
 
         while (true)
         {
-            if (ShipsService.GetShipCooldown(ship) is not null) return shipStatus;
-
-            //await Task.Delay(1000);
-
             var refuelResponse = await _shipCommandsHelperService.Refuel(ship, currentWaypoint);
             if (refuelResponse is not null)
             {

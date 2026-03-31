@@ -191,7 +191,7 @@ public class ShipCommandsHelperService(
 
         // Need fuel and fuel is available at this waypoint
         if ((ship.Fuel.Current < ship.Fuel.Capacity
-            && currentWaypoint.Marketplace?.Exchange.Any(e => e.Symbol == InventoryEnum.FUEL.ToString()) == true)
+            && currentWaypoint.Marketplace?.TradeGoods?.Any(e => e.Symbol == InventoryEnum.FUEL.ToString()) == true)
             || currentWaypoint.Shipyard?.ShipTypes.Any(st => st.Type == shipToBuy.ToString()) == true)
         {
             shouldDock = true;
@@ -977,6 +977,8 @@ public class ShipCommandsHelperService(
         return false;
     }
 
+
+    private readonly SemaphoreSlim _semaphore = new(1, 1);
     public async Task<Cargo?> TransferCargo(Ship ship, Waypoint currentWaypoint)
     {
         if (currentWaypoint.Type != WaypointTypesEnum.ENGINEERED_ASTEROID.ToString()
@@ -985,34 +987,42 @@ public class ShipCommandsHelperService(
             return null;
         }
 
-        var shipStatuses = await _shipStatusesCacheService.GetAsync();
-        var ships = shipStatuses.Select(s => s.Ship).ToList();
-        var hauler = ships
-            .Where(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString() 
-                && s.Cargo.Units < s.Cargo.Capacity
-                && s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.HaulingAssistToSellAnywhere
-                && s.Nav.WaypointSymbol == ship.Nav.WaypointSymbol
-                && s.Nav.Status == NavStatusEnum.IN_ORBIT.ToString())
-            .OrderByDescending(s => s.Cargo.Units)
-            .FirstOrDefault();
-        if (hauler is null)
+        await _semaphore.WaitAsync();
+        try
         {
-            return null;
-        }
+            var shipStatuses = await _shipStatusesCacheService.GetAsync();
+            var ships = shipStatuses.Select(s => s.Ship).ToList();
+            var hauler = ships
+                .Where(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString() 
+                    && s.Cargo.Units < s.Cargo.Capacity
+                    && s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.HaulingAssistToSellAnywhere
+                    && s.Nav.WaypointSymbol == ship.Nav.WaypointSymbol
+                    && s.Nav.Status == NavStatusEnum.IN_ORBIT.ToString())
+                .OrderByDescending(s => s.Cargo.Units)
+                .FirstOrDefault();
+            if (hauler is null)
+            {
+                return null;
+            }
 
-        while (hauler.Cargo.Units < hauler.Cargo.Capacity
-            && ship.Cargo.Units > 0)
+            while (hauler.Cargo.Units < hauler.Cargo.Capacity
+                && ship.Cargo.Units > 0)
+            {
+                var inventory = ship.Cargo.Inventory.OrderByDescending(i => i.Units).First();
+                var inventoryAmount = Math.Min(inventory.Units, hauler.Cargo.Capacity - hauler.Cargo.Units);
+                var transferCargoResult = await _shipsService.TransferCargo(ship.Symbol, hauler.Symbol, inventory.Symbol, inventoryAmount);
+                ship = ship with { Cargo = transferCargoResult.Cargo };
+                hauler = hauler with { Cargo = transferCargoResult.TargetCargo };
+            }
+
+            var shipStatus = await _shipStatusesCacheService.GetAsync(hauler.Symbol);
+            shipStatus = shipStatus with { Ship = hauler };
+            await _shipStatusesCacheService.SetAsync(shipStatus);
+        }
+        finally
         {
-            var inventory = ship.Cargo.Inventory.OrderByDescending(i => i.Units).First();
-            var inventoryAmount = Math.Min(inventory.Units, hauler.Cargo.Capacity - hauler.Cargo.Units);
-            var transferCargoResult = await _shipsService.TransferCargo(ship.Symbol, hauler.Symbol, inventory.Symbol, inventoryAmount);
-            ship = ship with { Cargo = transferCargoResult.Cargo };
-            hauler = hauler with { Cargo = transferCargoResult.TargetCargo };
+            _semaphore.Release();
         }
-
-        var shipStatus = await _shipStatusesCacheService.GetAsync(hauler.Symbol);
-        shipStatus = shipStatus with { Ship = hauler };
-        await _shipStatusesCacheService.SetAsync(shipStatus);
 
         return ship.Cargo;
     }
