@@ -31,6 +31,7 @@ using SpaceTraders.Services.ShipJobs.Interfaces;
 using SpaceTraders.Services.ShipLogs;
 using SpaceTraders.Services.ShipLogs.Interfaces;
 using SpaceTraders.Services.ShipLoops;
+using SpaceTraders.Services.Ships;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.ShipStatuses;
 using SpaceTraders.Services.ShipStatuses.Interfaces;

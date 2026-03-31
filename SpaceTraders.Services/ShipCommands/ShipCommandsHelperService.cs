@@ -979,7 +979,7 @@ public class ShipCommandsHelperService(
     }
 
 
-    private readonly SemaphoreSlim _semaphore = new(1, 1);
+    private readonly SemaphoreSlim _transferCargoSemaphore = new(1, 1);
     public async Task<Cargo?> TransferCargo(Ship ship, Waypoint currentWaypoint)
     {
         if (currentWaypoint.Type != WaypointTypesEnum.ENGINEERED_ASTEROID.ToString()
@@ -988,7 +988,7 @@ public class ShipCommandsHelperService(
             return null;
         }
 
-        await _semaphore.WaitAsync();
+        await _transferCargoSemaphore.WaitAsync();
         try
         {
             var shipStatuses = await _shipStatusesCacheService.GetAsync();
@@ -1038,7 +1038,7 @@ public class ShipCommandsHelperService(
         }
         finally
         {
-            _semaphore.Release();
+            _transferCargoSemaphore.Release();
         }
 
         return ship.Cargo;

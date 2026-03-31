@@ -155,7 +155,7 @@ public class ShipLoopsService(
                 await _shipStatusesCacheService.SetAsync(shipStatus);
                 return;
             }
-
+            
             var shipCommand = await shipJobsService.Get(shipStatuses.Select(ss => ss.Ship).ToList(), shipStatus.Ship);
             ship = ship with { ShipCommand = shipCommand };
             shipStatus = shipStatus with { Ship = ship };
