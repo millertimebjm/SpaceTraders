@@ -2,6 +2,8 @@
 @using System.Text.Json
 @using System.Dynamic
 @using SpaceTraders.Mvc.Services
+@using SpaceTraders.Services.Ships
+@using SpaceTraders.Services.Shipyards
 @model ShipLogsViewModel
 @{
     ViewData["Title"] = "Ship Logs";
@@ -13,7 +15,7 @@
 <span>
     <select class="select" onchange="reload(this.value)">
         <option value="" selected="@(string.IsNullOrWhiteSpace(Model.FilterModel.ShipSymbol))">Pick a Ship</option>
-        @foreach (var shipStatus in ShipSortHelper.ShipStatusSort(await Model.ShipStatusesTask))
+        @foreach (var shipStatus in (await Model.ShipStatusesTask).HexadecimalSort())
         {
             var selected = shipStatus.Ship.Symbol == Model.FilterModel.ShipSymbol;
             <option value="@shipStatus.Ship.Symbol" selected="@selected">@shipStatus.Ship.Symbol (@shipStatus.Ship.Registration.Role)</option>
@@ -47,7 +49,7 @@
                         var data = JsonSerializer.Deserialize<ExpandoObject>(shipLog.JsonData);
                     }
                     <ul>
-                        @foreach (var datum in (IDictionary<string, object>)data)
+                        @foreach (var datum in (IDictionary<string, object>)data!)
                         {
                             <li>
                                 <strong>@datum.Key</strong>: @datum.Value

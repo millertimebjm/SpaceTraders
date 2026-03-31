@@ -1,9 +1,8 @@
 using SpaceTraders.Model.Exceptions;
 using SpaceTraders.Models;
-using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
-using SpaceTraders.Services.Shipyards;
+using SpaceTraders.Services.Ships;
 using SpaceTraders.Services.Transactions.Interfaces;
 using SpaceTraders.Services.Waypoints.Interfaces;
 

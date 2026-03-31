@@ -1,4 +1,5 @@
 using System.Text.Json;
+using SpaceTraders.Model.Exceptions;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Models.Results;
@@ -7,8 +8,8 @@ using SpaceTraders.Services.Contracts.Interfaces;
 using SpaceTraders.Services.Paths.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.ShipLogs.Interfaces;
+using SpaceTraders.Services.Ships;
 using SpaceTraders.Services.Ships.Interfaces;
-using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Trades;
 using SpaceTraders.Services.Transactions.Interfaces;
@@ -26,8 +27,7 @@ public class FulfillContractCommandV2(
     IContractsService _contractsService,
     IShipLogsService _shipLogsService,
     IShipsService _shipsService,
-    ITradesService _tradesService,
-    IPathsService _pathsService
+    ITradesService _tradesService
 ) : IShipCommandsService
 {
     public async Task<ShipStatus> Run(
@@ -44,7 +44,6 @@ public class FulfillContractCommandV2(
         Nav? nav;
         Fuel? fuel;
         Cooldown cooldown = ship.Cooldown;
-        Cargo? cargo;
 
         if (goalModel is null)
         {
@@ -92,13 +91,15 @@ public class FulfillContractCommandV2(
                 ship = ship with { Nav = nav };
             }
             var refuelResponse = await _shipCommandsHelperService.Refuel(ship, currentWaypoint);
+            if (refuelResponse is null) throw new SpaceTraderResultException("Refuel failed.");
             ship = ship with { Fuel = refuelResponse.Fuel };
             await _agentsService.SetAsync(refuelResponse.Agent);
             await _transactionsService.SetAsync(refuelResponse.Transaction);
         }
 
         if (currentWaypoint.Symbol == goalModel.SellWaypointSymbol
-            && ship.Cargo.Units > 0)
+            && ship.Cargo.Units > 0
+            && contract is not null)
         {
             if (ship.Nav.Status != NavStatusEnum.DOCKED.ToString())
             {
@@ -136,7 +137,10 @@ public class FulfillContractCommandV2(
         }
 
         if (currentWaypoint.Symbol == goalModel.BuyWaypointSymbol 
-            && ship.Cargo.Units == 0)
+            && ship.Cargo.Units == 0
+            && goalModel.TradeSymbol is not null
+            && contract is not null
+            && goalModel.SellWaypointSymbol is not null)
         {
             if (ship.Nav.Status != NavStatusEnum.DOCKED.ToString())
             {
@@ -148,6 +152,7 @@ public class FulfillContractCommandV2(
                 currentWaypoint, 
                 goalModel.TradeSymbol, 
                 contract.Terms.Deliver[0].UnitsRequired - contract.Terms.Deliver[0].UnitsFulfilled);
+            if (purchaseCargoResult is null) throw new SpaceTraderResultException("Purchase Cargo failed.");
             await _agentsService.SetAsync(purchaseCargoResult.Agent);
             await _transactionsService.SetAsync(purchaseCargoResult.Transaction);
             ship = ship with { Cargo = purchaseCargoResult.Cargo };
@@ -160,7 +165,8 @@ public class FulfillContractCommandV2(
             return new ShipStatus(ship, $"Navigate To Contract Fulfill {ship.Nav.Route.Destination.Symbol}", DateTime.UtcNow);
         }
 
-        if (ship.Cargo.Units == 0)
+        if (ship.Cargo.Units == 0
+            && goalModel.BuyWaypointSymbol is not null)
         {
             if (ship.Nav.Status != NavStatusEnum.IN_ORBIT.ToString())
             {
@@ -172,7 +178,8 @@ public class FulfillContractCommandV2(
             return new ShipStatus(ship, $"Navigate To Marketplace Export {ship.Nav.Route.Destination.Symbol}", DateTime.UtcNow);
         }
 
-        if (ship.Cargo.Units > 0)
+        if (ship.Cargo.Units > 0
+            && goalModel.SellWaypointSymbol is not null)
         {
             if (ship.Nav.Status != NavStatusEnum.IN_ORBIT.ToString())
             {
@@ -184,7 +191,7 @@ public class FulfillContractCommandV2(
             return new ShipStatus(ship, $"Navigate To Contract Fulfill {ship.Nav.Route.Destination.Symbol}", DateTime.UtcNow);
         }
 
-        return null;
+        return null!;
     }
 
     private async Task<GoalModel> SetGoalModelByContract(STContract contract, string originWaypoint, int fuelMax, int fuelCurrent)

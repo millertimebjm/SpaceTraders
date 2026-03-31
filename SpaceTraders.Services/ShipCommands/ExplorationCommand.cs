@@ -1,10 +1,11 @@
+using SpaceTraders.Model.Exceptions;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Paths.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
+using SpaceTraders.Services.Ships;
 using SpaceTraders.Services.Ships.Interfaces;
-using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Systems;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Transactions.Interfaces;
@@ -42,7 +43,7 @@ public class ExplorationCommand(
                 }
                 catch (Exception ex)
                 {
-                    
+                    throw new SpaceTraderResultException(ex.Message);
                 }
             }
         }
@@ -130,7 +131,10 @@ public class ExplorationCommand(
                     p.Marketplace?.TradeGoods?.Any(tg => tg.Symbol == InventoryEnum.FUEL.ToString()) == true)
                 .Select(w => w.Symbol)
                 .ToList();
-            var shortestWaypointSymbol = paths.Where(p => fuelPaths.Contains(p.WaypointSymbol)).OrderBy(p => p.TimeCost).FirstOrDefault();
+            var shortestWaypointSymbol = paths
+                .Where(p => fuelPaths.Contains(p.WaypointSymbol))
+                .OrderBy(p => p.TimeCost)
+                .First();
             
             (nav, fuel) = await _shipsService.NavigateAsync(shortestWaypointSymbol.WaypointSymbol, ship);
             return (nav, fuel, ship.Cooldown, ship.Goal);

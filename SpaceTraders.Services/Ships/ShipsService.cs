@@ -1,21 +1,17 @@
-﻿using System.Net.Http.Headers;
-using System.Net.Http.Json;
+﻿using System.Net.Http.Json;
 using System.Text.Json;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
-using SpaceTraders.Dispatcher;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Models.Results;
-using SpaceTraders.Services.HttpHelpers;
 using SpaceTraders.Services.HttpHelpers.Interfaces;
 using SpaceTraders.Services.ShipLogs.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
-using SpaceTraders.Services.ShipStatuses.Interfaces;
 using SpaceTraders.Services.Waypoints;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
-namespace SpaceTraders.Services.Shipyards;
+namespace SpaceTraders.Services.Ships;
 
 public class ShipsService(
     IConfiguration _configuration,
@@ -70,7 +66,6 @@ public class ShipsService(
         };
         var url = urlBuilder.ToString();
         var request = new HttpRequestMessage(HttpMethod.Get, url);
-        //request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
         var response = await _httpHelperService.HttpSendHelperWithAgent(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Ship not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<Ship>>();
@@ -85,7 +80,6 @@ public class ShipsService(
         };
         var url = urlBuilder.ToString();
         var request = new HttpRequestMessage(HttpMethod.Post, url);
-        //request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
         var response = await _httpHelperService.HttpSendHelperWithAgent(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Nav not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<Ship>>();
@@ -100,7 +94,6 @@ public class ShipsService(
         };
         var url = urlBuilder.ToString();
         var request = new HttpRequestMessage(HttpMethod.Post, url);
-        //request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
         var response = await _httpHelperService.HttpSendHelperWithAgent(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Nav not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<Ship>>();
@@ -133,7 +126,6 @@ public class ShipsService(
         };
         var url = urlBuilder.ToString();
         var request = new HttpRequestMessage(HttpMethod.Post, url);
-        //request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
         request.Content = JsonContent.Create(new { waypointSymbol = waypoint.Symbol });
         var response = await _httpHelperService.HttpSendHelperWithAgent(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Ship not retrieved");
@@ -311,22 +303,8 @@ public class ShipsService(
             Path = $"/v2/my/ships/{shipSymbol}/jettison"
         };
         var url = urlBuilder.ToString();
-        // _httpClient.DefaultRequestHeaders.Authorization =
-        //     new AuthenticationHeaderValue("Bearer", Token);
-        // var content = JsonContent.Create(new { symbol = inventorySymbol, units });
-        // var response = await HttpHelperService.HttpPostHelper<DataSingle<Cargo>>(
-        //     url,
-        //     _httpClient,
-        //     content,
-        //     _logger);
-        // await AddJettisonLog(shipSymbol, inventorySymbol, units);
-        // _logger.LogInformation("Data returned from Jettison: {response}", response);
-        // return response.Datum;
-
         var request = new HttpRequestMessage(HttpMethod.Post, url);
         request.Content = JsonContent.Create(new { symbol = inventorySymbol, units });
-        //var response = await _dispatcher.SendAsync(request);
-        //var response = await _httpClient.SendAsync(request);
         var response = await _httpHelperService.HttpSendHelperWithAgent(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Jettison not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<Cargo>>();
@@ -372,20 +350,7 @@ public class ShipsService(
             Path = $"/v2/my/ships/{shipSymbol}/survey"
         };
         var url = urlBuilder.ToString();
-        // _httpClient.DefaultRequestHeaders.Authorization =
-        //     new AuthenticationHeaderValue("Bearer", Token);
-        // var data = await HttpHelperService.HttpPostHelper<DataSingle<SurveyResult>>(
-        //     url.ToString(),
-        //     _httpClient,
-        //     null,
-        //     _logger);
-        // if (data?.Datum is null) throw new HttpRequestException("Survey not retrieved");
-        // await AddSurveyShipLog(shipSymbol, data.Datum.Surveys, data.Datum.Cooldown);
-        // return data.Datum;
-
         var request = new HttpRequestMessage(HttpMethod.Post, url);
-        //var response = await _dispatcher.SendAsync(request);
-        //var response = await _httpClient.SendAsync(request);
         var response = await _httpHelperService.HttpSendHelperWithAgent(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Survey not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<SurveyResult>>();
@@ -416,19 +381,7 @@ public class ShipsService(
             Path = $"/my/ships/{shipSymbol}/scan/waypoints"
         };
         var url = urlBuilder.ToString();
-        // _httpClient.DefaultRequestHeaders.Authorization =
-        //     new AuthenticationHeaderValue("Bearer", Token);
-        // var data = await HttpHelperService.HttpPostHelper<DataSingle<ScanWaypointsResult>>(
-        //     url,
-        //     _httpClient,
-        //     null,
-        //     _logger);
-        // if (data.Datum is null) throw new HttpRequestException("Scan not retrieved");
-        // return data.Datum;
-
         var request = new HttpRequestMessage(HttpMethod.Post, url);
-        // var response = await _dispatcher.SendAsync(request);
-        //var response = await _httpClient.SendAsync(request);
         var response = await _httpHelperService.HttpSendHelperWithAgent(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Scan not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<ScanWaypointsResult>>();
@@ -444,22 +397,8 @@ public class ShipsService(
             Path = $"/my/ships/{ship.Symbol}/nav"
         };
         var url = urlBuilder.ToString();
-        // _httpClient.DefaultRequestHeaders.Authorization =
-        //     new AuthenticationHeaderValue("Bearer", Token);
-        // var content = JsonContent.Create(new { flightMode = flightModeString });
-        // var data = await HttpHelperService.HttpPatchHelper<DataSingle<NavToggleResult>>(
-        //     url,
-        //     _httpClient,
-        //     content,
-        //     _logger);
-        // if (data.Datum is null) throw new HttpRequestException("Nav Toggle not retrieved");
-        // await AddFlightModeShipLog(ship.Symbol, flightMode);
-        // return data.Datum.Nav;
-
         var request = new HttpRequestMessage(HttpMethod.Patch, url);
         request.Content = JsonContent.Create(new { flightMode = flightMode.ToString() });
-        // var response = await _dispatcher.SendAsync(request);
-        //var response = await _httpClient.SendAsync(request);
         var response = await _httpHelperService.HttpSendHelperWithAgent(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Nav Toggle not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<NavToggleResult>>();
@@ -474,20 +413,7 @@ public class ShipsService(
             Path = $"/my/ships/{shipSymbol}/chart"
         };
         var url = urlBuilder.ToString();
-        // _httpClient.DefaultRequestHeaders.Authorization =
-        //     new AuthenticationHeaderValue("Bearer", Token);
-        // var data = await HttpHelperService.HttpPostHelper<DataSingle<ChartWaypointResult>>(
-        //     url,
-        //     _httpClient,
-        //     null,
-        //     _logger);
-        // if (data.Datum is null) throw new HttpRequestException("Scan not retrieved");
-        // await AddChartShipLog(shipSymbol, data.Datum.Waypoint);
-        // return data.Datum;
-
         var request = new HttpRequestMessage(HttpMethod.Post, url);
-        //var response = await _dispatcher.SendAsync(request);
-        //var response = await _httpClient.SendAsync(request);
         var response = await _httpHelperService.HttpSendHelperWithAgent(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Scan not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<ChartWaypointResult>>();
@@ -519,19 +445,7 @@ public class ShipsService(
             Path = $"/my/ships/{shipSymbol}/scan/systems"
         };
         var url = urlBuilder.ToString();
-        // _httpClient.DefaultRequestHeaders.Authorization =
-        //     new AuthenticationHeaderValue("Bearer", Token);
-        // var data = await HttpHelperService.HttpPostHelper<DataSingle<ScanSystemsResult>>(
-        //     url,
-        //     _httpClient,
-        //     null,
-        //     _logger);
-        // if (data.Datum is null) throw new HttpRequestException("Scan not retrieved");
-        // return data.Datum;
-
         var request = new HttpRequestMessage(HttpMethod.Post, url);
-        //var response = await _dispatcher.SendAsync(request);
-        //var response = await _httpClient.SendAsync(request);
         var response = await _httpHelperService.HttpSendHelperWithAgent(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Scan not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<ScanSystemsResult>>();
@@ -545,32 +459,12 @@ public class ShipsService(
             Path = $"/my/ships/{shipSymbol}/scrap"
         };
         var url = urlBuilder.ToString();
-        // _httpClient.DefaultRequestHeaders.Authorization =
-        //     new AuthenticationHeaderValue("Bearer", Token);
-        // var data = await HttpHelperService.HttpPostHelper<DataSingle<ScanSystemsResult>>(
-        //     url,
-        //     _httpClient,
-        //     null,
-        //     _logger);
-        // if (data.Datum is null) throw new HttpRequestException("Scrap not retrieved");
-        // return data.Datum;
-
         var request = new HttpRequestMessage(HttpMethod.Post, url);
-        //var response = await _dispatcher.SendAsync(request);
-        //var response = await _httpClient.SendAsync(request);
         var response = await _httpHelperService.HttpSendHelperWithAgent(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Scan not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<ScanSystemsResult>>();
         return data.Datum;
     }
-
-    // public static async Task<IEnumerable<Ship>> HexadecimalSort(this IEnumerable<Ship> ships)
-    // {
-    //     return ships.OrderBy(s => {
-    //         var parts = s.Symbol.Split('-');
-    //         return Convert.ToInt32(parts[1], 16); // Parse as hex
-    //     });
-    // }
 
     public async Task<TransferCargoResult> TransferCargo(string shipSymbol, string targetShipSymbol, string inventorySymbol, int inventoryAmount)
     {
@@ -579,21 +473,8 @@ public class ShipsService(
             Path = $"/my/ships/{shipSymbol}/transfer"
         };
         var url = urlBuilder.ToString();
-        // _httpClient.DefaultRequestHeaders.Authorization =
-        //     new AuthenticationHeaderValue("Bearer", Token);
-        // var content = JsonContent.Create(new { tradeSymbol = inventorySymbol, units = inventoryAmount, shipSymbol = targetShipSymbol });
-        // var data = await HttpHelperService.HttpPostHelper<DataSingle<TransferCargoResult>>(
-        //     url,
-        //     _httpClient,
-        //     content,
-        //     _logger);
-        // if (data.Datum is null) throw new HttpRequestException("Transfer not retrieved");
-        // return data.Datum;
-
         var request = new HttpRequestMessage(HttpMethod.Post, url);
         request.Content = JsonContent.Create(new { tradeSymbol = inventorySymbol, units = inventoryAmount, shipSymbol = targetShipSymbol });
-        //var response = await _dispatcher.SendAsync(request);
-        //var response = await _httpClient.SendAsync(request);
         var response = await _httpHelperService.HttpSendHelperWithAgent(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Transfer not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<TransferCargoResult>>();
@@ -607,20 +488,7 @@ public class ShipsService(
             Path = $"/my/ships/{shipSymbol}/scrap"
         };
         var url = urlBuilder.ToString();
-        // _httpClient.DefaultRequestHeaders.Authorization =
-        //     new AuthenticationHeaderValue("Bearer", Token);
-        // var content = JsonContent.Create(new { tradeSymbol = inventorySymbol, units = inventoryAmount, shipSymbol = targetShipSymbol });
-        // var data = await HttpHelperService.HttpPostHelper<DataSingle<TransferCargoResult>>(
-        //     url,
-        //     _httpClient,
-        //     content,
-        //     _logger);
-        // if (data.Datum is null) throw new HttpRequestException("Scrap not retrieved");
-        // return data.Datum;
-
         var request = new HttpRequestMessage(HttpMethod.Post, url);
-        //var response = await _dispatcher.SendAsync(request);
-        //var response = await _httpClient.SendAsync(request);
         var response = await _httpHelperService.HttpSendHelperWithAgent(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Scrap not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<ScrapShipResponse>>();
@@ -634,21 +502,8 @@ public class ShipsService(
             Path = $"/my/ships/{shipSymbol}/installmodule"
         };
         var url = urlBuilder.ToString();
-        // _httpClient.DefaultRequestHeaders.Authorization =
-        //     new AuthenticationHeaderValue("Bearer", Token);
-        // var content = JsonContent.Create(new { tradeSymbol = inventorySymbol, units = inventoryAmount, shipSymbol = targetShipSymbol });
-        // var data = await HttpHelperService.HttpPostHelper<DataSingle<TransferCargoResult>>(
-        //     url,
-        //     _httpClient,
-        //     content,
-        //     _logger);
-        // if (data.Datum is null) throw new HttpRequestException("Scrap not retrieved");
-        // return data.Datum;
-
         var request = new HttpRequestMessage(HttpMethod.Post, url);
         request.Content = JsonContent.Create(new { symbol = moduleSymbol });
-        //var response = await _dispatcher.SendAsync(request);
-        //var response = await _httpClient.SendAsync(request);
         var response = await _httpHelperService.HttpSendHelperWithAgent(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Scrap not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<InstallModuleResult>>();

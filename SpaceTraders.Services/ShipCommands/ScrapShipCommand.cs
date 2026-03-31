@@ -1,12 +1,12 @@
+using SpaceTraders.Model.Exceptions;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
-using SpaceTraders.Services.Paths;
 using SpaceTraders.Services.Paths.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
+using SpaceTraders.Services.Ships;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.ShipStatuses.Interfaces;
-using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Transactions.Interfaces;
 using SpaceTraders.Services.Waypoints.Interfaces;
@@ -60,7 +60,7 @@ public class ScrapShipCommand(
             var shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
             shipStatuses = shipStatuses.Where(ss => ships.Select(s => s.Symbol).Contains(ss.Ship.Symbol)).ToList();
             await _shipStatusesCacheService.SetAsync(shipStatuses);
-            return null;
+            return null!;
         }
 
         if (ship.Fuel.Current < ship.Fuel.Capacity
@@ -72,6 +72,7 @@ public class ScrapShipCommand(
                 ship = ship with { Nav = nav };
             }
             var refuelResponse = await _shipCommandsHelperService.Refuel(ship, currentWaypoint);
+            if (refuelResponse is null) throw new SpaceTraderResultException("Refuel failed.");
             ship = ship with { Fuel = refuelResponse.Fuel };
             await _agentsService.SetAsync(refuelResponse.Agent);
             await _transactionsService.SetAsync(refuelResponse.Transaction);
@@ -122,6 +123,6 @@ public class ScrapShipCommand(
             // return new ShipStatus(ship, $"Navigate To Contract Fulfill {ship.Nav.Route.Destination.Symbol}", DateTime.UtcNow);
         }
 
-        return null;
+        return null!;
     }
 }

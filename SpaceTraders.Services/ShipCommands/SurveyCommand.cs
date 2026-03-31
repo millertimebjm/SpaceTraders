@@ -1,9 +1,7 @@
 using SpaceTraders.Models;
 using SpaceTraders.Services.Agents.Interfaces;
-using SpaceTraders.Services.Paths;
 using SpaceTraders.Services.ShipCommands.Interfaces;
-using SpaceTraders.Services.Shipyards;
-using SpaceTraders.Services.Systems.Interfaces;
+using SpaceTraders.Services.Ships;
 using SpaceTraders.Services.Transactions.Interfaces;
 using SpaceTraders.Services.Waypoints.Interfaces;
 

@@ -5,8 +5,10 @@ using SpaceTraders.Mvc.Models;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Contracts.Interfaces;
 using SpaceTraders.Services.Marketplaces.Interfaces;
+using SpaceTraders.Services.Ships;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.ShipStatuses.Interfaces;
+using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Surveys.Interfaces;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Transactions.Interfaces;
@@ -30,10 +32,7 @@ public class ShipsController(
     public async Task<IActionResult> Index()
     {
         var shipStatuses = await _shipStatusesCacheService.GetAsync();
-        IEnumerable<Ship> ships = shipStatuses.Select(ss => ss.Ship).OrderBy(s => {
-            var parts = s.Symbol.Split('-');
-            return Convert.ToInt32(parts[1], 16); // Parse as hex
-        }).ToList();
+        var ships = shipStatuses.Select(ss => ss.Ship).HexadecimalSort();
         var systems = await _systemsService.GetAsync();
         IReadOnlyList<Waypoint> waypoints = systems.SelectMany(s => s.Waypoints).ToList();
         ShipsViewModel model = new(
@@ -206,7 +205,7 @@ public class ShipsController(
     {
         var ship = await _shipsService.GetAsync(shipSymbol);
         var currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol);
-        var inventory = currentWaypoint.Marketplace.TradeGoods.Single(tg => tg.Symbol == inventorySymbol);
+        var inventory = currentWaypoint.Marketplace!.TradeGoods!.Single(tg => tg.Symbol == inventorySymbol);
         var shipUnits = ship.Cargo.Inventory.Single(i => i.Symbol == inventorySymbol).Units;
         var sellAmount = Math.Min(inventory.TradeVolume, shipUnits);
         await _marketplacesService.SellAsync(shipSymbol, inventorySymbol, sellAmount);

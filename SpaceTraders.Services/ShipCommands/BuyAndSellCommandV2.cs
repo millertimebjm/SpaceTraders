@@ -1,9 +1,10 @@
+using SpaceTraders.Model.Exceptions;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
+using SpaceTraders.Services.Ships;
 using SpaceTraders.Services.Ships.Interfaces;
-using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Systems;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Trades;
@@ -52,7 +53,7 @@ public class BuyAndSellCommandV2(
                     s.GoalModel?.TradeSymbol is not null 
                     && s.Symbol != ship.Symbol
                     && s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.BuyToSell)
-                .Select(s => s.GoalModel!.TradeSymbol)
+                .Select(s => s.GoalModel!.TradeSymbol!)
                 .ToList();
             if (ship.Symbol.Contains("-3A"))
             {
@@ -70,9 +71,11 @@ public class BuyAndSellCommandV2(
         Nav? nav = null;
         Fuel? fuel = null;
         Cooldown cooldown = ship.Cooldown;
-        Agent? agent = null;
 
-        if (ship.Cargo.Units == 0 && goalModel.BuyWaypointSymbol == ship.Nav.WaypointSymbol)
+        if (ship.Cargo.Units == 0 
+            && goalModel.BuyWaypointSymbol == ship.Nav.WaypointSymbol 
+            && goalModel.TradeSymbol is not null
+            && goalModel.SellWaypointSymbol is not null)
         {
             if (ship.Nav.Status != NavStatusEnum.DOCKED.ToString())
             {
@@ -93,7 +96,7 @@ public class BuyAndSellCommandV2(
             ship = ship with { Nav = nav };
 
             (nav, fuel, cooldown) = await _shipCommandsHelperService.NavigateHelper(ship, goalModel.SellWaypointSymbol);
-            ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown };
+            ship = ship with { Nav = nav ?? ship.Nav, Fuel = fuel ?? ship.Fuel, Cooldown = cooldown };
             return new ShipStatus(ship, $"Navigate To Marketplace Import {ship.Nav.Route.Destination.Symbol}", DateTime.UtcNow);
         }
 
@@ -106,9 +109,10 @@ public class BuyAndSellCommandV2(
             }
 
             if (ship.Fuel.Current < ship.Fuel.Capacity
-                && currentWaypoint.Marketplace?.TradeGoods.Any(tg => tg.Symbol == TradeSymbolsEnum.FUEL.ToString()) == true)
+                && currentWaypoint.Marketplace?.TradeGoods?.Any(tg => tg.Symbol == TradeSymbolsEnum.FUEL.ToString()) == true)
             {
                 var refuelResponse = await _shipCommandsHelperService.Refuel(ship, currentWaypoint);
+                if (refuelResponse is null) throw new SpaceTraderResultException("Refuel failed");
                 ship = ship with { Fuel = refuelResponse.Fuel };
                 await _agentsService.SetAsync(refuelResponse.Agent);
                 await _transactionsService.SetAsync(refuelResponse.Transaction);
@@ -146,12 +150,13 @@ public class BuyAndSellCommandV2(
             }
 
             var refuelResponse = await _shipCommandsHelperService.Refuel(ship, currentWaypoint);
+            if (refuelResponse is null) throw new SpaceTraderResultException("Refuel failed.");
             ship = ship with { Fuel = refuelResponse.Fuel };
             await _agentsService.SetAsync(refuelResponse.Agent);
             await _transactionsService.SetAsync(refuelResponse.Transaction);
         }
 
-        if (ship.Cargo.Units == 0)
+        if (ship.Cargo.Units == 0 && goalModel.BuyWaypointSymbol is not null)
         {
             if (ship.Nav.Status != NavStatusEnum.IN_ORBIT.ToString())
             {
@@ -159,10 +164,10 @@ public class BuyAndSellCommandV2(
                 ship = ship with { Nav = nav };
             }
             (nav, fuel, cooldown) = await _shipCommandsHelperService.NavigateHelper(ship, goalModel.BuyWaypointSymbol);
-            ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown };
+            ship = ship with { Nav = nav ?? ship.Nav, Fuel = fuel ?? ship.Fuel, Cooldown = cooldown };
             return new ShipStatus(ship, $"Navigate To Marketplace Export {ship.Nav.Route.Destination.Symbol}", DateTime.UtcNow);
         }
-        else
+        else if (goalModel.SellWaypointSymbol is not null)
         {
             if (ship.Nav.Status != NavStatusEnum.IN_ORBIT.ToString())
             {
@@ -170,11 +175,11 @@ public class BuyAndSellCommandV2(
                 ship = ship with { Nav = nav };
             }
             (nav, fuel, cooldown) = await _shipCommandsHelperService.NavigateHelper(ship, goalModel.SellWaypointSymbol);
-            ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown };
+            ship = ship with { Nav = nav, Fuel = fuel ?? ship.Fuel, Cooldown = cooldown };
             return new ShipStatus(ship, $"Navigate To Marketplace Export {ship.Nav.Route.Destination.Symbol}", DateTime.UtcNow);
         }
 
-        return null;
+        return null!;
     }
 
     private async Task<GoalModel?> GetGoalModelAsync(Ship ship, Waypoint currentWaypoint, List<string> otherShipGoalModelTradeSymbols)
@@ -185,9 +190,9 @@ public class BuyAndSellCommandV2(
         if (ship.Cargo.Units > 0)
         {
             var sellModels = await _tradesService.GetSellModelsAsyncWithBurn2(traversableSystems.Select(s => s.Symbol).ToList(), currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
-            var inventory = ship.Cargo.Inventory.OrderByDescending(i => i.Units).FirstOrDefault();
+            var inventory = ship.Cargo.Inventory.OrderByDescending(i => i.Units).First();
             var validSellModels = sellModels.Where(sm => sm.TradeSymbol == inventory.Symbol).ToList();
-            var bestSellModel = validSellModels.OrderByDescending(sm => sm.NavigationFactor).FirstOrDefault();
+            var bestSellModel = validSellModels.OrderByDescending(sm => sm.NavigationFactor).First();
             return new GoalModel(bestSellModel.TradeSymbol, null, bestSellModel.WaypointSymbol);
         }
         else

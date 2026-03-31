@@ -2,6 +2,7 @@
 @using SpaceTraders.Mvc.Services
 @using SpaceTraders.Models.Enums
 @using SpaceTraders.Services
+@using SpaceTraders.Services.Ships
 @using SpaceTraders.Services.Shipyards
 @model IEnumerable<ShipStatus>
 @{
@@ -23,10 +24,7 @@
 @{
     var commandShips = Model
         .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.COMMAND.ToString())
-        .OrderBy(s => {
-            var parts = s.Ship.Symbol.Split('-');
-            return Convert.ToInt32(parts[1], 16); // Parse as hex
-        });
+        .HexadecimalSort();
 }
 @if (commandShips.Any())
 {
@@ -47,10 +45,7 @@
 @{
     var haulerShips = Model
         .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString())
-        .OrderBy(s => {
-            var parts = s.Ship.Symbol.Split('-');
-            return Convert.ToInt32(parts[1], 16); // Parse as hex
-        });
+        .HexadecimalSort();
 }
 @if (haulerShips.Any())
 {
@@ -72,10 +67,7 @@
     var miningExcavators = Model
             .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.EXCAVATOR.ToString()
                 && s.Ship.Mounts.Any(m => m.Symbol.Contains("MINING_LASER")))
-            .OrderBy(s => {
-                var parts = s.Ship.Symbol.Split('-');
-                return Convert.ToInt32(parts[1], 16); // Parse as hex
-            });
+            .HexadecimalSort();
 }
 @if (miningExcavators.Any())
 {
@@ -97,10 +89,7 @@
     var gasExcavators = Model
         .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.EXCAVATOR.ToString()
             && s.Ship.Mounts.Any(m => m.Symbol.Contains("GAS_SIPHON")))
-        .OrderBy(s => {
-            var parts = s.Ship.Symbol.Split('-');
-            return Convert.ToInt32(parts[1], 16); // Parse as hex
-        });
+        .HexadecimalSort();
 }
 @if (gasExcavators.Any()) {
     <h3 style="text-align: center;">Siphoning @gasExcavators.Count()</h3>
@@ -120,10 +109,7 @@
 @{
     var surveyorShips = Model
         .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.SURVEYOR.ToString())
-        .OrderBy(s => {
-            var parts = s.Ship.Symbol.Split('-');
-            return Convert.ToInt32(parts[1], 16); // Parse as hex
-        });
+        .HexadecimalSort();
 }
 @if (surveyorShips.Any())
 {
@@ -144,10 +130,7 @@
 @{
     var transportShips = Model
         .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.TRANSPORT.ToString())
-        .OrderBy(s => {
-            var parts = s.Ship.Symbol.Split('-');
-            return Convert.ToInt32(parts[1], 16); // Parse as hex
-        });
+        .HexadecimalSort();
 }
 
 @if (transportShips.Any())
@@ -169,10 +152,7 @@
 @{
     var satelliteShips = Model
         .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.SATELLITE.ToString())
-        .OrderBy(s => {
-            var parts = s.Ship.Symbol.Split('-');
-            return Convert.ToInt32(parts[1], 16); // Parse as hex
-        });
+        .HexadecimalSort();
 }
 @if (satelliteShips.Any())
 {
