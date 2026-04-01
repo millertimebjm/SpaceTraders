@@ -140,6 +140,7 @@ public class ShipLoopsService(
         }
     }
 
+    private static SemaphoreSlim _getShipJobSemaphore = new (1, 1);
     private async Task DoShipWork(ShipStatus shipStatus, List<ShipStatus> shipStatuses)
     {
         var ship = shipStatus.Ship;
@@ -147,7 +148,17 @@ public class ShipLoopsService(
 
         if (ship.ShipCommand is null)
         {
-            var shipJobsService = _shipJobsFactory.Get(shipStatus.Ship);
+            await _getShipJobSemaphore.WaitAsync();
+            IShipJobService? shipJobsService = null;
+            try
+            {
+                shipJobsService = _shipJobsFactory.Get(shipStatus.Ship);
+            }
+            finally
+            {
+                _getShipJobSemaphore.Release();
+            }
+            
             if (shipJobsService is null)
             {
                 ship = ship with { ShipCommand = null };
@@ -155,7 +166,7 @@ public class ShipLoopsService(
                 await _shipStatusesCacheService.SetAsync(shipStatus);
                 return;
             }
-            
+
             var shipCommand = await shipJobsService.Get(shipStatuses.Select(ss => ss.Ship).ToList(), shipStatus.Ship);
             ship = ship with { ShipCommand = shipCommand };
             shipStatus = shipStatus with { Ship = ship };
@@ -163,7 +174,7 @@ public class ShipLoopsService(
             if (shipCommand is null) return;
         }
 
-        var shipCommandService = _shipCommandsServiceFactory.Get(ship.ShipCommand.ShipCommandEnum);
+            var shipCommandService = _shipCommandsServiceFactory.Get(ship.ShipCommand.ShipCommandEnum);
 
         try
         {

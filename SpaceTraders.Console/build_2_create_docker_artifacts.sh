@@ -8,7 +8,7 @@ IMAGE_NAME="spacetraders-console:latest"
 
 dotnet publish --os linux --arch x64 /t:PublishContainer -c Release
 
-docker run -d --restart=always --name "$PROJECT_NAME" -e AppConfigConnectionString="$1" "$IMAGE_NAME"
+docker run -d --restart=no --name "$PROJECT_NAME" -e AppConfigConnectionString="$1" "$IMAGE_NAME"
 rm -rf /tmp/Containers
 
 # Check if there are any dangling images

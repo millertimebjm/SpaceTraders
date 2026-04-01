@@ -344,4 +344,17 @@ public class ShipsController(
             action = "Index",
         });
     }
+
+    [Route("/ships/{shipSymbol}/remove")]
+    public async Task<IActionResult> Remove(string shipSymbol)
+    {
+        var shipStatus = await _shipStatusesCacheService.GetAsync(shipSymbol);
+        await _shipStatusesCacheService.DeleteAsync(shipStatus);
+        
+        return RedirectToRoute(new
+        {
+            controller = "Ships",
+            action = "Index",
+        });
+    }
 }
