@@ -7,19 +7,21 @@ using SpaceTraders.Model.Exceptions;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Accounts.Interfaces;
+using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Interfaces;
 using SpaceTraders.Services.MongoCache.Interfaces;
+using SpaceTraders.Services.Paths.Interfaces;
 using SpaceTraders.Services.ServerStatusServices.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.ShipJobs.Interfaces;
 using SpaceTraders.Services.ShipLogs.Interfaces;
 using SpaceTraders.Services.Ships;
 using SpaceTraders.Services.Ships.Interfaces;
-using SpaceTraders.Services.ShipStatuses;
 using SpaceTraders.Services.ShipStatuses.Interfaces;
-using SpaceTraders.Services.Shipyards;
+using SpaceTraders.Services.Systems;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Trades;
+using SpaceTraders.Services.Waypoints;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Services.ShipLoops;
@@ -38,9 +40,14 @@ public class ShipLoopsService(
     IConfiguration _configuration,
     IShipCommandsHelperService _shipCommandHelperService,
     ITradesService _tradesService,
-    IShipLogsService _shipLogsService
+    IShipLogsService _shipLogsService,
+    IAgentsService _agentsService,
+    IPathsService _pathsService
 ) : IShipLoopsService
 {
+    private static SemaphoreSlim _getShipJobSemaphore = new (1, 1);
+    private Task? _explorationTask = null;
+
     public async Task Run()
     {
         _logger.LogInformation("Ship loop started.");
@@ -101,14 +108,19 @@ public class ShipLoopsService(
         while (!cts.IsCancellationRequested)
         {
             shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
-            var ships = shipStatuses.Select(ss => ss.Ship).ToList();
+            await SleepUntilNextShipReady(shipStatuses);
 
+            if (_explorationTask is null || _explorationTask.IsCompleted)
+            {
+                _explorationTask = ExploreNewSystem();
+            }
+
+            var ships = shipStatuses.Select(ss => ss.Ship).ToList();
             await UpdateSystemWaypoints(ships);
             if (await BuyNewShipIfPossible(shipStatuses.Select(ss => ss.Ship).ToList()))
             {
                 shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
             }
-            await SleepUntilNextShipReady(shipStatuses);
 
             shipStatuses = shipStatuses
                 .HexadecimalSort()
@@ -140,7 +152,6 @@ public class ShipLoopsService(
         }
     }
 
-    private static SemaphoreSlim _getShipJobSemaphore = new (1, 1);
     private async Task DoShipWork(ShipStatus shipStatus, List<ShipStatus> shipStatuses)
     {
         var ship = shipStatus.Ship;
@@ -294,6 +305,43 @@ public class ShipLoopsService(
                 _logger.LogInformation("Refreshing Waypoint {waypoint}", waypoint.Symbol);
                 await _waypointsService.GetAsync(waypoint.Symbol, refresh: true);
             }
+        }
+    }
+
+    public async Task ExploreNewSystem()
+    {
+        var agent = await _agentsService.GetAsync();
+        var systems = await _systemsService.GetAsync();
+        var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters));
+        var paths = await _pathsService.BuildSystemPathWithCostWithBurn2(traversableSystems.Select(s => s.Symbol).ToList(), agent.Headquarters, 600, 600);
+        var waypoints = traversableSystems.SelectMany(s => s.Waypoints);
+        var jumpGateWaypoints = waypoints.Where(w => w.JumpGate is not null && !w.IsUnderConstruction);
+        var jumpGatePaths = paths
+            .Where(p => jumpGateWaypoints.Select(w => w.Symbol).Contains(p.WaypointSymbol))
+            .OrderBy(p => p.TimeCost);
+        string? nextToRefresh = null;
+        foreach (var jumpGatePath in jumpGatePaths)
+        {
+            var jumpGateWaypoint = jumpGateWaypoints.Single(w => w.Symbol == jumpGatePath.WaypointSymbol);
+            foreach (var connection in jumpGateWaypoint.JumpGate!.Connections)
+            {
+                var connectionSystemSymbol = WaypointsService.ExtractSystemFromWaypoint(connection);
+                var connectionSystem = systems.SingleOrDefault(s => s.Symbol == connectionSystemSymbol);
+                if (!traversableSystems.Any(s => s.Symbol == connectionSystemSymbol)
+                    && connectionSystem is null)
+                {
+                    nextToRefresh = connectionSystemSymbol;
+                    break;
+                }
+            }
+            if (nextToRefresh is not null) break;
+        }
+
+        if (nextToRefresh is null) return;
+        var newSystem = await _systemsService.GetAsync(nextToRefresh, true);
+        foreach (var waypoint in newSystem.Waypoints)
+        {
+            await _waypointsService.GetAsync(waypoint.Symbol, true);
         }
     }
 }
