@@ -105,11 +105,19 @@ public class ShipLoopsService(
         }
 
         //List<(TimeSpan ExecutionTime, DateTime ExecutionCompletionUtc)> executionAverageCalculator = [];
-        while (!cts.IsCancellationRequested)
+        while (!cts.IsCancellationRequested && _explorationTask is { IsCompleted: false })
         {
             shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
             await SleepUntilNextShipReady(shipStatuses);
 
+            if (cts.IsCancellationRequested)
+            {
+                if (_explorationTask is not null)
+                {
+                    await _explorationTask;
+                }
+                return;
+            }
             if (_explorationTask is null || _explorationTask.IsCompleted)
             {
                 _explorationTask = ExploreNewSystem();
