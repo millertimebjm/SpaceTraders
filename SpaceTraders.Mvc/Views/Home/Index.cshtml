@@ -43,16 +43,39 @@
 }
 
 @{
-    var haulerShips = Model
-        .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString())
+    var bulkHaulerShips = Model
+        .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString() 
+            && s.Ship.Frame.Symbol == ShipFrameEnum.FRAME_BULK_FREIGHTER.ToString())
         .HexadecimalSort();
 }
-@if (haulerShips.Any())
+@if (bulkHaulerShips.Any())
 {
-    <h3 style="text-align: center;">Hauler @haulerShips.Count()</h3>
+    <h3 style="text-align: center;">Bulk Hauler @bulkHaulerShips.Count()</h3>
     <section class="text-center container">
         <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
-            @foreach (var shipStatus in haulerShips)
+            @foreach (var shipStatus in bulkHaulerShips)
+            {
+                await Html.RenderPartialAsync("_ShipStatusBox", shipStatus);
+            }
+        </div>
+    </section>
+
+    <br/>
+    <br/>
+}
+
+@{
+    var lightHaulerShips = Model
+        .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString() 
+            && s.Ship.Frame.Symbol == ShipFrameEnum.FRAME_LIGHT_FREIGHTER.ToString())
+        .HexadecimalSort();
+}
+@if (lightHaulerShips.Any())
+{
+    <h3 style="text-align: center;">Light Hauler @lightHaulerShips.Count()</h3>
+    <section class="text-center container">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
+            @foreach (var shipStatus in lightHaulerShips)
             {
                 await Html.RenderPartialAsync("_ShipStatusBox", shipStatus);
             }

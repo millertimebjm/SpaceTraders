@@ -60,7 +60,21 @@ public class UpgradeShipModule(
         Cooldown cooldown = ship.Cooldown;
         Agent? agent = null;
 
-        if (ship.Cargo.Units <= 1 && goalModel.BuyWaypointSymbol == ship.Nav.WaypointSymbol)
+        if (ship.Fuel.Current < ship.Fuel.Capacity && currentWaypoint.Marketplace?.Exchange.Any(e => e.Symbol == TradeSymbolsEnum.FUEL.ToString()) == true)
+        {
+            if (ship.Nav.Status != NavStatusEnum.DOCKED.ToString())
+            {
+                nav = await _shipsService.DockAsync(ship.Symbol);
+                ship = ship with { Nav = nav };
+            }
+
+            var refuelResponse = await _shipCommandsHelperService.Refuel(ship, currentWaypoint);
+            ship = ship with { Fuel = refuelResponse.Fuel };
+            await _agentsService.SetAsync(refuelResponse.Agent);
+            await _transactionsService.SetAsync(refuelResponse.Transaction);
+        }
+
+        if (ship.Cargo.Units < 1 && goalModel.BuyWaypointSymbol == ship.Nav.WaypointSymbol)
         {
             if (ship.Nav.Status != NavStatusEnum.DOCKED.ToString())
             {
@@ -80,19 +94,9 @@ public class UpgradeShipModule(
                 await _agentsService.SetAsync(purchaseCargoResult.Agent);
                 await _transactionsService.SetAsync(purchaseCargoResult.Transaction);
             }
-
-            var installModuleResult = await _shipsService.InstallModule(ship.Symbol, ship.Cargo.Inventory.Single().Symbol);
-            ship = ship with { Modules = installModuleResult.Modules };
-
-            var cargo = await _shipsService.JettisonAsync(ship.Symbol, ship.Cargo.Inventory.Single().Symbol, 1);
-            ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown, Goal = null, GoalModel = await _shipCommandsHelperService.GetShipModuleGoalModel(ship), Cargo = cargo, ShipCommand = null };
-            if (ship.GoalModel is null)
-            {
-                return new ShipStatus(ship, $"Install module complete, resetting...", DateTime.UtcNow);
-            }
         }
 
-        if (ship.Fuel.Current < ship.Fuel.Capacity && currentWaypoint.Marketplace?.Exchange.Any(e => e.Symbol == TradeSymbolsEnum.FUEL.ToString()) == true)
+        if (ship.Cargo.Units > 0 && currentWaypoint.Shipyard is not null)
         {
             if (ship.Nav.Status != NavStatusEnum.DOCKED.ToString())
             {
@@ -100,10 +104,22 @@ public class UpgradeShipModule(
                 ship = ship with { Nav = nav };
             }
 
-            var refuelResponse = await _shipCommandsHelperService.Refuel(ship, currentWaypoint);
-            ship = ship with { Fuel = refuelResponse.Fuel };
-            await _agentsService.SetAsync(refuelResponse.Agent);
-            await _transactionsService.SetAsync(refuelResponse.Transaction);
+            var moduleToRemove = _shipCommandsHelperService.GetModuleToRemove(ship, goalModel.TradeSymbol);
+            if (moduleToRemove is not null)
+            {
+                var removeModuleResult = await _shipsService.RemoveModule(ship.Symbol, moduleToRemove);
+                ship = ship with { Modules = removeModuleResult.Modules, Cargo = removeModuleResult.Cargo };
+            }
+
+            var installModuleResult = await _shipsService.InstallModule(ship.Symbol, goalModel.TradeSymbol);
+            ship = ship with { Modules = installModuleResult.Modules, Cargo = installModuleResult.Cargo };
+
+            var cargo = await _shipsService.JettisonAsync(ship.Symbol, moduleToRemove, 1);
+            ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown, Goal = null, GoalModel = await _shipCommandsHelperService.GetShipModuleGoalModel(ship), Cargo = cargo, ShipCommand = null };
+            if (ship.GoalModel is null)
+            {
+                return new ShipStatus(ship, $"Install module complete, resetting...", DateTime.UtcNow);
+            }
         }
 
         if (ship.Cargo.Units == 0)
@@ -116,6 +132,22 @@ public class UpgradeShipModule(
             (nav, fuel, cooldown) = await _shipCommandsHelperService.NavigateHelper(ship, goalModel.BuyWaypointSymbol);
             ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown };
             return new ShipStatus(ship, $"Navigate To Marketplace Export {ship.Nav.Route.Destination.Symbol}", DateTime.UtcNow);
+        }
+
+        if (ship.Cargo.Units > 0)
+        {
+            if (ship.Nav.Status != NavStatusEnum.IN_ORBIT.ToString())
+            {
+                nav = await _shipsService.OrbitAsync(ship.Symbol);
+                ship = ship with { Nav = nav };
+            }
+            if (goalModel.SellWaypointSymbol is null)
+            {
+                goalModel = await _shipCommandsHelperService.GetShipModuleGoalModel(ship);
+            }
+            (nav, fuel, cooldown) = await _shipCommandsHelperService.NavigateHelper(ship, goalModel.SellWaypointSymbol);
+            ship = ship with { Nav = nav, Fuel = fuel, Cooldown = cooldown };
+            return new ShipStatus(ship, $"Navigate To Shipyard {ship.Nav.Route.Destination.Symbol}", DateTime.UtcNow);
         }
 
         return null;

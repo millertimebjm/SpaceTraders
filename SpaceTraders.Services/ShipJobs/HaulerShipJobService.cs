@@ -19,6 +19,7 @@ public class HaulerShipJobService(
         Ship ship)
     {
         if (!ships.Any(s => s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.UpgradeShipModule)
+            && ship.Cargo.Units == 0
             && await _shipCommandsHelperService.GetShipModuleGoalModel(ship) is not null)
         {
             return new ShipCommand(ship.Symbol, ShipCommandEnum.UpgradeShipModule);

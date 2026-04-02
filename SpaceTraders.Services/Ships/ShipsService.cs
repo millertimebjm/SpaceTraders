@@ -502,11 +502,30 @@ public class ShipsService(
             Path = $"/my/ships/{shipSymbol}/modules/install"
         };
         var url = urlBuilder.ToString();
-        var request = new HttpRequestMessage(HttpMethod.Post, url);
-        request.Content = JsonContent.Create(new { symbol = moduleSymbol });
+        var request = new HttpRequestMessage(HttpMethod.Post, url)
+        {
+            Content = JsonContent.Create(new { symbol = moduleSymbol })
+        };
         var response = await _httpHelperService.HttpSendHelperWithAgent(request, _logger);
-        if (!response.IsSuccessStatusCode) throw new HttpRequestException("Scrap not retrieved");
+        if (!response.IsSuccessStatusCode) throw new HttpRequestException("InstallModule not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<InstallModuleResult>>();
+        return data.Datum;
+    }
+  
+    public async Task<RemoveModuleResult> RemoveModule(string shipSymbol, string moduleSymbol)
+    {
+        var urlBuilder = new UriBuilder(ApiUrl)
+        {
+            Path = $"/my/ships/{shipSymbol}/modules/remove"
+        };
+        var url = urlBuilder.ToString();
+        var request = new HttpRequestMessage(HttpMethod.Post, url)
+        {
+            Content = JsonContent.Create(new { symbol = moduleSymbol })
+        };
+        var response = await _httpHelperService.HttpSendHelperWithAgent(request, _logger);
+        if (!response.IsSuccessStatusCode) throw new HttpRequestException("RemoveModule not retrieved");
+        var data = await response.Content.ReadFromJsonAsync<DataSingle<RemoveModuleResult>>();
         return data.Datum;
     }
 }

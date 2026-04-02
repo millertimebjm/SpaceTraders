@@ -105,7 +105,7 @@ public class ShipLoopsService(
         }
 
         //List<(TimeSpan ExecutionTime, DateTime ExecutionCompletionUtc)> executionAverageCalculator = [];
-        while (!cts.IsCancellationRequested && _explorationTask is { IsCompleted: false })
+        while (!cts.IsCancellationRequested || !(_explorationTask ?? Task.FromResult(false)).IsCompleted)
         {
             shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
             await SleepUntilNextShipReady(shipStatuses);
@@ -185,6 +185,9 @@ public class ShipLoopsService(
             {
                 shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
                 shipCommand = await shipJobsService.Get(shipStatuses.Select(ss => ss.Ship), shipStatus.Ship);
+                ship = ship with { ShipCommand = shipCommand };
+                shipStatus = shipStatus with { Ship = ship };
+                await _shipStatusesCacheService.SetAsync(shipStatus);
             }
             finally
             {

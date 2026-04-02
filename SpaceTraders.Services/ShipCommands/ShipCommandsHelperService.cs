@@ -854,7 +854,8 @@ public class ShipCommandsHelperService(
     public async Task<(string?, ShipTypesEnum?)> ShipToBuy(IEnumerable<Ship> ships)
     {
         const long INITIAL_SURVEYOR_SHIP_CREDITS_THRESHOLD = 50_000;
-        const long PURCHASE_SHIP_CREDITS_THRESHOLD = 800_000;
+        const long PURCHASE_SHIP_CREDITS_THRESHOLD_BEFORE_JUMPGATE = 800_000;
+        const long PURCHASE_SHIP_CREDITS_THRESHOLD_AFTER_JUMPGATE = 2_000_000;
 
         var agent = await _agentsService.GetAsync();
         var systems = await _systemsService.GetAsync();
@@ -870,7 +871,7 @@ public class ShipCommandsHelperService(
             return (shipyard.Symbol, ShipTypesEnum.SHIP_SURVEYOR);
         }
 
-        if (agent.Credits < PURCHASE_SHIP_CREDITS_THRESHOLD)
+        if (agent.Credits < PURCHASE_SHIP_CREDITS_THRESHOLD_BEFORE_JUMPGATE)
         {
             return (null, null);
         }
@@ -898,6 +899,23 @@ public class ShipCommandsHelperService(
             }
         }
 
+        if (headquartersSystem.Waypoints.Any(w => w.JumpGate is not null && w.IsUnderConstruction))
+        {
+            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()) < 4)
+            {
+                var shipyard = headquartersSystem.Waypoints.Single(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_LIGHT_HAULER.ToString()) == true);
+                return (shipyard.Symbol, ShipTypesEnum.SHIP_LIGHT_HAULER);
+            }
+        }
+
+        if (agent.Credits < PURCHASE_SHIP_CREDITS_THRESHOLD_AFTER_JUMPGATE)
+        {
+            return (null, null);
+        }
+
+        var reachableWaypoints = reachableSystems.SelectMany(s => s.Waypoints);
+        var reachableShipyards = reachableWaypoints.Where(w => w.Shipyard is not null).Select(w => w.Shipyard);
+
         if (headquartersSystem.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction))
         {
             if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.TRANSPORT.ToString()) < 5)
@@ -912,17 +930,9 @@ public class ShipCommandsHelperService(
                 return (shipyard.Symbol, ShipTypesEnum.SHIP_LIGHT_HAULER);
             }
         }
-
-        if (headquartersSystem.Waypoints.Any(w => w.JumpGate is not null && w.IsUnderConstruction))
-        {
-            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()) < 4)
-            {
-                var shipyard = headquartersSystem.Waypoints.Single(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_LIGHT_HAULER.ToString()) == true);
-                return (shipyard.Symbol, ShipTypesEnum.SHIP_LIGHT_HAULER);
-            }
-        }
         
-        if (headquartersSystem.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction))
+        if (headquartersSystem.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction)
+            && !reachableShipyards.Any(s => s!.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_BULK_FREIGHTER.ToString())))
         {
             if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.TRANSPORT.ToString()) < 15)
             {
@@ -937,7 +947,8 @@ public class ShipCommandsHelperService(
             }
         }
 
-        if (headquartersSystem.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction))
+        if (headquartersSystem.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction)
+            && !reachableShipyards.Any(s => s!.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_BULK_FREIGHTER.ToString())))
         {
             if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.TRANSPORT.ToString()) < 30)
             {
@@ -949,6 +960,17 @@ public class ShipCommandsHelperService(
             {
                 var shipyard = headquartersSystem.Waypoints.Single(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_LIGHT_HAULER.ToString()) == true);
                 return (shipyard.Symbol, ShipTypesEnum.SHIP_LIGHT_HAULER);
+            }
+        }
+
+        if (headquartersSystem.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction)
+            && reachableShipyards.Any(s => s!.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_BULK_FREIGHTER.ToString()))
+            && agent.Credits > PURCHASE_SHIP_CREDITS_THRESHOLD_FOR_BULK_FREIGHTER)
+        {
+            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()) < 100)
+            {
+                var shipyard = reachableShipyards.First(s => s?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_BULK_FREIGHTER.ToString()) == true);
+                return (shipyard.Symbol, ShipTypesEnum.SHIP_BULK_FREIGHTER);
             }
         }
 
@@ -985,6 +1007,11 @@ public class ShipCommandsHelperService(
 
 
     private readonly SemaphoreSlim _transferCargoSemaphore = new(1, 1);
+
+    private long MINIMUM_SHIP_UPGRADE_CREDITS = 2_000_000;
+
+    private long PURCHASE_SHIP_CREDITS_THRESHOLD_FOR_BULK_FREIGHTER = 10_000_000;
+
     public async Task<Cargo?> TransferCargo(Ship ship, Waypoint currentWaypoint)
     {
         if (currentWaypoint.Type != WaypointTypesEnum.ENGINEERED_ASTEROID.ToString()
@@ -1050,24 +1077,31 @@ public class ShipCommandsHelperService(
     }
     public async Task<GoalModel?> GetShipModuleGoalModel(Ship ship)
     {
+        var agent = await _agentsService.GetAsync();
+        if (agent.Credits < MINIMUM_SHIP_UPGRADE_CREDITS) return null;
+
         var moduleToUpgrade = IsCargoUpgrade(ship);
         if (moduleToUpgrade == null) return null;
 
+        GoalModel? goalModel;
         var systems = await _systemsService.GetAsync();
         var traversableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol, int.MaxValue);
         var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
         var upgradeModuleWaypoints = waypoints.Where(w => w.Marketplace.HasTradeGood(Enum.Parse<TradeSymbolsEnum>(moduleToUpgrade.ToString()))).ToList();
 
-        var paths = await _pathsService.BuildSystemPathWithCostWithBurn2(traversableSystems.Select(s => s.Symbol).ToList(), ship.Nav.WaypointSymbol, ship.Fuel.Capacity, ship.Fuel.Current);
-        var closestPath = paths
+        var shipPaths = await _pathsService.BuildSystemPathWithCostWithBurn2(traversableSystems.Select(s => s.Symbol).ToList(), ship.Nav.WaypointSymbol, ship.Fuel.Capacity, ship.Fuel.Current);
+        var closestModulePath = shipPaths
             .Where(p => upgradeModuleWaypoints.Select(w => w.Symbol).Contains(p.WaypointSymbol))
             .OrderBy(p => p.TimeCost)
             .FirstOrDefault();
-        if (closestPath is not null)
-        {
-            return new GoalModel(moduleToUpgrade, closestPath.WaypointSymbol, null);
-        }
-        return null;
+        if (closestModulePath is null) return null;
+        goalModel = new GoalModel(moduleToUpgrade, closestModulePath.WaypointSymbol, null);
+
+        var shipyardPaths = await _pathsService.BuildSystemPathWithCostWithBurn2(traversableSystems.Select(s => s.Symbol).ToList(), goalModel.BuyWaypointSymbol, 600, 600);
+        var shipyards = waypoints.Where(w => w.Shipyard is not null);
+        var closestShipyard = shipyardPaths.Where(p => shipyards.Select(s => s.Symbol).Contains(p.WaypointSymbol)).OrderBy(p => p.TimeCost).First();
+        goalModel = goalModel with { SellWaypointSymbol = closestShipyard.WaypointSymbol };
+        return goalModel;
     }
 
     private string? IsCargoUpgrade(Ship ship)
@@ -1084,13 +1118,24 @@ public class ShipCommandsHelperService(
         //     return ShipEngineEnum.ENGINE_ION_DRIVE_II.ToString();
         // }
 
-        if (ship.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()
-            && (ship.Modules.Any(m => m.Symbol == ShipCargoEnum.MODULE_CARGO_HOLD_II.ToString())
-                || ship.Frame.ModuleSlots > ship.Modules.Count()))
-        {
-            return ShipCargoEnum.MODULE_CARGO_HOLD_III.ToString();
-        }
+        // if (ship.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()
+        //     && (ship.Modules.Any(m => m.Symbol == ShipCargoEnum.MODULE_CARGO_HOLD_II.ToString())
+        //         || ship.Frame.ModuleSlots > ship.Modules.Sum(m => m.Requirements.Slots)))
+        // {
+        //     return ShipCargoEnum.MODULE_CARGO_HOLD_III.ToString();
+        // }
 
+        return null;
+    }
+
+    public string? GetModuleToRemove(Ship ship, string tradeSymbol)
+    {
+        if (tradeSymbol == TradeSymbolsEnum.MODULE_CARGO_HOLD_III.ToString()
+            && ship.Frame.ModuleSlots - ship.Modules.Sum(m => m.Requirements.Slots) < 2
+            && ship.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString())
+        {
+            return ship.Modules.FirstOrDefault(m => m.Symbol == TradeSymbolsEnum.MODULE_CARGO_HOLD_II.ToString())?.Symbol;
+        }
         return null;
     }
 }
