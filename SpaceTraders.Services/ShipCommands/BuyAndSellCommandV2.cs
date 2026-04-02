@@ -70,9 +70,8 @@ public class BuyAndSellCommandV2(
         }
         if (goalModel is null)
         {
-            ship = ship with { ShipCommand = null, GoalModel = null, Goal = null };
-            ship = ship with { Cooldown = new Cooldown(ship.Symbol, 600, 600, DateTime.UtcNow.AddMinutes(10) ) };
-            return new ShipStatus(ship, $"Nothing to do buy and sell.", DateTime.UtcNow); 
+            ship = ship with { ShipCommand = new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration), GoalModel = null, Goal = null };
+            return new ShipStatus(ship, $"Nothing to do buy and sell, so exploring...", DateTime.UtcNow); 
         }
         
         Nav? nav = null;
