@@ -357,4 +357,11 @@ public class ShipsController(
             action = "Index",
         });
     }
+
+    [Route("/ships/{shipSymbol}/detail")]
+    public async Task<IActionResult> Detail(string shipSymbol)
+    {
+        var shipStatus = await _shipStatusesCacheService.GetAsync(shipSymbol);
+        return Json(shipStatus.Ship);
+    }
 }

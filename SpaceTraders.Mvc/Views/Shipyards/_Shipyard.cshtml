@@ -4,7 +4,7 @@
 
 <h6><u>Shipyard @Model.Symbol</u></h6>
 <ul>
-    <li><b>Ship Types:</b> @(Html.Raw(string.Join(", ", Model.ShipTypes.Select(st => $"{st.Type} (<a href='/waypoints/{Model.Symbol}/shipyards/{st.Type}/buy'>buy</a>)"))))</li>
+    <li><b>Ship Types:</b> @(Html.Raw(string.Join(", ", Model.ShipTypes.Select(st => $"<a href='/waypoints/{Model.Symbol}/shipyards/{st.Type}/detail'>{st.Type}</a> (<a href='/waypoints/{Model.Symbol}/shipyards/{st.Type}/buy'>buy</a>)"))))</li>
     <li><b>Mod Fee:</b> @Model.ModificationsFee</li>
 </ul>
 <div style="margin-left:10px; border-left-style: solid; border-left-width: 1px; padding-left: 10px;  margin-bottom: 0px;">

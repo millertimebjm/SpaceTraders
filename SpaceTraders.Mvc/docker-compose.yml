@@ -1,0 +1,9 @@
+services:
+  spacetraders-mvc:
+    build: .
+    container_name: spacetraders-mvc
+    ports:
+      - "5064:8080"
+    restart: always
+    environment:
+      - AppConfigConnectionString=${APP_CONFIG_CONNECTION_STRING}

@@ -208,7 +208,7 @@ public class ShipLoopsService(
             }
             ship = ship with
             {
-                Error = ex.Message + " " + ex.InnerException.Message + " " + ex.ResponseBody,
+                Error = ex.Message + " " + ex.InnerException?.Message ?? "" + " " + ex.ResponseBody,
             };
             shipStatus = shipStatus with { Ship = ship };
         }

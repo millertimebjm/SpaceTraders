@@ -1,6 +1,9 @@
+@using Microsoft.EntityFrameworkCore.Metadata.Internal
 @using SpaceTraders.Models
 @using SpaceTraders.Models.Enums
 @model Marketplace
+
+
 
 <h6><u>Marketplace @Model.Symbol</u></h6>
 <ul>
@@ -14,7 +17,8 @@
             }
             @foreach (var tradeGood in tradeGoods)
             {
-                <text><li>@tradeGood.Symbol @tradeGood.Type (Buy @tradeGood.PurchasePrice, Sell @tradeGood.SellPrice, Supply @tradeGood.Supply, Activity @tradeGood.Activity, Volume @tradeGood.TradeVolume) <a href="/marketplaces/@Model.Symbol/buy/@tradeGood.Symbol"></a></li></text>
+
+                <text><li><span data-toggle="tooltip" data-placement="top" title="@GetDescription(tradeGood, Model)">@tradeGood.Symbol</span> @tradeGood.Type (Buy @tradeGood.PurchasePrice, Sell @tradeGood.SellPrice, Supply @tradeGood.Supply, Activity @tradeGood.Activity, Volume @tradeGood.TradeVolume) <a href="/marketplaces/@Model.Symbol/buy/@tradeGood.Symbol"></a></li></text>
             }
         </ul>
     }
@@ -34,3 +38,20 @@
         }
     }    
 </ul>
+
+@{
+    static string GetDescription(TradeGood tradeGood, Marketplace marketplace)
+    {
+        switch (Enum.Parse<TradeGoodTypeEnum>(tradeGood.Type))
+        {
+            case TradeGoodTypeEnum.EXCHANGE:
+                return marketplace.Exchange.Single(tg => tg.Symbol == tradeGood.Symbol).Description;
+            case TradeGoodTypeEnum.IMPORT:
+                return marketplace.Imports.Single(tg => tg.Symbol == tradeGood.Symbol).Description;
+            case TradeGoodTypeEnum.EXPORT:
+                return marketplace.Exports.Single(tg => tg.Symbol == tradeGood.Symbol).Description;
+            default:
+                throw new NotImplementedException();
+        }
+    }
+}
