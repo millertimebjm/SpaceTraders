@@ -2,6 +2,7 @@ using SpaceTraders.Model.Exceptions;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
+using SpaceTraders.Services.Paths.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.Ships;
 using SpaceTraders.Services.Ships.Interfaces;
@@ -21,7 +22,8 @@ public class BuyAndSellCommandV2(
     IAgentsService _agentsService,
     ITransactionsCacheService _transactionsService,
     ITradesService _tradesService,
-    IShipsService _shipsService
+    IShipsService _shipsService,
+    IPathsService _pathsService
 ) : IShipCommandsService
 {
     public async Task<ShipStatus> Run(
@@ -55,11 +57,15 @@ public class BuyAndSellCommandV2(
                     && s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.BuyToSell)
                 .Select(s => s.GoalModel!.TradeSymbol!)
                 .ToList();
-            if (ship.Symbol.Contains("-3A"))
-            {
-
-            }
-            goalModel = await GetGoalModelAsync(ship, currentWaypoint, otherShipGoalModelTradeSymbols);
+            var otherShipSystems = shipsDictionary
+                .Values
+                .Where(s => s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.BuyToSell
+                    && s.Symbol != ship.Symbol)
+                .Select(s => WaypointsService.ExtractSystemFromWaypoint(s.Nav.WaypointSymbol))
+                .GroupBy(s => s)
+                .Where(s => s.Count() > 4)
+                .Select(s => s.Key);
+            goalModel = await GetGoalModelAsync(ship, currentWaypoint, otherShipGoalModelTradeSymbols, otherShipSystems.ToList());
             ship = ship with { GoalModel = goalModel };
         }
         if (goalModel is null)
@@ -183,11 +189,24 @@ public class BuyAndSellCommandV2(
         return null!;
     }
 
-    private async Task<GoalModel?> GetGoalModelAsync(Ship ship, Waypoint currentWaypoint, List<string> otherShipGoalModelTradeSymbols)
+    private async Task<GoalModel?> GetGoalModelAsync(Ship ship, Waypoint currentWaypoint, List<string> otherShipGoalModelTradeSymbols, List<string> otherShipSystemsToAvoid)
     {
         var systems = await _systemsService.GetAsync();
         var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(ship.Nav.WaypointSymbol));
         var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
+
+        var originWaypoint = ship.Nav.WaypointSymbol;
+        var originSystem = ship.Nav.SystemSymbol;
+        if (otherShipSystemsToAvoid.Contains(originSystem))
+        {
+            var jumpGateWaypoints = waypoints.Where(w => w.JumpGate is not null && !otherShipSystemsToAvoid.Contains(WaypointsService.ExtractSystemFromWaypoint(w.Symbol)));
+            var paths = await _pathsService.BuildSystemPathWithCostWithBurn2(traversableSystems.Select(s => s.Symbol).ToList(), originWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
+            var pathsToClosestAvailableJumpGate = paths
+                .Where(p => jumpGateWaypoints.Any(w => w.Symbol == p.WaypointSymbol))
+                .OrderBy(p => p.TimeCost);
+            originWaypoint = pathsToClosestAvailableJumpGate.First().WaypointSymbol;
+        }
+
         if (ship.Cargo.Units > 0)
         {
             var sellModels = await _tradesService.GetSellModelsAsyncWithBurn2(traversableSystems.Select(s => s.Symbol).ToList(), currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
@@ -199,9 +218,17 @@ public class BuyAndSellCommandV2(
         }
         else
         {
-            var tradeModels = await _tradesService.GetTradeModelsAsyncWithBurn2(traversableSystems.Select(s => s.Symbol).ToList(), ship.Nav.WaypointSymbol, ship.Fuel.Capacity, ship.Fuel.Current);
+            var tradeModels = await _tradesService.GetTradeModelsAsyncWithBurn2(traversableSystems.Select(s => s.Symbol).ToList(), originWaypoint, ship.Fuel.Capacity, ship.Fuel.Current);
             tradeModels = tradeModels.Where(tm => !otherShipGoalModelTradeSymbols.Contains(tm.TradeSymbol)).ToList();
             var bestTradeModel = tradeModels.OrderByDescending(sm => sm.NavigationFactor).FirstOrDefault();
+            if (bestTradeModel is not null)
+            {
+                return new GoalModel(bestTradeModel.TradeSymbol, bestTradeModel.ExportWaypointSymbol, bestTradeModel.ImportWaypointSymbol);
+            }
+
+            tradeModels = await _tradesService.GetTradeModelsAsyncWithBurn2(traversableSystems.Select(s => s.Symbol).ToList(), ship.Nav.WaypointSymbol, ship.Fuel.Capacity, ship.Fuel.Current);
+            tradeModels = tradeModels.Where(tm => !otherShipGoalModelTradeSymbols.Contains(tm.TradeSymbol)).ToList();
+            bestTradeModel = tradeModels.OrderByDescending(sm => sm.NavigationFactor).FirstOrDefault();
             if (bestTradeModel is null) return null;
             return new GoalModel(bestTradeModel.TradeSymbol, bestTradeModel.ExportWaypointSymbol, bestTradeModel.ImportWaypointSymbol);
         }
