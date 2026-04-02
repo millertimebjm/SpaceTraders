@@ -499,7 +499,7 @@ public class ShipsService(
     {
         var urlBuilder = new UriBuilder(ApiUrl)
         {
-            Path = $"/my/ships/{shipSymbol}/installmodule"
+            Path = $"/my/ships/{shipSymbol}/modules/install"
         };
         var url = urlBuilder.ToString();
         var request = new HttpRequestMessage(HttpMethod.Post, url);

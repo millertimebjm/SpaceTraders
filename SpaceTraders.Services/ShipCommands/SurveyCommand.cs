@@ -2,6 +2,7 @@ using SpaceTraders.Models;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.Ships;
+using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Transactions.Interfaces;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
@@ -11,7 +12,8 @@ public class SurveyCommand(
     IShipCommandsHelperService _shipCommandsHelperService,
     IWaypointsService _waypointsService,
     IAgentsService _agentsService,
-    ITransactionsCacheService _transactionsService
+    ITransactionsCacheService _transactionsService,
+    ISystemsService _systemsService
 ) : IShipCommandsService
 {
     public async Task<ShipStatus> Run(
@@ -57,8 +59,11 @@ public class SurveyCommand(
 
             var cooldown = await _shipCommandsHelperService.Survey(ship);
             ship = ship with { Cooldown = cooldown };
-            if (ship.Cooldown.TotalSeconds > 10)
+            var system = await _systemsService.GetAsync(ship.Nav.SystemSymbol);
+
+            if (system.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction))
             {
+                ship = ship with { ShipCommand = null, Goal = null, GoalModel = null };
                 return new ShipStatus(ship, $"Resetting job after surveying.", DateTime.UtcNow);
             }
             return new ShipStatus(ship, $"Survey {ship.Nav.WaypointSymbol}", DateTime.UtcNow);

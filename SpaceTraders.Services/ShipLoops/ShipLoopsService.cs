@@ -187,6 +187,7 @@ public class ShipLoopsService(
                 // shipStatuses.Remove(shipStatus);
                 // i--;
                 await _shipStatusesCacheService.DeleteAsync(shipStatus);
+                shipStatus = newShipStatus;
             }
             else
             {
@@ -194,6 +195,7 @@ public class ShipLoopsService(
                 ship = shipStatus.Ship;
                 ship = ship with { Error = null };
                 shipStatus = shipStatus with { Ship = ship };
+                await _shipStatusesCacheService.SetAsync(shipStatus);
             }
         }
         catch (SpaceTraderResultException ex)
@@ -211,8 +213,8 @@ public class ShipLoopsService(
                 Error = ex.Message + " " + ex.InnerException?.Message ?? "" + " " + ex.ResponseBody,
             };
             shipStatus = shipStatus with { Ship = ship };
+            await _shipStatusesCacheService.SetAsync(shipStatus);
         }
-        await _shipStatusesCacheService.SetAsync(shipStatus);
     }
 
     private async Task AddShipLogsError(Ship ship, Exception ex)

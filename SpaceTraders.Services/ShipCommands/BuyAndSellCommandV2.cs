@@ -65,6 +65,7 @@ public class BuyAndSellCommandV2(
         if (goalModel is null)
         {
             ship = ship with { ShipCommand = null, GoalModel = null, Goal = null };
+            ship = ship with { Cooldown = new Cooldown(ship.Symbol, 600, 600, DateTime.UtcNow.AddMinutes(10) ) };
             return new ShipStatus(ship, $"Nothing to do buy and sell.", DateTime.UtcNow); 
         }
         
@@ -192,7 +193,8 @@ public class BuyAndSellCommandV2(
             var sellModels = await _tradesService.GetSellModelsAsyncWithBurn2(traversableSystems.Select(s => s.Symbol).ToList(), currentWaypoint.Symbol, ship.Fuel.Capacity, ship.Fuel.Current);
             var inventory = ship.Cargo.Inventory.OrderByDescending(i => i.Units).First();
             var validSellModels = sellModels.Where(sm => sm.TradeSymbol == inventory.Symbol).ToList();
-            var bestSellModel = validSellModels.OrderByDescending(sm => sm.NavigationFactor).First();
+            var bestSellModel = validSellModels.OrderByDescending(sm => sm.NavigationFactor).FirstOrDefault();
+            if (bestSellModel is null) return null;
             return new GoalModel(bestSellModel.TradeSymbol, null, bestSellModel.WaypointSymbol);
         }
         else

@@ -5,6 +5,7 @@ using SpaceTraders.Models.Results;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Constructions.Interfaces;
 using SpaceTraders.Services.Contracts.Interfaces;
+using SpaceTraders.Services.Marketplaces;
 using SpaceTraders.Services.Marketplaces.Interfaces;
 using SpaceTraders.Services.Paths;
 using SpaceTraders.Services.Paths.Interfaces;
@@ -1045,23 +1046,47 @@ public class ShipCommandsHelperService(
     }
     public async Task<GoalModel?> GetShipModuleGoalModel(Ship ship)
     {
-        if (ship.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()
-            && ship.Modules.Any(m => m.Symbol == ShipModuleEnum.MODULE_CARGO_HOLD_II.ToString()))
+        var moduleToUpgrade = IsCargoUpgrade(ship);
+        if (moduleToUpgrade == null) return null;
+
+        var systems = await _systemsService.GetAsync();
+        var traversableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol, int.MaxValue);
+        var waypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
+        var upgradeModuleWaypoints = waypoints.Where(w => w.Marketplace.HasTradeGood(Enum.Parse<TradeSymbolsEnum>(moduleToUpgrade.ToString()))).ToList();
+
+        var paths = await _pathsService.BuildSystemPathWithCostWithBurn2(traversableSystems.Select(s => s.Symbol).ToList(), ship.Nav.WaypointSymbol, ship.Fuel.Capacity, ship.Fuel.Current);
+        var closestPath = paths
+            .Where(p => upgradeModuleWaypoints.Select(w => w.Symbol).Contains(p.WaypointSymbol))
+            .OrderBy(p => p.TimeCost)
+            .FirstOrDefault();
+        if (closestPath is not null)
         {
-            var moduleToUpgrade = ShipModuleEnum.MODULE_CARGO_HOLD_II.ToString();
-            var systems = await _systemsService.GetAsync();
-            var traversableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol, int.MaxValue);
-            var waypoints = traversableSystems.SelectMany(s => s.Waypoints);
-            var upgradeModuleWaypoints = waypoints.Where(w => 
-                w.Marketplace?.Exchange.Any(e => e.Symbol == TradeSymbolsEnum.MODULE_CARGO_HOLD_III.ToString()) == true
-                || waypoints.Any(w => w.Marketplace?.Imports.Any(e => e.Symbol == TradeSymbolsEnum.MODULE_CARGO_HOLD_III.ToString()) == true)
-                || waypoints.Any(w => w.Marketplace?.Exports.Any(e => e.Symbol == TradeSymbolsEnum.MODULE_CARGO_HOLD_III.ToString()) == true));
-            upgradeModuleWaypoints = upgradeModuleWaypoints.OrderBy(w => w.Symbol); // TODO: Get closest
-            if (upgradeModuleWaypoints.Any())
-            {
-                return new GoalModel(moduleToUpgrade, upgradeModuleWaypoints.First().Symbol, null);
-            }
+            return new GoalModel(moduleToUpgrade, closestPath.WaypointSymbol, null);
         }
+        return null;
+    }
+
+    private string? IsCargoUpgrade(Ship ship)
+    {
+        // if (ship.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()
+        //     && ship.Reactor.Symbol == ShipReactorEnum.REACTOR_CHEMICAL_I.ToString())
+        // {
+        //     return ShipReactorEnum.REACTOR_FISSION_I.ToString();
+        // }
+
+        // if (ship.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()
+        //     && ship.Reactor.Symbol == ShipEngineEnum.ENGINE_ION_DRIVE_I.ToString())
+        // {
+        //     return ShipEngineEnum.ENGINE_ION_DRIVE_II.ToString();
+        // }
+
+        if (ship.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()
+            && (ship.Modules.Any(m => m.Symbol == ShipCargoEnum.MODULE_CARGO_HOLD_II.ToString())
+                || ship.Frame.ModuleSlots > ship.Modules.Count()))
+        {
+            return ShipCargoEnum.MODULE_CARGO_HOLD_III.ToString();
+        }
+
         return null;
     }
 }
