@@ -148,16 +148,9 @@ public class ShipLoopsService(
 
         if (ship.ShipCommand is null)
         {
-            await _getShipJobSemaphore.WaitAsync();
-            IShipJobService? shipJobsService = null;
-            try
-            {
-                shipJobsService = _shipJobsFactory.Get(shipStatus.Ship);
-            }
-            finally
-            {
-                _getShipJobSemaphore.Release();
-            }
+            
+            var shipJobsService = _shipJobsFactory.Get(shipStatus.Ship);
+
             
             if (shipJobsService is null)
             {
@@ -167,7 +160,18 @@ public class ShipLoopsService(
                 return;
             }
 
-            var shipCommand = await shipJobsService.Get(shipStatuses.Select(ss => ss.Ship).ToList(), shipStatus.Ship);
+            ShipCommand? shipCommand = null;
+            await _getShipJobSemaphore.WaitAsync();
+            try
+            {
+                shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
+                shipCommand = await shipJobsService.Get(shipStatuses.Select(ss => ss.Ship), shipStatus.Ship);
+            }
+            finally
+            {
+                _getShipJobSemaphore.Release();
+            }
+
             ship = ship with { ShipCommand = shipCommand };
             shipStatus = shipStatus with { Ship = ship };
             await _shipStatusesCacheService.SetAsync(shipStatus);

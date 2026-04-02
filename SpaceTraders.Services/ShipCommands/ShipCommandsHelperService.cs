@@ -185,18 +185,22 @@ public class ShipCommandsHelperService(
         }
 
         var shouldDock = false;
-        var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
-        var shipStatuses = await _shipStatusesCacheService.GetAsync();
-        var ships = shipStatuses.Select(ss => ss.Ship);
-        var (shipyardWaypointSymbol, shipToBuy) = await ShipToBuy(ships);
-        if (shipToBuy is null || shipyardWaypointSymbol != ship.Nav.WaypointSymbol) return null;
 
         // Need fuel and fuel is available at this waypoint
-        if ((ship.Fuel.Current < ship.Fuel.Capacity
+        if (ship.Fuel.Current < ship.Fuel.Capacity
             && currentWaypoint.Marketplace?.TradeGoods?.Any(e => e.Symbol == InventoryEnum.FUEL.ToString()) == true)
-            || currentWaypoint.Shipyard?.ShipTypes.Any(st => st.Type == shipToBuy.ToString()) == true)
         {
             shouldDock = true;
+        }
+
+        if (!shouldDock)
+        {
+            var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
+            var shipStatuses = await _shipStatusesCacheService.GetAsync();
+            var ships = shipStatuses.Select(ss => ss.Ship);
+            var (shipyardWaypointSymbol, shipToBuy) = await ShipToBuy(ships);
+            if (shipToBuy is null || shipyardWaypointSymbol != ship.Nav.WaypointSymbol) return null;
+            shouldDock = currentWaypoint.Shipyard?.ShipTypes.Any(st => st.Type == shipToBuy.ToString()) == true;
         }
 
         if (!shouldDock)
