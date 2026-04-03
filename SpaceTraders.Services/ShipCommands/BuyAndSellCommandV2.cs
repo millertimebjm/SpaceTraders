@@ -49,14 +49,21 @@ public class BuyAndSellCommandV2(
         var goalModel = ship.GoalModel;
         if (goalModel is null)
         {
-            var otherShipGoalModelTradeSymbols = shipsDictionary
-                .Values
-                .Where(s => 
-                    s.GoalModel?.TradeSymbol is not null 
-                    && s.Symbol != ship.Symbol
-                    && s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.BuyToSell)
-                .Select(s => s.GoalModel!.TradeSymbol!)
-                .ToList();
+            var system = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(currentWaypoint.Symbol));
+            var jumpGateWaypoint = system.Waypoints.SingleOrDefault(w => w.JumpGate is not null && !w.IsUnderConstruction);
+            List<string> otherShipGoalModelTradeSymbols = [];
+            if (jumpGateWaypoint is null)
+            {
+                otherShipGoalModelTradeSymbols = shipsDictionary
+                    .Values
+                    .Where(s => 
+                        s.GoalModel?.TradeSymbol is not null 
+                        && s.Symbol != ship.Symbol
+                        && s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.BuyToSell)
+                    .Select(s => s.GoalModel!.TradeSymbol!)
+                    .ToList();
+            }
+            
             var otherShipSystems = shipsDictionary
                 .Values
                 .Where(s => s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.BuyToSell
