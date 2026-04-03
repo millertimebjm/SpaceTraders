@@ -12,7 +12,7 @@ public class PathsService(
     IPathsCacheService _pathsCacheService
 ) : IPathsService
 {
-    private const int COST_OF_JUMP = 1000;
+    private const int COST_OF_JUMP = 500;
 
     public async Task<List<PathModel>> BuildSystemPathWithCost(
         string originWaypoint, 

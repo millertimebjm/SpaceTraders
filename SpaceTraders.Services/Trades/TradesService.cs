@@ -153,18 +153,15 @@ public class TradesService(
         }
     }
 
-    public async Task<List<TradeModel>> GetTradeModelsAsyncWithBurn2(List<string> systemSymbols, string originWaypointSymbol, int fuelMax, int fuelCurrent)
+    public async Task<List<TradeModel>> GetTradeModelsAsyncWithBurn2(List<string> systemSymbols, string originWaypointSymbol, int fuelMax, int fuelCurrent, int distance = 1)
     {
         _logger.LogInformation("Starting GetTradeModelsAsyncWithBurn2...");
         var tradeModels = await GetTradeModelsWithCacheAsync();
 
         var systems = await _systemsService.GetAsync();
-        var traversableSystemsWithinOneJump = GetSystemSymbolsWithinOneJump(systems, WaypointsService.ExtractSystemFromWaypoint(originWaypointSymbol));
-        var localTradeModels = tradeModels.Where(tm => traversableSystemsWithinOneJump.Any(s => tm.ExportWaypointSymbol.StartsWith(s)) && systemSymbols.Any(s => tm.ImportWaypointSymbol.StartsWith(s))).ToList();
-        //var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(originWaypointSymbol));
-        var systemsIncluded = systems.Where(s => traversableSystemsWithinOneJump.Contains(s.Symbol));
-        //var waypoints = systemsIncluded.SelectMany(s => s.Waypoints).ToList();
-        //var pathModels = PathsService.BuildSystemPathWithCostWithBurn(waypoints, originWaypointSymbol, fuelMax, fuelCurrent);
+        var traversableSystemsWithinXJumps = GetTraversableSystemSymbolsWithinXJumps(systems, WaypointsService.ExtractSystemFromWaypoint(originWaypointSymbol), distance);
+        var localTradeModels = tradeModels.Where(tm => traversableSystemsWithinXJumps.Any(s => tm.ExportWaypointSymbol.StartsWith(s)) && systemSymbols.Any(s => tm.ImportWaypointSymbol.StartsWith(s))).ToList();
+        var systemsIncluded = systems.Where(s => traversableSystemsWithinXJumps.Contains(s.Symbol));
         var pathModels = await _pathsService.BuildSystemPathWithCostWithBurn2(systemsIncluded.Select(s => s.Symbol).ToList(), originWaypointSymbol, fuelMax, fuelCurrent);
         List<TradeModel> tradeModelsWithOriginTimeCost = [];
         foreach (var localTradeModel in localTradeModels)
@@ -431,11 +428,11 @@ public class TradesService(
         List<Waypoint> marketplaceWaypoints,
         ConcurrentBag<TradeModel> tradeModels)
     {
-        var systemSymbolsWithinOneJump = GetSystemSymbolsWithinOneJump(systems, WaypointsService.ExtractSystemFromWaypoint(marketplaceWaypointExport.Symbol));
-        var marketplaceWaypointsWithinOneSystem = marketplaceWaypoints.Where(w => systemSymbolsWithinOneJump.Contains(WaypointsService.ExtractSystemFromWaypoint(w.Symbol))).ToList();
+        var systemSymbolsWithinXJumps = GetTraversableSystemSymbolsWithinXJumps(systems, WaypointsService.ExtractSystemFromWaypoint(marketplaceWaypointExport.Symbol));
+        var marketplaceWaypointsWithinOneSystem = marketplaceWaypoints.Where(w => systemSymbolsWithinXJumps.Contains(WaypointsService.ExtractSystemFromWaypoint(w.Symbol))).ToList();
         // reduce all other waypoints to within one system
 
-        var paths = await _pathsService.BuildSystemPathWithCostWithBurn2(systems.Where(s => systemSymbolsWithinOneJump.Contains(s.Symbol)).Select(s => s.Symbol).ToList(), marketplaceWaypointExport.Symbol, 600, 600);
+        var paths = await _pathsService.BuildSystemPathWithCostWithBurn2(systems.Where(s => systemSymbolsWithinXJumps.Contains(s.Symbol)).Select(s => s.Symbol).ToList(), marketplaceWaypointExport.Symbol, 600, 600);
         var exports = marketplaceWaypointExport.Marketplace.TradeGoods.Where(tg => tg.Type == TradeGoodTypeEnum.EXPORT.ToString() && tg.Symbol != TradeSymbolsEnum.FUEL.ToString() && tg.Symbol != TradeSymbolsEnum.ANTIMATTER.ToString()).ToList();
         foreach (var export in exports)
         {
@@ -568,10 +565,7 @@ public class TradesService(
             .Where(tm => localSystemSymbols.Any(s => tm.ImportWaypointSymbol.StartsWith(s)))
             .Select(tm => new SellModel(tm.TradeSymbol, tm.ImportWaypointSymbol, tm.ImportSellPrice, tm.ImportSupplyEnum, tm.ImportTradeVolume, 0, 0))
             .ToList();
-        // var systems = await _systemsService.GetAsync();
-        // var systemsIncluded = systems.Where(s => systemSymbols.Contains(s.Symbol)).ToList();
-        // var waypoints = systemsIncluded.SelectMany(s => s.Waypoints).ToList();
-        // var pathModels = PathsService.BuildSystemPathWithCostWithBurn(waypoints, originWaypointSymbol, fuelMax, fuelCurrent);
+
         var pathModels = await _pathsService.BuildSystemPathWithCostWithBurn2(localSystemSymbols, originWaypointSymbol, fuelMax, fuelCurrent);
         List<SellModel> tradeModelsWithOriginTimeCost = [];
         foreach (var localSellModel in localSellModels)
@@ -601,11 +595,27 @@ public class TradesService(
         return distinctSystems;
     }
 
+    private static List<string> GetTraversableSystemSymbolsWithinXJumps(IReadOnlyList<STSystem> systems, string originSystemSymbol, int distance = 1)
+    {
+        var systemLinks = SystemsService.TraverseLinks(systems.ToList(), originSystemSymbol, traversable: true);
+        List<string> currentLinks = [originSystemSymbol];
+
+        for (int i = 0; i < distance; i++)
+        {
+            var newSystems = systemLinks.Where(sl => currentLinks.Contains(sl.leftSystem.Symbol) || currentLinks.Contains(sl.rightSystem.Symbol)).ToList();
+            currentLinks.AddRange(newSystems.Select(sl => sl.leftSystem.Symbol));
+            currentLinks.AddRange(newSystems.Select(sl => sl.rightSystem.Symbol));
+            currentLinks = currentLinks.Distinct().ToList();
+        }
+
+        return currentLinks;
+    }
+
     private async Task<List<string>> GetSystemSymbolsWithinOneJump(List<string> systemSymbols, string originSystemSymbol)
     {
         var systems = await _systemsService.GetAsync();
         var limitedySystems = systems.Where(s => systemSymbols.Contains(s.Symbol)).ToList();
-        return GetSystemSymbolsWithinOneJump(limitedySystems, originSystemSymbol);
+        return GetTraversableSystemSymbolsWithinXJumps(limitedySystems, originSystemSymbol);
     }
 }
 

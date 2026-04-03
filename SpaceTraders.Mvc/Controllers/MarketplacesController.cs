@@ -42,7 +42,7 @@ public class MarketplacesController(
     }
 
     [Route("/marketplaces/trademodels")]
-    public async Task<IActionResult> TradeModels(string? waypointSymbol)
+    public async Task<IActionResult> TradeModels(string? waypointSymbol, int distance = 1)
     {
         var agent = await _agentsService.GetAsync();
         var pathWaypointSymbol = waypointSymbol;
@@ -65,13 +65,14 @@ public class MarketplacesController(
                 {
                     var systems = await _systemsService.GetAsync();
                     var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(waypointSymbol));
-                    var modelTrades = await _tradesService.GetTradeModelsAsyncWithBurn2(traversableSystems.Select(s => s.Symbol).ToList(), waypointSymbol, 600, 600);
+                    var modelTrades = await _tradesService.GetTradeModelsAsyncWithBurn2(traversableSystems.Select(s => s.Symbol).ToList(), waypointSymbol, 600, 600, distance);
                     orderedModelTrades = modelTrades.OrderByDescending(mt => mt.NavigationFactor).ToList();
                 }
                 return orderedModelTrades;
             }),
             _pathsService.BuildSystemPathWithCostWithBurn2(traversableSystems.Select(s => s.Symbol).ToList(), pathWaypointSymbol!, 600, 600),
-            waypointSymbol ?? "");
+            waypointSymbol ?? "",
+            distance);
         return View(model);
     }
 

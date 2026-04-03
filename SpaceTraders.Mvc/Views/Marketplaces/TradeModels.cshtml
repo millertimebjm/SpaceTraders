@@ -19,6 +19,7 @@
     <div class="col-sm-2">
         <form method="GET" action="/marketplaces/trademodels" autocomplete="off" id="waypointSymbolForm">        
             <input class="form-control" list="waypoints" name="waypointSymbol" id="waypointSymbol" value="@Model.WaypointSymbol" autocomplete="off">
+            <input class="form-control" name="distance" id="distance" value="@Model.Distance" autocomplete="off" width="3" />
             <button type="submit" class="btn-success" value="submit">Submit</button>
             <input type="button" class="btn-warning" onclick="clearWaypointSymbol()" value="Clear">
         </form>

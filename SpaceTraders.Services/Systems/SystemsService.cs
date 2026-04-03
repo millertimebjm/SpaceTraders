@@ -85,13 +85,9 @@ public class SystemsService(
         return traversableSystems;
     }
 
-    public static List<(STSystem leftSystem, STSystem rightSystem, bool dottedLine)> TraverseLinks(List<STSystem> systems, string startingSystemString)
+    public static List<(STSystem leftSystem, STSystem rightSystem, bool dottedLine)> TraverseLinks(List<STSystem> systems, string startingSystemString, bool traversable = false)
     {
         var startingSystem = systems.SingleOrDefault(s => s.Symbol == startingSystemString);
-        if (startingSystem is null)
-        {
-            
-        }
         List<(STSystem leftSystem, STSystem rightSystem, bool dottedLine)> links = [];
         foreach (var system in systems)
         {
@@ -106,7 +102,10 @@ public class SystemsService(
                 if (!links.Any(l => l.leftSystem.Symbol == system.Symbol && l.rightSystem.Symbol == connectedSystem.Symbol)
                     && !links.Any(l => l.rightSystem.Symbol == system.Symbol && l.leftSystem.Symbol == connectedSystem.Symbol))
                 {
-                    links.Add((system, connectedSystem, dottedLine));
+                    if (!traversable || !dottedLine)
+                    {
+                        links.Add((system, connectedSystem, dottedLine));
+                    }
                 }
             }
         }
