@@ -323,6 +323,10 @@ public class ShipLoopsService(
     {
         var agent = await _agentsService.GetAsync();
         var systems = await _systemsService.GetAsync();
+
+        var finishedJumpGate = systems.SingleOrDefault(s => s.Symbol == WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters) && s.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction));
+        if (finishedJumpGate is null) return;
+
         var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters));
         var paths = await _pathsService.BuildSystemPathWithCostWithBurn2(traversableSystems.Select(s => s.Symbol).ToList(), agent.Headquarters, 600, 600);
         var waypoints = traversableSystems.SelectMany(s => s.Waypoints);
