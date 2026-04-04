@@ -327,10 +327,10 @@ public class ShipLoopsService(
         // var finishedJumpGate = systems.SingleOrDefault(s => s.Symbol == WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters) && s.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction));
         // if (finishedJumpGate is null) return;
 
-        var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters));
-        var paths = await _pathsService.BuildSystemPathWithCostWithBurn2(traversableSystems.Select(s => s.Symbol).ToList(), agent.Headquarters, 600, 600);
-        var waypoints = traversableSystems.SelectMany(s => s.Waypoints);
-        var jumpGateWaypoints = waypoints.Where(w => w.JumpGate is not null && !w.IsUnderConstruction);
+        //var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters));
+        var paths = await _pathsService.BuildSystemPathWithCostWithBurn2(systems.Select(s => s.Symbol).ToList(), agent.Headquarters, 600, 600);
+        var waypoints = systems.SelectMany(s => s.Waypoints);
+        var jumpGateWaypoints = waypoints.Where(w => w.JumpGate is not null);
         var jumpGatePaths = paths
             .Where(p => jumpGateWaypoints.Select(w => w.Symbol).Contains(p.WaypointSymbol))
             .OrderBy(p => p.TimeCost);
@@ -342,7 +342,7 @@ public class ShipLoopsService(
             {
                 var connectionSystemSymbol = WaypointsService.ExtractSystemFromWaypoint(connection);
                 var connectionSystem = systems.SingleOrDefault(s => s.Symbol == connectionSystemSymbol);
-                if (!traversableSystems.Any(s => s.Symbol == connectionSystemSymbol)
+                if (!systems.Any(s => s.Symbol == connectionSystemSymbol)
                     && connectionSystem is null)
                 {
                     nextToRefresh = connectionSystemSymbol;
