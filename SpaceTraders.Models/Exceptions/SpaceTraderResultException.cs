@@ -6,12 +6,12 @@ namespace SpaceTraders.Model.Exceptions;
 public class SpaceTraderResultException(
     string Message,
     HttpRequestException? Exception,
-    string responseBody) : Exception(Message, Exception)
+    string? responseBody) : Exception(Message, Exception)
 {
     public SpaceTraderResultException(string? message) 
         : this(message ?? string.Empty, null, string.Empty)
     {
     }
 
-    public string ResponseBody { get; } = responseBody;
+    public string ResponseBody { get; } = responseBody ?? "";
 }
