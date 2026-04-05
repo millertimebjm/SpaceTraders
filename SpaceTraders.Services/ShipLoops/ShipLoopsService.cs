@@ -69,7 +69,7 @@ public class ShipLoopsService(
         {
             await CheckAndHandleReset();
             await AddAgentTokenToConfiguration();
-            await JumpGateWaypointsRefresh();
+            //await JumpGateWaypointsRefresh();
             await CreateTradeModelsIfEmpty();
             var shipStatuses = await RefreshOrCreateShipStatuses();
             await SleepUntilNextShipReady(shipStatuses);
@@ -356,13 +356,15 @@ public class ShipLoopsService(
     {
         var agent = await _agentsService.GetAsync();
         var systems = await _systemsService.GetAsync();
+        var links = SystemsService.GetSystemSymbolsWithinXJumps(systems, WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters), distance: 6);
+        var systemsWithinXJumps = systems.Where(s => links.Contains(s.Symbol));
 
-        // var finishedJumpGate = systems.SingleOrDefault(s => s.Symbol == WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters) && s.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction));
-        // if (finishedJumpGate is null) return;
+        var finishedJumpGate = systems.SingleOrDefault(s => s.Symbol == WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters) && s.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction));
+        if (finishedJumpGate is null) return;
 
         //var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters));
-        var paths = await _pathsService.BuildSystemPathWithCostWithBurn2(systems.Select(s => s.Symbol).ToList(), agent.Headquarters, 600, 600);
-        var waypoints = systems.SelectMany(s => s.Waypoints);
+        var paths = await _pathsService.BuildSystemPathWithCostWithBurn2(systemsWithinXJumps.Select(s => s.Symbol).ToList(), agent.Headquarters, 600, 600);
+        var waypoints = systemsWithinXJumps.SelectMany(s => s.Waypoints);
         var jumpGateWaypoints = waypoints.Where(w => w.JumpGate is not null);
         var jumpGatePaths = paths
             .Where(p => jumpGateWaypoints.Select(w => w.Symbol).Contains(p.WaypointSymbol))
@@ -374,8 +376,8 @@ public class ShipLoopsService(
             foreach (var connection in jumpGateWaypoint.JumpGate!.Connections)
             {
                 var connectionSystemSymbol = WaypointsService.ExtractSystemFromWaypoint(connection);
-                var connectionSystem = systems.SingleOrDefault(s => s.Symbol == connectionSystemSymbol);
-                if (!systems.Any(s => s.Symbol == connectionSystemSymbol)
+                var connectionSystem = systemsWithinXJumps.SingleOrDefault(s => s.Symbol == connectionSystemSymbol);
+                if (!systemsWithinXJumps.Any(s => s.Symbol == connectionSystemSymbol)
                     && connectionSystem is null)
                 {
                     nextToRefresh = connectionSystemSymbol;

@@ -159,7 +159,7 @@ public class TradesService(
         var tradeModels = await GetTradeModelsWithCacheAsync();
 
         var systems = await _systemsService.GetAsync();
-        var traversableSystemsWithinXJumps = GetTraversableSystemSymbolsWithinXJumps(systems, WaypointsService.ExtractSystemFromWaypoint(originWaypointSymbol), distance);
+        var traversableSystemsWithinXJumps = SystemsService.GetSystemSymbolsWithinXJumps(systems, WaypointsService.ExtractSystemFromWaypoint(originWaypointSymbol), distance, traversable: true);
         var localTradeModels = tradeModels.Where(tm => traversableSystemsWithinXJumps.Any(s => tm.ExportWaypointSymbol.StartsWith(s)) && systemSymbols.Any(s => tm.ImportWaypointSymbol.StartsWith(s))).ToList();
         var systemsIncluded = systems.Where(s => traversableSystemsWithinXJumps.Contains(s.Symbol));
         var pathModels = await _pathsService.BuildSystemPathWithCostWithBurn2(systemsIncluded.Select(s => s.Symbol).ToList(), originWaypointSymbol, fuelMax, fuelCurrent);
@@ -428,7 +428,7 @@ public class TradesService(
         List<Waypoint> marketplaceWaypoints,
         ConcurrentBag<TradeModel> tradeModels)
     {
-        var systemSymbolsWithinXJumps = GetTraversableSystemSymbolsWithinXJumps(systems, WaypointsService.ExtractSystemFromWaypoint(marketplaceWaypointExport.Symbol));
+        var systemSymbolsWithinXJumps = SystemsService.GetSystemSymbolsWithinXJumps(systems, WaypointsService.ExtractSystemFromWaypoint(marketplaceWaypointExport.Symbol), traversable: true);
         var marketplaceWaypointsWithinOneSystem = marketplaceWaypoints.Where(w => systemSymbolsWithinXJumps.Contains(WaypointsService.ExtractSystemFromWaypoint(w.Symbol))).ToList();
         // reduce all other waypoints to within one system
 
@@ -595,27 +595,11 @@ public class TradesService(
         return distinctSystems;
     }
 
-    private static List<string> GetTraversableSystemSymbolsWithinXJumps(IReadOnlyList<STSystem> systems, string originSystemSymbol, int distance = 1)
-    {
-        var systemLinks = SystemsService.TraverseLinks(systems.ToList(), originSystemSymbol, traversable: true);
-        List<string> currentLinks = [originSystemSymbol];
-
-        for (int i = 0; i < distance; i++)
-        {
-            var newSystems = systemLinks.Where(sl => currentLinks.Contains(sl.leftSystem.Symbol) || currentLinks.Contains(sl.rightSystem.Symbol)).ToList();
-            currentLinks.AddRange(newSystems.Select(sl => sl.leftSystem.Symbol));
-            currentLinks.AddRange(newSystems.Select(sl => sl.rightSystem.Symbol));
-            currentLinks = currentLinks.Distinct().ToList();
-        }
-
-        return currentLinks;
-    }
-
     private async Task<List<string>> GetSystemSymbolsWithinOneJump(List<string> systemSymbols, string originSystemSymbol)
     {
         var systems = await _systemsService.GetAsync();
         var limitedySystems = systems.Where(s => systemSymbols.Contains(s.Symbol)).ToList();
-        return GetTraversableSystemSymbolsWithinXJumps(limitedySystems, originSystemSymbol);
+        return SystemsService.GetSystemSymbolsWithinXJumps(limitedySystems, originSystemSymbol, traversable: true);
     }
 }
 

@@ -155,15 +155,6 @@ ArgumentException.ThrowIfNullOrWhiteSpace(accountToken);
 
 var app = builder.Build();
 
-using (var scope = app.Services.CreateScope())
-{
-    var accountService = scope.ServiceProvider.GetRequiredService<IAccountService>();
-    var account = await accountService.GetAsync();
-    var agentToken = account.Token;
-    var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
-    configuration[$"{_appConfigSectionName}:{ConfigurationEnums.AgentToken}"] = agentToken;
-}
-
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
