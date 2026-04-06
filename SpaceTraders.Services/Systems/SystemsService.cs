@@ -112,4 +112,20 @@ public class SystemsService(
 
         return links;
     }
+
+    public static List<string> GetSystemSymbolsWithinXJumps(IReadOnlyList<STSystem> systems, string originSystemSymbol, int distance = 1, bool traversable = false)
+    {
+        var systemLinks = SystemsService.TraverseLinks(systems.ToList(), originSystemSymbol, traversable: traversable);
+        List<string> currentLinks = [originSystemSymbol];
+
+        for (int i = 0; i < distance; i++)
+        {
+            var newSystems = systemLinks.Where(sl => currentLinks.Contains(sl.leftSystem.Symbol) || currentLinks.Contains(sl.rightSystem.Symbol)).ToList();
+            currentLinks.AddRange(newSystems.Select(sl => sl.leftSystem.Symbol));
+            currentLinks.AddRange(newSystems.Select(sl => sl.rightSystem.Symbol));
+            currentLinks = currentLinks.Distinct().ToList();
+        }
+
+        return currentLinks;
+    }
 }

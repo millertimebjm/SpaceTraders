@@ -64,50 +64,14 @@ public class ShipLoopsService(
             await _accountService.RegisterAsync();
         }
 
-        var serverStatus = await _serverStatusService.GetAsync();
-        var resetTime = serverStatus.ServerResets.Next;
-        var now = DateTime.UtcNow;
-
-        // If we are within 1 hour of the reset, or the reset just happened
-        if (resetTime.AddHours(-1) < now)
-        {
-            // Calculate how long to wait. 
-            // If resetTime is 10:00 and now is 9:50, delay is 10 minutes.
-            var delayDuration = resetTime - now;
-
-            if (delayDuration > TimeSpan.Zero)
-            {
-                _logger.LogInformation("Waiting {Delay} for next reset.", delayDuration);
-                await Task.Delay(delayDuration.Add(new TimeSpan(0, 10, 0))); // add 10 minutes to the delay
-            }
-
-            // Now that we've waited (or if the time already passed), do the cleanup
-            await _collectionFactory.DeleteDatabaseAsync();
-            await _accountService.RegisterAsync();
-        }
-
-        var account = await _accountService.GetAsync();
-        _configuration[$"SpaceTrader:" + ConfigurationEnums.AgentToken.ToString()] = account.Token;
-       
-        await JumpGateWaypointsRefresh();
-
-        var tradeModels = await _tradesService.GetTradeModelsWithCacheAsync();
-        
-        var shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
-        if (!shipStatuses.Any())
-        {
-            var ships = await _shipsService.GetAsync();
-            foreach (var ship in ships)
-            {
-                shipStatuses.Add(new ShipStatus(ship, "Ship Statuses reset.", DateTime.UtcNow));
-                await _shipStatusesCacheService.SetAsync(shipStatuses);
-            }
-        }
-
         //List<(TimeSpan ExecutionTime, DateTime ExecutionCompletionUtc)> executionAverageCalculator = [];
         while (!cts.IsCancellationRequested || !(_explorationTask ?? Task.FromResult(false)).IsCompleted)
         {
-            shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
+            await CheckAndHandleReset();
+            await AddAgentTokenToConfiguration();
+            //await JumpGateWaypointsRefresh();
+            await CreateTradeModelsIfEmpty();
+            var shipStatuses = await RefreshOrCreateShipStatuses();
             await SleepUntilNextShipReady(shipStatuses);
 
             if (cts.IsCancellationRequested)
@@ -125,7 +89,7 @@ public class ShipLoopsService(
 
             var ships = shipStatuses.Select(ss => ss.Ship).ToList();
             await UpdateSystemWaypoints(ships);
-            if (await BuyNewShipIfPossible(shipStatuses.Select(ss => ss.Ship).ToList()))
+            if (await BuyNewShipIfPossible(ships))
             {
                 shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
             }
@@ -147,15 +111,84 @@ public class ShipLoopsService(
             //     if (cts.IsCancellationRequested) break;
             // }
 
+            await WaitForResetIfWithinOneHour();
+        }
+    }
 
-            _logger.LogInformation("Time until server reset: {hours} Hours", Math.Round((serverStatus.ServerResets.Next - DateTime.UtcNow).TotalHours));
+    private async Task AddAgentTokenToConfiguration()
+    {
+        var account = await _accountService.GetAsync();
+        _configuration[$"SpaceTrader:" + ConfigurationEnums.AgentToken.ToString()] = account.Token;
+    }
 
-            now = DateTime.UtcNow;
-            if (serverStatus.ServerResets.Next.AddHours(-1) < now)
+    private async Task CreateTradeModelsIfEmpty()
+    {
+        await _tradesService.GetTradeModelsWithCacheAsync();
+    }
+
+    private async Task<List<ShipStatus>> RefreshOrCreateShipStatuses()
+    {
+        var shipStatuses = (await _shipStatusesCacheService.GetAsync()).ToList();
+        if (!shipStatuses.Any())
+        {
+            var refreshShips = await _shipsService.GetAsync();
+            foreach (var ship in refreshShips)
             {
-                _logger.LogInformation("Waiting for next reset.");
-                var waitInMilliseconds = (int)(serverStatus.ServerResets.Next - now).TotalMilliseconds;
-                await Task.Delay(waitInMilliseconds);
+                shipStatuses.Add(new ShipStatus(ship, "Ship Statuses reset.", DateTime.UtcNow));
+                await _shipStatusesCacheService.SetAsync(shipStatuses);
+            }
+        }
+        return shipStatuses;
+    }
+
+    private async Task WaitForResetIfWithinOneHour()
+    {
+        var now = DateTime.UtcNow;
+        var serverStatus = await _serverStatusService.GetAsync();
+        _logger.LogInformation("Time until server reset: {hours} Hours", Math.Round((serverStatus.ServerResets.Next - now).TotalHours));
+
+        if (serverStatus.ServerResets.Next.AddHours(-1) < now)
+        {
+            _logger.LogInformation("Waiting for next reset.");
+            var waitInMilliseconds = (int)(serverStatus.ServerResets.Next - now).TotalMilliseconds;
+            await Task.Delay(waitInMilliseconds);
+        }
+    }
+
+    private async Task CheckAndHandleReset()
+    {
+        var serverStatus = await _serverStatusService.GetAsync();
+        var resetTime = serverStatus.ServerResets.Next;
+        var now = DateTime.UtcNow;
+
+        // If we are within 1 hour of the reset, or the reset just happened
+        if (resetTime.AddHours(-1) < now)
+        {
+            // Calculate how long to wait. 
+            // If resetTime is 10:00 and now is 9:50, delay is 10 minutes.
+            var delayDuration = resetTime - now;
+
+            if (delayDuration > TimeSpan.Zero)
+            {
+                _logger.LogInformation("Waiting {Delay} for next reset.", delayDuration);
+                await Task.Delay(delayDuration.Add(new TimeSpan(0, 10, 0))); // add 10 minutes to the delay
+            }
+
+            // Now that we've waited (or if the time already passed), do the cleanup
+            await _collectionFactory.DeleteDatabaseAsync();
+
+            var successful = false;
+            while (!successful)
+            {
+                try
+                {
+                    await _accountService.RegisterAsync();
+                    successful = true;
+                }
+                catch
+                {
+                    await Task.Delay(new TimeSpan(0, 10, 0));
+                }
             }
         }
     }
@@ -323,14 +356,16 @@ public class ShipLoopsService(
     {
         var agent = await _agentsService.GetAsync();
         var systems = await _systemsService.GetAsync();
+        var links = SystemsService.GetSystemSymbolsWithinXJumps(systems, WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters), distance: 6);
+        var systemsWithinXJumps = systems.Where(s => links.Contains(s.Symbol));
 
         var finishedJumpGate = systems.SingleOrDefault(s => s.Symbol == WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters) && s.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction));
         if (finishedJumpGate is null) return;
 
-        var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters));
-        var paths = await _pathsService.BuildSystemPathWithCostWithBurn2(traversableSystems.Select(s => s.Symbol).ToList(), agent.Headquarters, 600, 600);
-        var waypoints = traversableSystems.SelectMany(s => s.Waypoints);
-        var jumpGateWaypoints = waypoints.Where(w => w.JumpGate is not null && !w.IsUnderConstruction);
+        //var traversableSystems = SystemsService.Traverse(systems, WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters));
+        var paths = await _pathsService.BuildSystemPathWithCostWithBurn2(systemsWithinXJumps.Select(s => s.Symbol).ToList(), agent.Headquarters, 600, 600);
+        var waypoints = systemsWithinXJumps.SelectMany(s => s.Waypoints);
+        var jumpGateWaypoints = waypoints.Where(w => w.JumpGate is not null);
         var jumpGatePaths = paths
             .Where(p => jumpGateWaypoints.Select(w => w.Symbol).Contains(p.WaypointSymbol))
             .OrderBy(p => p.TimeCost);
@@ -341,8 +376,8 @@ public class ShipLoopsService(
             foreach (var connection in jumpGateWaypoint.JumpGate!.Connections)
             {
                 var connectionSystemSymbol = WaypointsService.ExtractSystemFromWaypoint(connection);
-                var connectionSystem = systems.SingleOrDefault(s => s.Symbol == connectionSystemSymbol);
-                if (!traversableSystems.Any(s => s.Symbol == connectionSystemSymbol)
+                var connectionSystem = systemsWithinXJumps.SingleOrDefault(s => s.Symbol == connectionSystemSymbol);
+                if (!systemsWithinXJumps.Any(s => s.Symbol == connectionSystemSymbol)
                     && connectionSystem is null)
                 {
                     nextToRefresh = connectionSystemSymbol;

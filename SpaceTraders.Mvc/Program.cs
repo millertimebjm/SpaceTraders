@@ -75,7 +75,7 @@ builder.Services.AddScoped<IAccountService, AccountService>();
 builder.Services.AddScoped<IAccountApiService, AccountApiService>();
 builder.Services.AddScoped<IContractsApiService, ContractsApiService>();
 builder.Services.AddSingleton<IHttpHelperService, HttpHelperService>();
-builder.Services.AddSingleton<IApiRequestLimiterService, ApiRequestLimiterPollyService>();
+builder.Services.AddSingleton<IApiRequestLimiterService, ApiRequestLimiterChannelService>();
 
 // Cache Services
 builder.Services.AddSingleton<IMongoCollectionFactory, MongoCollectionFactory>();
@@ -154,15 +154,6 @@ ArgumentException.ThrowIfNullOrWhiteSpace(accountToken);
 // builder.Services.AddScoped<ITradesCacheService, TradesCacheEfService>();
 
 var app = builder.Build();
-
-using (var scope = app.Services.CreateScope())
-{
-    var accountService = scope.ServiceProvider.GetRequiredService<IAccountService>();
-    var account = await accountService.GetAsync();
-    var agentToken = account.Token;
-    var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
-    configuration[$"{_appConfigSectionName}:{ConfigurationEnums.AgentToken}"] = agentToken;
-}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

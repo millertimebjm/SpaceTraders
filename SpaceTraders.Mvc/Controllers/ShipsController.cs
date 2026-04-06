@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
+using SpaceTraders.Models.Results;
 using SpaceTraders.Mvc.Models;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Contracts.Interfaces;
@@ -158,9 +159,12 @@ public class ShipsController(
     [Route("/ships/{shipSymbol}/jettison/{inventorySymbol}")]
     public async Task<IActionResult> Jettison(string shipSymbol, string inventorySymbol)
     {
-        var ship = await _shipsService.GetAsync(shipSymbol);
-        await _shipsService.JettisonAsync(shipSymbol, inventorySymbol, ship.Cargo.Inventory.Single(i => i.Symbol == inventorySymbol).Units);
-        ship = await _shipsService.GetAsync(shipSymbol);
+        var shipStatus = await _shipStatusesCacheService.GetAsync(shipSymbol);
+        var ship = shipStatus.Ship;
+        var cargo = await _shipsService.JettisonAsync(shipSymbol, inventorySymbol, ship.Cargo.Inventory.Single(i => i.Symbol == inventorySymbol).Units);
+        ship = ship with { Cargo = cargo };
+        shipStatus = shipStatus with { Ship = ship };
+        await _shipStatusesCacheService.SetAsync(shipStatus);
         return Redirect($"/ships/{ship.Symbol}");
     }
 
@@ -175,10 +179,16 @@ public class ShipsController(
     [Route("/ships/{shipSymbol}/fuel")]
     public async Task<IActionResult> Refuel(string shipSymbol)
     {
-        var ship = await _shipsService.GetAsync(shipSymbol);
-        await _marketplacesService.RefuelAsync(shipSymbol);
-        var agent = await _agentsService.GetAsync();
-        SessionHelper.Set(HttpContext, SessionEnum.CurrentCredits, agent.Credits);
+        var shipStatus = await _shipStatusesCacheService.GetAsync(shipSymbol);
+        var ship = shipStatus.Ship;
+        var refuelResponse = await _marketplacesService.RefuelAsync(shipSymbol);
+        ship = ship with { Fuel = refuelResponse.Fuel };
+        shipStatus = shipStatus with { Ship = ship };
+        await _shipStatusesCacheService.SetAsync(shipStatus);
+        
+        SessionHelper.Set(HttpContext, SessionEnum.CurrentCredits, refuelResponse.Agent.Credits);
+        await _agentsService.SetAsync(refuelResponse.Agent);
+
         return RedirectToRoute(new
         {
             controller = "Ships",
@@ -190,8 +200,13 @@ public class ShipsController(
     [Route("/ships/{shipSymbol}/jumps/{jumpGate}")]
     public async Task<IActionResult> Jump(string shipSymbol, string jumpGate)
     {
-        var ship = await _shipsService.GetAsync(shipSymbol);
-        await _shipsService.JumpAsync(jumpGate, shipSymbol);
+        var shipStatus = await _shipStatusesCacheService.GetAsync(shipSymbol);
+        var ship = shipStatus.Ship;
+        var (nav, cooldown) = await _shipsService.JumpAsync(jumpGate, shipSymbol);
+        ship = ship with {Cooldown = cooldown, Nav = nav };
+        shipStatus = shipStatus with { Ship = ship };
+        await _shipStatusesCacheService.SetAsync(shipStatus);
+
         return RedirectToRoute(new
         {
             controller = "Ships",
@@ -203,12 +218,19 @@ public class ShipsController(
     [Route("/ships/{shipSymbol}/sell/{inventorySymbol}")]
     public async Task<IActionResult> Sell(string shipSymbol, string inventorySymbol)
     {
-        var ship = await _shipsService.GetAsync(shipSymbol);
+        var shipStatus = await _shipStatusesCacheService.GetAsync(shipSymbol);
+        var ship = shipStatus.Ship;
         var currentWaypoint = await _waypointsService.GetAsync(ship.Nav.WaypointSymbol);
         var inventory = currentWaypoint.Marketplace!.TradeGoods!.Single(tg => tg.Symbol == inventorySymbol);
         var shipUnits = ship.Cargo.Inventory.Single(i => i.Symbol == inventorySymbol).Units;
         var sellAmount = Math.Min(inventory.TradeVolume, shipUnits);
-        await _marketplacesService.SellAsync(shipSymbol, inventorySymbol, sellAmount);
+        var sellCargoResponse = await _marketplacesService.SellAsync(shipSymbol, inventorySymbol, sellAmount);
+        ship = ship with { Cargo = sellCargoResponse.Cargo };
+        shipStatus = shipStatus with { Ship = ship };
+        await _shipStatusesCacheService.SetAsync(shipStatus);
+        await _agentsService.SetAsync(sellCargoResponse.Agent);
+        SessionHelper.Set(HttpContext, SessionEnum.CurrentCredits, sellCargoResponse.Agent.Credits);
+
         return RedirectToRoute(new
         {
             controller = "Ships",

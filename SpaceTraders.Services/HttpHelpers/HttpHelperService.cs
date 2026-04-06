@@ -60,23 +60,23 @@ public class HttpHelperService(
         // var response = await _httpClient.SendAsync(request);
         // await Task.Delay(DELAY_IN_MILLISECONDS);
 
-        var response = await _limiterService.SendAsync(request, CancellationToken.None);
-        logger.LogInformation("{responseString}", await response.Content.ReadAsStringAsync());
-        
+        HttpResponseMessage? response = null;
         try
         {
+            response = await _limiterService.SendAsync(request, CancellationToken.None);
             response.EnsureSuccessStatusCode();
+            logger.LogInformation("{responseString}", await response.Content.ReadAsStringAsync());
             return response;
         }
         catch (HttpRequestException ex)
         {
-            string responseBody = null;
+            string? responseBody = null;
             if (response != null)
             {
                 responseBody = await response.Content.ReadAsStringAsync();
             }
             var detailedMessage = $"HTTP request failed. Status code: {response?.StatusCode}";
-            throw new SpaceTraderResultException(detailedMessage, ex, responseBody);
+            throw new SpaceTraderResultException(detailedMessage, ex, responseBody ?? "");
         }
     }
 }

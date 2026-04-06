@@ -81,37 +81,41 @@ public class ShipCommandsHelperService(
         return purchaseCargoResult;
     }
 
-    public async Task<PurchaseCargoResult?> PurchaseCargoForContract(Ship ship, Waypoint currentWaypoint, string contractTradeSymbol, int inventoryAmount)
+    public async Task<PurchaseCargoResult?> PurchaseCargoForContract(Ship ship, Waypoint currentWaypoint, string tradeSymbol, int maxQuantity = int.MaxValue)
     {
         if (ship.Cargo.Inventory.Count > 0
             || ship.Nav.Status == NavStatusEnum.IN_ORBIT.ToString()
             || currentWaypoint.Marketplace is null
-            || (!currentWaypoint.Marketplace.Exports.Any()
-            && !currentWaypoint.Marketplace.Exchange.Any()))
+            || !(currentWaypoint.Marketplace.Exports.Any() || currentWaypoint.Marketplace.Exchange.Any()))
         {
             return null;
         }
-
-        Agent? agent = null;
-        if (!currentWaypoint.Marketplace?.Exports.Any(e => e.Symbol == contractTradeSymbol) == true
-            && !currentWaypoint.Marketplace?.Exchange.Any(e => e.Symbol == contractTradeSymbol) == true
-            && !currentWaypoint.Marketplace?.Imports.Any(e => e.Symbol == contractTradeSymbol) == true)
-        {
-            return null;
-        }
-        var contractTradeModelTradeVolume = currentWaypoint.Marketplace?.TradeGoods?.Single(tg => tg.Symbol == contractTradeSymbol).TradeVolume;
+        var agent = await _agentsService.GetAsync();
+        var tradeGood = currentWaypoint.Marketplace?.TradeGoods?.Single(tg => tg.Symbol == tradeSymbol);
+        SupplyEnum? newTradeGoodSupply;
 
         PurchaseCargoResult? purchaseCargoResult = null;
         do
         {
-            var amountToBuy = Math.Min(Math.Min(inventoryAmount - ship.Cargo.Units, contractTradeModelTradeVolume.Value), ship.Cargo.Capacity - ship.Cargo.Units);
-            purchaseCargoResult = await _marketplacesService.PurchaseAsync(ship.Symbol, contractTradeSymbol, amountToBuy);
-            //await Task.Delay(500);
+            var amountToBuy = Math.Min(Math.Min(tradeGood.TradeVolume, ship.Cargo.Capacity - ship.Cargo.Units), maxQuantity - ship.Cargo.Units);
+            if (amountToBuy * tradeGood.PurchasePrice > agent.Credits)
+            {
+                if (ship.Cargo.Units > 0) break;
+                amountToBuy = 1;
+            }
+            purchaseCargoResult = await _marketplacesService.PurchaseAsync(ship.Symbol, tradeGood.Symbol, amountToBuy);
             agent = purchaseCargoResult.Agent;
             ship = ship with { Cargo = purchaseCargoResult.Cargo };
             await _transactionsService.SetAsync(purchaseCargoResult.Transaction);
-            //await Task.Delay(500);
-        }  while (ship.Cargo.Units != inventoryAmount && ship.Cargo.Units < ship.Cargo.Capacity);
+
+            currentWaypoint = await _waypointsService.GetAsync(currentWaypoint.Symbol, refresh: true);
+            tradeGood = currentWaypoint.Marketplace?.TradeGoods?.SingleOrDefault(tg => tg.Symbol == tradeGood.Symbol);
+            if (tradeGood is null) 
+            {
+                break;
+            }
+            newTradeGoodSupply = Enum.Parse<SupplyEnum>(tradeGood.Supply);
+        } while (ship.Cargo.Units < ship.Cargo.Capacity && ship.Cargo.Units < maxQuantity);
 
         return purchaseCargoResult;
     }

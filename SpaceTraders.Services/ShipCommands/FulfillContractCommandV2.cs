@@ -147,7 +147,7 @@ public class FulfillContractCommandV2(
                 nav = await _shipsService.DockAsync(ship.Symbol);
                 ship = ship with { Nav = nav };
             }
-            var purchaseCargoResult = await _shipCommandsHelperService.PurchaseCargo(
+            var purchaseCargoResult = await _shipCommandsHelperService.PurchaseCargoForContract(
                 ship, 
                 currentWaypoint, 
                 goalModel.TradeSymbol, 

@@ -15,6 +15,7 @@ public interface IShipCommandsHelperService
     Task<(Nav?, Fuel?)> NavigateToStartWaypoint(Ship ship, Waypoint currentWaypoint, Waypoint startWaypoint);
     Task<SellCargoResponse?> Sell(Ship ship, Waypoint currentWaypoint);
     Task<PurchaseCargoResult?> PurchaseCargo(Ship ship, Waypoint currentWaypoint, string tradeSymbol, int maxQuantity = int.MaxValue);
+    Task<PurchaseCargoResult?> PurchaseCargoForContract(Ship ship, Waypoint currentWaypoint, string tradeSymbol, int maxQuantity = int.MaxValue);
     Task<SupplyResult?> SupplyConstructionSite(Ship ship, Waypoint currentWaypoint);
     Task<(Cargo?, Cooldown?)> Extract(Ship ship, Waypoint currentWaypoint);
     Task<(Cargo?, Cooldown?)> Siphon(Ship ship, Waypoint currentWaypoint);
@@ -38,7 +39,6 @@ public interface IShipCommandsHelperService
         Waypoint currentWaypoint, 
         string contractWaypointSymbol, 
         string inventorySymbol);
-    Task<PurchaseCargoResult?> PurchaseCargoForContract(Ship ship, Waypoint currentWaypoint, string contractTradeSymbol, int amountToBuy);
     Task<(string?, ShipTypesEnum?)> ShipToBuy(IEnumerable<Ship> ships);
     Task<bool> CheckRemotePurchaseShip(IEnumerable<Ship> ships, string shipyardWaypoint, ShipTypesEnum shipType);
     Task<Cargo?> TransferCargo(Ship ship, Waypoint currentWaypoint);
