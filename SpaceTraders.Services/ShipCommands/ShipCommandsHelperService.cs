@@ -1012,6 +1012,8 @@ public class ShipCommandsHelperService(
 
     private long PURCHASE_SHIP_CREDITS_THRESHOLD_FOR_BULK_FREIGHTER = 10_000_000;
 
+    private const long MINIMUM_LEFTOVER_CREDITS = 200_000;
+
     public async Task<Cargo?> TransferCargo(Ship ship, Waypoint currentWaypoint)
     {
         if (currentWaypoint.Type != WaypointTypesEnum.ENGINEERED_ASTEROID.ToString()
@@ -1137,5 +1139,32 @@ public class ShipCommandsHelperService(
             return ship.Modules.FirstOrDefault(m => m.Symbol == TradeSymbolsEnum.MODULE_CARGO_HOLD_II.ToString())?.Symbol;
         }
         return null;
+    }
+
+    public async Task<GoalModel?> BuildSupplyConstructionGoalModel(Ship ship, Waypoint? constructionWaypoint)
+    {
+        var inventories = constructionWaypoint.Construction.Materials.Where(m => m.Fulfilled < m.Required).ToList();
+        if (!inventories.Any()) return null;
+
+        var system = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(constructionWaypoint.Symbol));
+        var marketplaceWaypoints = system.Waypoints.Where(w => w.Marketplace is not null && w.Marketplace.TradeGoods is not null);
+        var inventoryMarketplaceWaypoints = marketplaceWaypoints
+            .Where(w => w.Marketplace!.TradeGoods!.Any(tg => inventories.Any(i => tg.Symbol == i.TradeSymbol)));
+        var inventoryTradeGood = marketplaceWaypoints
+            .SelectMany(w => w.Marketplace!.TradeGoods!)
+            .Where(tg => inventories.Any(i => tg.Symbol == i.TradeSymbol))
+            .OrderByDescending(tg => tg.Supply).First();
+        var marketplaceWaypoint = marketplaceWaypoints
+            .Where(w => w.Marketplace!.TradeGoods!.Any(tg => tg.Symbol == inventoryTradeGood.Symbol && tg.Supply == inventoryTradeGood.Supply))
+            .OrderBy(w => w.Symbol) // Tiebreaker
+            .First();
+
+        var agent = await _agentsService.GetAsync();
+        if (Math.Min(ship.Cargo.Capacity, inventoryTradeGood.TradeVolume) * inventoryTradeGood.PurchasePrice > agent.Credits - MINIMUM_LEFTOVER_CREDITS)
+        {
+            return null;
+        }
+
+        return new GoalModel(inventoryTradeGood.Symbol, marketplaceWaypoint.Symbol, constructionWaypoint.Symbol);
     }
 }

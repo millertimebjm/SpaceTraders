@@ -45,4 +45,6 @@ public interface IShipCommandsHelperService
     Task<(Nav, Fuel, Cooldown)> NavigateHelper(Ship ship, string waypointSymbol);
     Task<GoalModel?> GetShipModuleGoalModel(Ship ship);
     string GetModuleToRemove(Ship ship, string? tradeSymbol);
+    Task<GoalModel?> BuildSupplyConstructionGoalModel(Ship ship, Waypoint? constructionWaypoint);
+    
 }

@@ -4,6 +4,7 @@ using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Contracts.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
 using SpaceTraders.Services.Systems.Interfaces;
+using SpaceTraders.Services.Waypoints;
 
 namespace SpaceTraders.Services.ShipJobs.Interfaces;
 
@@ -28,7 +29,13 @@ public class HaulerShipJobService(
         {
             return new ShipCommand(ship.Symbol, ShipCommandEnum.FulfillContract);
         }
-        if (await IsSupplyConstruction(ships, ship))
+        
+        var agent = await _agentsService.GetAsync();
+        var system = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters));
+        var constructionWaypoint = system.Waypoints.SingleOrDefault(w => w.JumpGate is not null && w.IsUnderConstruction);
+        if (!ships.Any(s => s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.SupplyConstruction)
+            && constructionWaypoint is not null
+            && (await _shipCommandsHelperService.BuildSupplyConstructionGoalModel(ship, constructionWaypoint)) is not null)
         {
             return new ShipCommand(ship.Symbol, ShipCommandEnum.SupplyConstruction);
         }

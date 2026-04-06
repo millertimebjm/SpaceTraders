@@ -84,7 +84,7 @@ public static class DependencyInjectionHelperService
         // Ship Commands
         services.AddSingleton<MiningToSellAnywhereCommand>();
         services.AddSingleton<BuyAndSellCommandV2>();
-        services.AddSingleton<SupplyConstructionCommand>();
+        services.AddSingleton<SupplyConstructionCommandV2>();
         services.AddSingleton<SurveyCommand>();
         services.AddSingleton<PurchaseShipCommand>();
         services.AddSingleton<ExplorationCommand>();

@@ -13,7 +13,7 @@ public class ShipCommandsServiceFactory(IServiceProvider _serviceProvider) : ISh
             ShipCommandEnum.MiningToSellAnywhere => _serviceProvider.GetRequiredService<MiningToSellAnywhereCommand>(),
             ShipCommandEnum.SiphonToSellAnywhere => _serviceProvider.GetRequiredService<SiphonToSellAnywhereCommand>(),
             ShipCommandEnum.BuyToSell => _serviceProvider.GetRequiredService<BuyAndSellCommandV2>(),
-            ShipCommandEnum.SupplyConstruction => _serviceProvider.GetRequiredService<SupplyConstructionCommand>(),
+            ShipCommandEnum.SupplyConstruction => _serviceProvider.GetRequiredService<SupplyConstructionCommandV2>(),
             ShipCommandEnum.Survey => _serviceProvider.GetRequiredService<SurveyCommand>(),
             ShipCommandEnum.PurchaseShip => _serviceProvider.GetRequiredService<PurchaseShipCommand>(),
             ShipCommandEnum.Exploration => _serviceProvider.GetRequiredService<ExplorationCommand>(),
