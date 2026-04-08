@@ -176,5 +176,9 @@ app.MapControllerRoute(
     pattern: "{controller=Home}/{action=Index}/{id?}")
     .WithStaticAssets();
 
+using var scope = app.Services.CreateAsyncScope();
+var accountService = scope.ServiceProvider.GetRequiredService<IAccountService>();
+var account = await accountService.GetAsync();
+builder.Configuration[$"{_appConfigSectionName}:{ConfigurationEnums.AgentToken.ToString()}"] = account.Token;
 
 app.Run();
