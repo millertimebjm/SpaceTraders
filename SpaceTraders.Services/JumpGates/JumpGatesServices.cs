@@ -46,18 +46,8 @@ public class JumpGatesServices(
             Path = $"v2/systems/{WaypointsService.ExtractSystemFromWaypoint(waypointSymbol)}/waypoints/{waypointSymbol}/jump-gate"
         };
         var url = urlBuilder.ToString();
-        // _httpClient.DefaultRequestHeaders.Authorization =
-        //     new AuthenticationHeaderValue("Bearer", Token);
-        // var waypointsData = await HttpHelperService.HttpGetHelper<DataSingle<JumpGate>>(url, _httpClient, _logger);
-        // if (waypointsData is null) throw new HttpRequestException("System Data not retrieved.");
-        // if (waypointsData.Datum is null) throw new HttpRequestException("System not retrieved");
-        // return waypointsData.Datum;
-
         var request = new HttpRequestMessage(HttpMethod.Get, url);
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
-        // var response = await _dispatcher.SendAsync(request);
-        //var response = await _httpClient.SendAsync(request);
-        var response = await _httpHelperService.HttpSendHelper(request, _logger);
+        var response = await _httpHelperService.HttpSendHelperWithAgent(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Account not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<JumpGate>>();
         return data.Datum;

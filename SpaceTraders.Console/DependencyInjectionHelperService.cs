@@ -39,6 +39,8 @@ using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Shipyards.Interfaces;
 using SpaceTraders.Services.Surveys;
 using SpaceTraders.Services.Surveys.Interfaces;
+using SpaceTraders.Services.SystemRefresh;
+using SpaceTraders.Services.SystemRefresh.Interfaces;
 using SpaceTraders.Services.Systems;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Trades;
@@ -80,6 +82,7 @@ public static class DependencyInjectionHelperService
         services.AddSingleton<IContractsApiService, ContractsApiService>();
         services.AddSingleton<IHttpHelperService, HttpHelperService>();
         services.AddSingleton<IApiRequestLimiterService, ApiRequestLimiterChannelService>();
+        services.AddSingleton<ISystemRefreshService, SystemRefreshService>();
 
         // Ship Commands
         services.AddSingleton<MiningToSellAnywhereCommand>();

@@ -1018,9 +1018,9 @@ public class ShipCommandsHelperService(
 
     private readonly SemaphoreSlim _transferCargoSemaphore = new(1, 1);
 
-    private long MINIMUM_SHIP_UPGRADE_CREDITS = 2_000_000;
+    private const long MINIMUM_SHIP_UPGRADE_CREDITS = 2_000_000;
 
-    private long PURCHASE_SHIP_CREDITS_THRESHOLD_FOR_BULK_FREIGHTER = 10_000_000;
+    private const long PURCHASE_SHIP_CREDITS_THRESHOLD_FOR_BULK_FREIGHTER = 10_000_000;
 
     private const long MINIMUM_LEFTOVER_CREDITS = 200_000;
 

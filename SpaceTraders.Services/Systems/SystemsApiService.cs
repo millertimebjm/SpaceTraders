@@ -48,20 +48,8 @@ public class SystemsApiService(
             Path = DIRECTORY_PATH + systemSymbol
         };
         var url = urlBuilder.ToString();
-        // _httpClient.DefaultRequestHeaders.Authorization =
-        //     new AuthenticationHeaderValue("Bearer", Token);
-        // var data = await HttpHelperService.HttpGetHelper<DataSingle<STSystem>>(
-        //     url,
-        //     _httpClient,
-        //     _logger);
-        // if (data.Datum is null) throw new HttpRequestException("System not retrieved");
-        // return data.Datum;
-
         var request = new HttpRequestMessage(HttpMethod.Get, url);
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", Token);
-        //var response = await _dispatcher.SendAsync(request);
-        //var response = await _httpClient.SendAsync(request);
-        var response = await _httpHelperService.HttpSendHelper(request, _logger);
+        var response = await _httpHelperService.HttpSendHelperWithAgent(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("System not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<STSystem>>();
         return data.Datum;

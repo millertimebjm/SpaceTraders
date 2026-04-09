@@ -3,6 +3,7 @@ using Microsoft.Extensions.Logging;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Services.Agents.Interfaces;
+using SpaceTraders.Services.SystemRefresh.Interfaces;
 using SpaceTraders.Services.Systems;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Waypoints;
@@ -15,7 +16,8 @@ public class TransportShipJobService(
     ISystemsService _systemsService,
     IWaypointsService _waypointsService,
     ISystemsCacheService _systemsCacheService,
-    ILogger<TransportShipJobService> _logger
+    ILogger<TransportShipJobService> _logger,
+    ISystemRefreshService _systemRefreshService
 ) : IShipJobService
 {
     public async Task<ShipCommand?> Get(
@@ -62,12 +64,7 @@ public class TransportShipJobService(
                 if (newSystem is null)
                 {
                     _logger.LogInformation("Loading system {systemSymbol}.", newSystemSymbol);
-                    newSystem = await _systemsService.GetAsync(newSystemSymbol, true);
-                    foreach (var newWaypoint in newSystem.Waypoints)
-                    {
-                        _logger.LogInformation("Loading waypoint {waypointSymbol}", newWaypoint.Symbol);
-                        await _waypointsService.GetAsync(newWaypoint.Symbol, true);
-                    }
+                    newSystem = await _systemRefreshService.RefreshSystem(newSystemSymbol);
                     _logger.LogInformation("One system refreshed.");
                     return;
                 }

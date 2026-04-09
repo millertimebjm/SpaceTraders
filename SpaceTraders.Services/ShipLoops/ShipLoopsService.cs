@@ -18,6 +18,7 @@ using SpaceTraders.Services.ShipLogs.Interfaces;
 using SpaceTraders.Services.Ships;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.ShipStatuses.Interfaces;
+using SpaceTraders.Services.SystemRefresh.Interfaces;
 using SpaceTraders.Services.Systems;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Trades;
@@ -42,7 +43,8 @@ public class ShipLoopsService(
     ITradesService _tradesService,
     IShipLogsService _shipLogsService,
     IAgentsService _agentsService,
-    IPathsService _pathsService
+    IPathsService _pathsService,
+    ISystemRefreshService _systemRefreshService
 ) : IShipLoopsService
 {
     private static SemaphoreSlim _getShipJobSemaphore = new (1, 1);
@@ -69,7 +71,7 @@ public class ShipLoopsService(
         {
             await CheckAndHandleReset();
             await AddAgentTokenToConfiguration();
-            //await JumpGateWaypointsRefresh();
+            //await FixSystemsWithNullJumpGate();
             await CreateTradeModelsIfEmpty();
             var shipStatuses = await RefreshOrCreateShipStatuses();
             await SleepUntilNextShipReady(shipStatuses);
@@ -292,16 +294,6 @@ public class ShipLoopsService(
             DateTime.UtcNow));
     }
 
-    private async Task JumpGateWaypointsRefresh()
-    {
-        var systems = await _systemsService.GetAsync();
-        var jumpGateWaypoints = systems.SelectMany(s => s.Waypoints).Where(w => w.Type == WaypointTypesEnum.JUMP_GATE.ToString() && w.JumpGate is null);
-        foreach (var jumpGateWaypoint in jumpGateWaypoints)
-        {
-            var waypoint = await _waypointsService.GetAsync(jumpGateWaypoint.Symbol, refresh: true);
-        }
-    }
-
     private async Task<bool> BuyNewShipIfPossible(IEnumerable<Ship> ships)
     {
         var shipToBuy = await _shipCommandHelperService.ShipToBuy(ships);
@@ -376,7 +368,7 @@ public class ShipLoopsService(
             foreach (var connection in jumpGateWaypoint.JumpGate!.Connections)
             {
                 var connectionSystemSymbol = WaypointsService.ExtractSystemFromWaypoint(connection);
-                var connectionSystem = systemsWithinXJumps.SingleOrDefault(s => s.Symbol == connectionSystemSymbol);
+                var connectionSystem = systems.SingleOrDefault(s => s.Symbol == connectionSystemSymbol);
                 if (!systemsWithinXJumps.Any(s => s.Symbol == connectionSystemSymbol)
                     && connectionSystem is null)
                 {
@@ -388,10 +380,6 @@ public class ShipLoopsService(
         }
 
         if (nextToRefresh is null) return;
-        var newSystem = await _systemsService.GetAsync(nextToRefresh, true);
-        foreach (var waypoint in newSystem.Waypoints)
-        {
-            await _waypointsService.GetAsync(waypoint.Symbol, true);
-        }
+        var newSystem = await _systemRefreshService.RefreshSystem(nextToRefresh);
     }
 }

@@ -72,11 +72,12 @@ public class WaypointsCacheMongoService(
             .ToListAsync();
     }
 
-    public async Task SetAsync(Waypoint waypoint)
+    public async Task SetAsync(Waypoint waypoint, bool updateTradeModels = true)
     {
         Task updateTradeModelTask = Task.CompletedTask;
         if (waypoint.Marketplace?.TradeGoods is not null
-            && waypoint.Marketplace?.TradeGoods.Any(tg => tg.Symbol != TradeSymbolsEnum.FUEL.ToString() && tg.Symbol != TradeSymbolsEnum.ANTIMATTER.ToString()) == true)
+                && waypoint.Marketplace?.TradeGoods.Any(tg => tg.Symbol != TradeSymbolsEnum.FUEL.ToString() && tg.Symbol != TradeSymbolsEnum.ANTIMATTER.ToString()) == true
+                && updateTradeModels)
         {
             updateTradeModelTask = _tradesService.UpdateTradeModelAsync(waypoint.Symbol, waypoint.Marketplace.TradeGoods);
         }
