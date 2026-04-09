@@ -198,7 +198,7 @@ public class FulfillContractCommandV2(
     {
         var tradeSymbol = contract.Terms.Deliver[0].TradeSymbol;
         var systems = await _systemsService.GetAsync();
-        var tradeModels = await _tradesService.GetTradeModelsAsyncWithBurn2(systems.Select(s => s.Symbol).ToList(), originWaypoint, fuelMax, fuelCurrent);
+        var tradeModels = await _tradesService.GetTradeModelsAsyncWithBurn2Grouped(systems.Select(s => s.Symbol).ToList(), originWaypoint, fuelMax, fuelCurrent);
         var tradeModelsOnTradeSymbol = tradeModels.FirstOrDefault(tm => tm.TradeSymbol == tradeSymbol);
         var exportWaypointSymbol = tradeModelsOnTradeSymbol?.ExportWaypointSymbol;
         if (tradeModelsOnTradeSymbol is null)

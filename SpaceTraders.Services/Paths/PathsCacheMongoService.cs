@@ -82,10 +82,15 @@ public class PathsCacheMongoService(IMongoCollectionFactory _collectionFactory) 
             .Project<PathModelWithBurnMemoize>(projection)
             .CountDocumentsAsync();
             
-        if (count > 1)
+        while (count > 1)
         {
             await collection
                 .DeleteOneAsync(filter, CancellationToken.None);
+
+            count = await collection
+                .Find(filter)
+                .Project<PathModelWithBurnMemoize>(projection)
+                .CountDocumentsAsync();
         }
 
         var pathModels = await collection

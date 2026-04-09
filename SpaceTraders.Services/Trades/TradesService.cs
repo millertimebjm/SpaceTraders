@@ -67,10 +67,6 @@ public class TradesService(
                 }
                 if (tradeModel.ExportBuyPrice > import.SellPrice) continue;
                 var pathModel = pathModels.SingleOrDefault(pm => pm.WaypointSymbol == tradeModel.ImportWaypointSymbol);
-                if (pathModel is null)
-                {
-                    Console.WriteLine("tradeModel.ImportWaypointSymbol: " + tradeModel.ImportWaypointSymbol);
-                }
                 var newTradeModel = tradeModel with
                 {
                     ImportWaypointSymbol = waypointSymbol,
@@ -153,9 +149,9 @@ public class TradesService(
         }
     }
 
-    public async Task<List<TradeModel>> GetTradeModelsAsyncWithBurn2(List<string> systemSymbols, string originWaypointSymbol, int fuelMax, int fuelCurrent, int distance = 1)
+    public async Task<List<TradeModel>> GetTradeModelsAsyncWithBurn2Grouped(List<string> systemSymbols, string originWaypointSymbol, int fuelMax, int fuelCurrent, int distance = 1)
     {
-        _logger.LogInformation("Starting GetTradeModelsAsyncWithBurn2...");
+        _logger.LogInformation("Starting GetTradeModelsAsyncWithBurn2Grouped...");
         var tradeModels = await GetTradeModelsWithCacheAsync();
 
         var systems = await _systemsService.GetAsync();
@@ -174,9 +170,31 @@ public class TradesService(
 
         var tradeModelsWithOriginTimeCostGrouped = tradeModelsWithOriginTimeCost.GroupBy(tm => tm.TradeSymbol);
         var bestTradeModelBySymbol = tradeModelsWithOriginTimeCostGrouped.Select(tmg => tmg.OrderByDescending(tm => tm.NavigationFactor).First()).ToList();
-        _logger.LogInformation("Completed GetTradeModelsAsyncWithBurn2.");
+        _logger.LogInformation("Completed GetTradeModelsAsyncWithBurn2Grouped.");
         return bestTradeModelBySymbol.OrderByDescending(tm => tm.TimeCost).ToList();
     }
+
+    public async Task<List<TradeModel>> GetTradeModelsAsyncWithBurn2(List<string> systemSymbols, string originWaypointSymbol, int fuelMax, int fuelCurrent, int distance = 1)
+    {
+        _logger.LogInformation("Starting GetTradeModelsAsyncWithBurn2...");
+        var tradeModels = await GetTradeModelsWithCacheAsync();
+
+        var systems = await _systemsService.GetAsync();
+        var traversableSystemsWithinXJumps = SystemsService.GetSystemSymbolsWithinXJumps(systems, WaypointsService.ExtractSystemFromWaypoint(originWaypointSymbol), distance, traversable: true);
+        var localTradeModels = tradeModels.Where(tm => traversableSystemsWithinXJumps.Any(s => tm.ExportWaypointSymbol.StartsWith(s)) && systemSymbols.Any(s => tm.ImportWaypointSymbol.StartsWith(s))).ToList();
+        var systemsIncluded = systems.Where(s => traversableSystemsWithinXJumps.Contains(s.Symbol));
+        var pathModels = await _pathsService.BuildSystemPathWithCostWithBurn2(systemsIncluded.Select(s => s.Symbol).ToList(), originWaypointSymbol, fuelMax, fuelCurrent);
+        List<TradeModel> tradeModelsWithOriginTimeCost = [];
+        foreach (var localTradeModel in localTradeModels)
+        {
+            var pathModel = pathModels.Single(pm => pm.WaypointSymbol == localTradeModel.ExportWaypointSymbol);
+            var newLocalTradeModel = localTradeModel with { TimeCost = localTradeModel.TimeCost + pathModel.TimeCost };
+            newLocalTradeModel = newLocalTradeModel with { NavigationFactor = GetTradeModelNavigationFactorWithBurn2(newLocalTradeModel.ExportBuyPrice, newLocalTradeModel.ImportSellPrice, newLocalTradeModel.ExportSupplyEnum, newLocalTradeModel.ImportSupplyEnum, newLocalTradeModel.TimeCost) };
+            tradeModelsWithOriginTimeCost.Add(newLocalTradeModel);
+        }
+        return tradeModelsWithOriginTimeCost;
+    }
+
 
     private async Task<List<TradeModel>> BuildTradeModelWithBurnAsync2()
     {
