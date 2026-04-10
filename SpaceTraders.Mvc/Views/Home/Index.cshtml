@@ -64,6 +64,29 @@
     <br/>
 }
 
+
+@{
+    var heavyHaulerShips = Model
+        .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString() 
+            && s.Ship.Frame.Symbol == ShipFrameEnum.FRAME_HEAVY_FREIGHTER.ToString())
+        .HexadecimalSort();
+}
+@if (heavyHaulerShips.Any())
+{
+    <h3 style="text-align: center;">Bulk Hauler @heavyHaulerShips.Count()</h3>
+    <section class="text-center container">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
+            @foreach (var shipStatus in heavyHaulerShips)
+            {
+                await Html.RenderPartialAsync("_ShipStatusBox", shipStatus);
+            }
+        </div>
+    </section>
+
+    <br/>
+    <br/>
+}
+
 @{
     var lightHaulerShips = Model
         .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString() 

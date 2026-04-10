@@ -942,7 +942,7 @@ public class ShipCommandsHelperService(
         }
         
         if (headquartersSystem.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction)
-            && !reachableShipyards.Any(s => s!.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_BULK_FREIGHTER.ToString())))
+            && !reachableShipyards.Any(s => s!.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_BULK_FREIGHTER.ToString() || st.Type == ShipTypesEnum.SHIP_HEAVY_FREIGHTER.ToString())))
         {
             if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.TRANSPORT.ToString()) < 15)
             {
@@ -958,7 +958,7 @@ public class ShipCommandsHelperService(
         }
 
         if (headquartersSystem.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction)
-            && !reachableShipyards.Any(s => s!.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_BULK_FREIGHTER.ToString())))
+            && !reachableShipyards.Any(s => s!.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_BULK_FREIGHTER.ToString() || st.Type == ShipTypesEnum.SHIP_HEAVY_FREIGHTER.ToString())))
         {
             if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.TRANSPORT.ToString()) < 30)
             {
@@ -974,19 +974,28 @@ public class ShipCommandsHelperService(
         }
 
         if (headquartersSystem.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction)
-            && reachableShipyards.Any(s => s!.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_BULK_FREIGHTER.ToString()))
+            && reachableShipyards.Any(s => s!.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_BULK_FREIGHTER.ToString() || st.Type == ShipTypesEnum.SHIP_HEAVY_FREIGHTER.ToString()))
             && agent.Credits > PURCHASE_SHIP_CREDITS_THRESHOLD_FOR_BULK_FREIGHTER)
         {
             if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()) < 100)
             {
-                var shipyard = reachableShipyards.First(s => s?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_BULK_FREIGHTER.ToString()) == true);
-                return (shipyard.Symbol, ShipTypesEnum.SHIP_BULK_FREIGHTER);
+
+                var shipyard = reachableShipyards.FirstOrDefault(s => s?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_BULK_FREIGHTER.ToString()) == true);
+                if (shipyard is not null)
+                {
+                    return (shipyard.Symbol, ShipTypesEnum.SHIP_BULK_FREIGHTER);
+                }
+                shipyard = reachableShipyards.FirstOrDefault(s => s?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_HEAVY_FREIGHTER.ToString()) == true);
+                if (shipyard is not null)
+                {
+                    return (shipyard.Symbol, ShipTypesEnum.SHIP_HEAVY_FREIGHTER);
+                }
             }
         }
 
         foreach (var system in reachableSystems)
         {
-            var markets = system.Waypoints.Where(w => w.Marketplace is not null).ToList();
+            var markets = system.Waypoints.Where(w => w.Marketplace?.TradeGoods?.Any(tg => tg.Symbol != TradeSymbolsEnum.FUEL.ToString() && tg.Symbol != TradeSymbolsEnum.ANTIMATTER.ToString()) == true).ToList();
             var probes = ships.Where(s => s.Registration.Role == ShipRegistrationRolesEnum.SATELLITE.ToString() && s.Nav.SystemSymbol == system.Symbol).ToList();
             if (probes.Count < markets.Count) 
             {
@@ -1004,7 +1013,8 @@ public class ShipCommandsHelperService(
         {
             var shipyardWaypoint = await _waypointsService.GetAsync(shipyardWaypointSymbol);
             var agent = await _agentsService.GetAsync();
-            if (shipyardWaypoint.Shipyard.ShipFrames.Single(st => st.Type == shipType.ToString()).PurchasePrice + 200_000 < (agent.Credits))
+            var shipFrame = shipyardWaypoint.Shipyard.ShipFrames.Single(st => st.Type == shipType.ToString());
+            if (shipFrame.PurchasePrice + 200_000 < agent.Credits)
             {
                 var purchaseShipResponse = await _shipyardsService.PurchaseShipAsync(shipyardWaypointSymbol, shipType.ToString());
                 await _shipStatusesCacheService.SetAsync(new ShipStatus(purchaseShipResponse.Ship, $"Newly purchase ship.", DateTime.UtcNow));

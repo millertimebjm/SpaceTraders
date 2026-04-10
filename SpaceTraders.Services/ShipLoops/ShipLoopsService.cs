@@ -348,7 +348,7 @@ public class ShipLoopsService(
     {
         var agent = await _agentsService.GetAsync();
         var systems = await _systemsService.GetAsync();
-        var links = SystemsService.GetSystemSymbolsWithinXJumps(systems, WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters), distance: 6);
+        var links = SystemsService.GetSystemSymbolsWithinXJumps(systems, WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters), distance: 6, traversable: true);
         var systemsWithinXJumps = systems.Where(s => links.Contains(s.Symbol));
 
         var finishedJumpGate = systems.SingleOrDefault(s => s.Symbol == WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters) && s.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction));

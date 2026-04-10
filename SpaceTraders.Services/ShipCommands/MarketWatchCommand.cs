@@ -63,7 +63,7 @@ public class MarketWatchCommand(
     {
         var system = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(ship.Nav.WaypointSymbol));
         var waypoints = system.Waypoints;
-        var marketplaceWaypoints = waypoints.Where(w => w.Marketplace is not null).Select(w => w.Symbol).ToList();
+        var marketplaceWaypoints = waypoints.Where(w => w.Marketplace?.TradeGoods?.Any(tg => tg.Symbol != TradeSymbolsEnum.FUEL.ToString() && tg.Symbol != TradeSymbolsEnum.ANTIMATTER.ToString()) == true).Select(w => w.Symbol).ToList();
         var shipWaypoints = shipsDictionary
             .Values
             .Where(sd => sd.Registration.Role == ShipRegistrationRolesEnum.SATELLITE.ToString())

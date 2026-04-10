@@ -4,4 +4,5 @@ public enum ShipFrameEnum
 {
     FRAME_LIGHT_FREIGHTER,
     FRAME_BULK_FREIGHTER,
+    FRAME_HEAVY_FREIGHTER,
 }
