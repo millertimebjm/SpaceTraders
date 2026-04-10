@@ -1,7 +1,9 @@
+using System.Text.Json;
 using SpaceTraders.Model.Exceptions;
 using SpaceTraders.Models;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.ShipCommands.Interfaces;
+using SpaceTraders.Services.ShipLogs.Interfaces;
 using SpaceTraders.Services.Ships;
 using SpaceTraders.Services.ShipStatuses.Interfaces;
 using SpaceTraders.Services.Waypoints.Interfaces;
@@ -12,7 +14,8 @@ public class PurchaseShipCommand(
     IShipCommandsHelperService _shipCommandsHelperService,
     IWaypointsService _waypointsService,
     IShipStatusesCacheService _shipStatusesCacheService,
-    IAgentsService _agentsService
+    IAgentsService _agentsService,
+    IShipLogsService _shipLogsService
 ) : IShipCommandsService
 {
     public async Task<ShipStatus> Run(
@@ -54,6 +57,7 @@ public class PurchaseShipCommand(
                 ship = ship with { ShipCommand = null };
                 await _shipStatusesCacheService.SetAsync(new ShipStatus(purchaseShipResponse.Ship, $"Newly purchase ship.", DateTime.UtcNow));
                 await _agentsService.SetAsync(purchaseShipResponse.Agent);
+                await AddPurchaseShipShipLog(ship, purchaseShipResponse);
                 return new ShipStatus(ship, $"Just purchased ship.", DateTime.UtcNow);
             }
 
@@ -73,5 +77,21 @@ public class PurchaseShipCommand(
 
             throw new SpaceTraderResultException("Infinite loop, no work planned. PurchaseShip", new HttpRequestException("Fake"), $"Infinite loop, no work planned. {ship.Symbol}, {currentWaypoint.Symbol}, {string.Join(":", ship.Cargo.Inventory.Select(i => $"{i.Name}/{i.Units}"))}, {ship.Fuel.Current}/{ship.Fuel.Capacity}");
         }
+    }
+
+    private async Task AddPurchaseShipShipLog(Ship ship, PurchaseShipResponse purchaseShipResponse)
+    {
+        var now = DateTime.UtcNow;
+        await _shipLogsService.AddAsync(new ShipLog(
+            ship.Symbol,
+            Models.Enums.ShipLogEnum.BuyShip,
+            JsonSerializer.Serialize(new
+            {
+                ShipType = purchaseShipResponse.Transaction.ShipType ?? "No Ship Type",
+                Price = purchaseShipResponse.Transaction.Price ?? 0,
+            }),
+            now,
+            now
+        ));
     }
 }

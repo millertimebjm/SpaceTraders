@@ -20,9 +20,11 @@ public record MarketTransaction(
     string ShipSymbol,
     string TradeSymbol,
     string Type,
+    string? ShipType, // Only for PurchaseShip
     int Units,
     int PricePerUnit,
     int TotalPrice,
+    int? Price, // Only for PurchaseShip
     DateTime Timestamp
 );
 // {
