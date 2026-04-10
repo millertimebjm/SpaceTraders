@@ -134,22 +134,6 @@ public class ShipsService(
         return (data.Datum.Nav, data.Datum.Fuel);
     }
 
-    private async Task AddFlightModeShipLog(string symbol, NavFlightModeEnum flightMode)
-    {
-        var datetime = DateTime.UtcNow;
-        var shipLog = new ShipLog(
-            symbol,
-            ShipLogEnum.FlightMode,
-            JsonSerializer.Serialize(new
-            {
-                FlightMode = flightMode.ToString(),
-            }),
-            datetime,
-            datetime
-        );
-        await _shipLogsService.AddAsync(shipLog);
-    }
-
     private async Task AddNavigateLog(Ship ship, Nav nav, Fuel fuel)
     {
         var shipLog = new ShipLog(
@@ -161,6 +145,7 @@ public class ShipsService(
                 DestinationWaypointSymbol = nav.Route.Destination.Symbol,
                 CurrentFuel = fuel.Current,
                 OriginalFuel = fuel.Current + fuel.Consumed.Amount,
+                nav.FlightMode
             }),
             nav.Route.DepartureTime,
             nav.Route.Arrival
@@ -402,7 +387,6 @@ public class ShipsService(
         var response = await _httpHelperService.HttpSendHelperWithAgent(request, _logger);
         if (!response.IsSuccessStatusCode) throw new HttpRequestException("Nav Toggle not retrieved");
         var data = await response.Content.ReadFromJsonAsync<DataSingle<NavToggleResult>>();
-        await AddFlightModeShipLog(ship.Symbol, flightMode);
         return data.Datum.Nav;
     }
 
