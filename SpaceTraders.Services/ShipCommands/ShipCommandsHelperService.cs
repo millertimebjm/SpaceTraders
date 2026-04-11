@@ -977,7 +977,8 @@ public class ShipCommandsHelperService(
             && reachableShipyards.Any(s => s!.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_BULK_FREIGHTER.ToString() || st.Type == ShipTypesEnum.SHIP_HEAVY_FREIGHTER.ToString()))
             && agent.Credits > PURCHASE_SHIP_CREDITS_THRESHOLD_FOR_BULK_FREIGHTER)
         {
-            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()) < 100)
+            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString()) < 30
+                && ships.Count(s => s.Frame.Symbol == ShipFrameEnum.FRAME_HEAVY_FREIGHTER.ToString() || s.Frame.Symbol == ShipFrameEnum.FRAME_BULK_FREIGHTER.ToString()) < 30)
             {
 
                 var shipyard = reachableShipyards.FirstOrDefault(s => s?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_BULK_FREIGHTER.ToString()) == true);
