@@ -97,6 +97,11 @@ public class SupplyConstructionCommandV2(
             }
 
             var purchaseCargoResult = await _shipCommandsHelperService.BuyForConstruction(ship, currentWaypoint, constructionWaypoint);
+            if (purchaseCargoResult is null) 
+            {
+                ship = ship with { GoalModel = null, ShipCommand = null };
+                return new ShipStatus(ship, "Construction material buy didn't work.", DateTime.UtcNow);
+            }
             ship = ship with { Cargo = purchaseCargoResult.Cargo };
             await _agentsService.SetAsync(purchaseCargoResult.Agent);
             await _transactionsService.SetAsync(purchaseCargoResult.Transaction);

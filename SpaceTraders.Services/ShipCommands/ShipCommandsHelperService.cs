@@ -130,24 +130,14 @@ public class ShipCommandsHelperService(
 
         var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
 
-        var marketplaceWaypoint = GetConstructionInventoryWaypoint(
-            ship,
-            currentWaypoint,
-            constructionWaypoint,
-            system);
-        if (marketplaceWaypoint is null) throw new SpaceTraderResultException("No marketplace for construction materials found.");
-        if (marketplaceWaypoint.Symbol != currentWaypoint.Symbol)
+        if (ship.GoalModel.BuyWaypointSymbol != currentWaypoint.Symbol)
         {
             return null;
         }
 
-        var inventoryToBuy = GetConstructionInventoryToBuy(
-            ship,
-            currentWaypoint,
-            constructionWaypoint,
-            system);
+        var inventoryToBuy = currentWaypoint.Marketplace!.TradeGoods!.Single(tg => tg.Symbol == ship.GoalModel.TradeSymbol);
         if (inventoryToBuy is null) return null;
-        var constructionInventory = constructionWaypoint.Construction?.Materials.Single(m => m.TradeSymbol == inventoryToBuy.Symbol);
+        var constructionInventory = constructionWaypoint.Construction?.Materials.Single(m => m.TradeSymbol == ship.GoalModel.TradeSymbol);
         if (constructionInventory is null) throw new SpaceTraderResultException("Could not find construction inventory.");
 
         var quantityToBuy = Math.Min(constructionInventory.Required - constructionInventory.Fulfilled - ship.Cargo.Units, Math.Min(inventoryToBuy.TradeVolume, (ship.Cargo.Capacity - ship.Cargo.Units)));
