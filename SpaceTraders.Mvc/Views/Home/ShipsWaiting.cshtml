@@ -1,0 +1,215 @@
+@using SpaceTraders.Models
+@using SpaceTraders.Mvc.Services
+@using SpaceTraders.Models.Enums
+@using SpaceTraders.Services
+@using SpaceTraders.Services.Ships
+@using SpaceTraders.Services.Shipyards
+@model IEnumerable<ShipStatus>
+@{
+    ViewData["Title"] = "Fleet Status";
+    var ships = Model;
+    var shipsWaiting = Model.Where(m => ShipsService.GetShipCooldown(m.Ship) is null);
+}
+@{
+    var lastInstruction = ships.OrderByDescending(ss => ss.DateTimeOfLastInstruction).FirstOrDefault()?.DateTimeOfLastInstruction;
+}
+@if (lastInstruction is not null)
+{
+    <h3 style="text-align: center;">Last Update: @ViewHelperService.HumanReadableTimeSpan(DateTime.UtcNow - lastInstruction.Value)</h3>
+}
+@{
+    var numberOfWaitingShips = ships.Count();
+}
+<h3 style="text-align: center;">Ships Waiting for Instructions: @shipsWaiting.Count()/@ships.Count()</h3>
+
+@{
+    var commandShips = shipsWaiting
+        .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.COMMAND.ToString())
+        .HexadecimalSort();
+}
+@if (commandShips.Any())
+{
+    <h3 style="text-align: center;">Command @commandShips.Count()</h3>
+    <section class="text-center container">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
+            @foreach (var shipStatus in commandShips)
+            {
+                await Html.RenderPartialAsync("_ShipStatusBox", shipStatus);
+            }
+        </div>
+    </section>
+
+    <br/>
+    <br/>
+}
+
+@{
+    var bulkHaulerShips = shipsWaiting
+        .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString() 
+            && s.Ship.Frame.Symbol == ShipFrameEnum.FRAME_BULK_FREIGHTER.ToString())
+        .HexadecimalSort();
+}
+@if (bulkHaulerShips.Any())
+{
+    <h3 style="text-align: center;">Bulk Hauler @bulkHaulerShips.Count()</h3>
+    <section class="text-center container">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
+            @foreach (var shipStatus in bulkHaulerShips)
+            {
+                await Html.RenderPartialAsync("_ShipStatusBox", shipStatus);
+            }
+        </div>
+    </section>
+
+    <br/>
+    <br/>
+}
+
+
+@{
+    var heavyHaulerShips = shipsWaiting
+        .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString() 
+            && s.Ship.Frame.Symbol == ShipFrameEnum.FRAME_HEAVY_FREIGHTER.ToString())
+        .HexadecimalSort();
+}
+@if (heavyHaulerShips.Any())
+{
+    <h3 style="text-align: center;">Bulk Hauler @heavyHaulerShips.Count()</h3>
+    <section class="text-center container">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
+            @foreach (var shipStatus in heavyHaulerShips)
+            {
+                await Html.RenderPartialAsync("_ShipStatusBox", shipStatus);
+            }
+        </div>
+    </section>
+
+    <br/>
+    <br/>
+}
+
+@{
+    var lightHaulerShips = shipsWaiting
+        .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString() 
+            && s.Ship.Frame.Symbol == ShipFrameEnum.FRAME_LIGHT_FREIGHTER.ToString())
+        .HexadecimalSort();
+}
+@if (lightHaulerShips.Any())
+{
+    <h3 style="text-align: center;">Light Hauler @lightHaulerShips.Count()</h3>
+    <section class="text-center container">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
+            @foreach (var shipStatus in lightHaulerShips)
+            {
+                await Html.RenderPartialAsync("_ShipStatusBox", shipStatus);
+            }
+        </div>
+    </section>
+
+    <br/>
+    <br/>
+}
+
+@{
+    var miningExcavators = shipsWaiting
+            .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.EXCAVATOR.ToString()
+                && s.Ship.Mounts.Any(m => m.Symbol.Contains("MINING_LASER")))
+            .HexadecimalSort();
+}
+@if (miningExcavators.Any())
+{
+    <h3 style="text-align: center;">Mining @miningExcavators.Count()</h3>
+    <section class="text-center container">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
+            @foreach (var shipStatus in miningExcavators)
+            {
+                await Html.RenderPartialAsync("_ShipStatusBox", shipStatus);
+            }
+        </div>
+    </section>
+
+    <br/>
+    <br/>
+}
+
+@{
+    var gasExcavators = shipsWaiting
+        .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.EXCAVATOR.ToString()
+            && s.Ship.Mounts.Any(m => m.Symbol.Contains("GAS_SIPHON")))
+        .HexadecimalSort();
+}
+@if (gasExcavators.Any()) {
+    <h3 style="text-align: center;">Siphoning @gasExcavators.Count()</h3>
+    <section class="text-center container">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
+            @foreach (var shipStatus in gasExcavators)
+            {
+                await Html.RenderPartialAsync("_ShipStatusBox", shipStatus);
+            }
+        </div>
+    </section>
+
+    <br/>
+    <br/>
+}
+
+@{
+    var surveyorShips = shipsWaiting
+        .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.SURVEYOR.ToString())
+        .HexadecimalSort();
+}
+@if (surveyorShips.Any())
+{
+    <h3 style="text-align: center;">Surveyor @surveyorShips.Count()</h3>
+    <section class="text-center container">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
+            @foreach (var shipStatus in surveyorShips)
+            {
+                await Html.RenderPartialAsync("_ShipStatusBox", shipStatus);
+            }
+        </div>
+    </section>
+
+    <br/>
+    <br/>
+}
+
+@{
+    var transportShips = shipsWaiting
+        .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.TRANSPORT.ToString())
+        .HexadecimalSort();
+}
+
+@if (transportShips.Any())
+{
+    <h3 style="text-align: center;">Transport @transportShips.Count()</h3>
+    <section class="text-center container">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
+            @foreach (var shipStatus in transportShips)
+            {
+                await Html.RenderPartialAsync("_ShipStatusBox", shipStatus);
+            }
+        </div>
+    </section>
+
+    <br/>
+    <br/>
+}
+
+@{
+    var satelliteShips = shipsWaiting
+        .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.SATELLITE.ToString())
+        .HexadecimalSort();
+}
+@if (satelliteShips.Any())
+{
+    <h3 style="text-align: center;">Satellite @satelliteShips.Count() - @(satelliteShips.GroupBy(ss => ss.Ship.Nav.SystemSymbol).Count()) Systems</h3>
+    <section class="text-center container">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
+            @foreach (var shipStatus in satelliteShips)
+            {
+                await Html.RenderPartialAsync("_ShipStatusBox", shipStatus);
+            }
+        </div>
+    </section>
+}

@@ -7,22 +7,23 @@
 @model IEnumerable<ShipStatus>
 @{
     ViewData["Title"] = "Fleet Status";
+    var ships = Model;
 }
 @{
-    var lastInstruction = Model.OrderByDescending(ss => ss.DateTimeOfLastInstruction).FirstOrDefault()?.DateTimeOfLastInstruction;
+    var lastInstruction = ships.OrderByDescending(ss => ss.DateTimeOfLastInstruction).FirstOrDefault()?.DateTimeOfLastInstruction;
 }
 @if (lastInstruction is not null)
 {
     <h3 style="text-align: center;">Last Update: @ViewHelperService.HumanReadableTimeSpan(DateTime.UtcNow - lastInstruction.Value)</h3>
 }
 @{
-    var numberOfWaitingShips = Model.Count(m => ShipsService.GetShipCooldown(m.Ship) is null);
+    var numberOfWaitingShips = ships.Count(m => ShipsService.GetShipCooldown(m.Ship) is null);
 }
-<h3 style="text-align: center;">Ships Waiting for Instructions: @numberOfWaitingShips/@Model.Count()</h3>
+<h3 style="text-align: center;"><a href="/home/shipswaiting">Ships Waiting</a> for Instructions: @numberOfWaitingShips/@Model.Count()</h3>
 
 
 @{
-    var commandShips = Model
+    var commandShips = ships
         .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.COMMAND.ToString())
         .HexadecimalSort();
 }
@@ -43,7 +44,7 @@
 }
 
 @{
-    var bulkHaulerShips = Model
+    var bulkHaulerShips = ships
         .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString() 
             && s.Ship.Frame.Symbol == ShipFrameEnum.FRAME_BULK_FREIGHTER.ToString())
         .HexadecimalSort();
@@ -66,7 +67,7 @@
 
 
 @{
-    var heavyHaulerShips = Model
+    var heavyHaulerShips = ships
         .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString() 
             && s.Ship.Frame.Symbol == ShipFrameEnum.FRAME_HEAVY_FREIGHTER.ToString())
         .HexadecimalSort();
@@ -88,7 +89,7 @@
 }
 
 @{
-    var lightHaulerShips = Model
+    var lightHaulerShips = ships
         .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString() 
             && s.Ship.Frame.Symbol == ShipFrameEnum.FRAME_LIGHT_FREIGHTER.ToString())
         .HexadecimalSort();
@@ -110,7 +111,7 @@
 }
 
 @{
-    var miningExcavators = Model
+    var miningExcavators = ships
             .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.EXCAVATOR.ToString()
                 && s.Ship.Mounts.Any(m => m.Symbol.Contains("MINING_LASER")))
             .HexadecimalSort();
@@ -132,7 +133,7 @@
 }
 
 @{
-    var gasExcavators = Model
+    var gasExcavators = ships
         .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.EXCAVATOR.ToString()
             && s.Ship.Mounts.Any(m => m.Symbol.Contains("GAS_SIPHON")))
         .HexadecimalSort();
@@ -153,7 +154,7 @@
 }
 
 @{
-    var surveyorShips = Model
+    var surveyorShips = ships
         .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.SURVEYOR.ToString())
         .HexadecimalSort();
 }
@@ -174,7 +175,7 @@
 }
 
 @{
-    var transportShips = Model
+    var transportShips = ships
         .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.TRANSPORT.ToString())
         .HexadecimalSort();
 }
@@ -196,7 +197,7 @@
 }
 
 @{
-    var satelliteShips = Model
+    var satelliteShips = ships
         .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.SATELLITE.ToString())
         .HexadecimalSort();
 }
