@@ -123,26 +123,16 @@ public class ShipCommandsHelperService(
     public async Task<PurchaseCargoResult?> BuyForConstruction(Ship ship, Waypoint currentWaypoint, Waypoint constructionWaypoint)
     {
         var agent = await _agentsService.GetAsync();
-        if (ship.Cargo.Capacity == ship.Cargo.Units)
-        {
-            return null;
-        }
-
         var system = await _systemsService.GetAsync(currentWaypoint.SystemSymbol);
 
-        if (ship.GoalModel.BuyWaypointSymbol != currentWaypoint.Symbol)
-        {
-            return null;
-        }
-
         var inventoryToBuy = currentWaypoint.Marketplace!.TradeGoods!.Single(tg => tg.Symbol == ship.GoalModel.TradeSymbol);
-        if (inventoryToBuy is null) return null;
+        if (inventoryToBuy is null) throw new Exception($"Construction Marketplace doesn't contain trade symbol - {ship.GoalModel.TradeSymbol}");
         var constructionInventory = constructionWaypoint.Construction?.Materials.Single(m => m.TradeSymbol == ship.GoalModel.TradeSymbol);
-        if (constructionInventory is null) throw new SpaceTraderResultException("Could not find construction inventory.");
+        if (constructionInventory is null) throw new Exception($"Could not find construction inventory - {ship.GoalModel.TradeSymbol}");
 
         var quantityToBuy = Math.Min(constructionInventory.Required - constructionInventory.Fulfilled - ship.Cargo.Units, Math.Min(inventoryToBuy.TradeVolume, (ship.Cargo.Capacity - ship.Cargo.Units)));
         if (inventoryToBuy.PurchasePrice * quantityToBuy > (agent.Credits - 200_000)) return null;
-        if (quantityToBuy == 0) return null;
+        if (quantityToBuy == 0) throw new Exception($"Construction quantity to buy is 0 {ship.GoalModel.TradeSymbol}");
         var purchaseCargoResult = await _marketplacesService.PurchaseAsync(ship.Symbol, inventoryToBuy.Symbol, quantityToBuy);
         return purchaseCargoResult;
     }
