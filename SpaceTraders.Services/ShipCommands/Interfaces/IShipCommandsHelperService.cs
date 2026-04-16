@@ -46,5 +46,6 @@ public interface IShipCommandsHelperService
     Task<GoalModel?> GetShipModuleGoalModel(Ship ship);
     string GetModuleToRemove(Ship ship, string? tradeSymbol);
     Task<GoalModel?> BuildSupplyConstructionGoalModel(Ship ship, Waypoint? constructionWaypoint);
-    
+    Task<GoalModel?> CompleteOtherConstructionGoalModel(Ship ship, Dictionary<string, Ship> shipsDictionary);
+    Task<(Nav nav, Fuel fuel)> WarpAsync(Ship ship, Waypoint goalJumpGate);
 }

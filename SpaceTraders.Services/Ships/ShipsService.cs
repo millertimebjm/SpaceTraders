@@ -512,4 +512,22 @@ public class ShipsService(
         var data = await response.Content.ReadFromJsonAsync<DataSingle<RemoveModuleResult>>();
         return data.Datum;
     }
+
+    public async Task<ShipWarpResult> WarpAsync(string shipSymbol, string waypointSymbol)
+    {
+        var urlBuilder = new UriBuilder(ApiUrl)
+        {
+            Path = $"/my/ships/{shipSymbol}/warp"
+        };
+        var url = urlBuilder.ToString();
+        var request = new HttpRequestMessage(HttpMethod.Post, url)
+        {
+            Content = JsonContent.Create(new { waypointSymbol })
+        };
+        var response = await _httpHelperService.HttpSendHelperWithAgent(request, _logger);
+        if (!response.IsSuccessStatusCode) throw new HttpRequestException("RemoveModule not retrieved");
+        var data = await response.Content.ReadFromJsonAsync<DataSingle<ShipWarpResult>>();
+        return data.Datum;
+    }
+
 }

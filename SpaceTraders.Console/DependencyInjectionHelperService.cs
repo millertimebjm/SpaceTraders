@@ -97,6 +97,7 @@ public static class DependencyInjectionHelperService
         services.AddSingleton<HaulingAssistToSellAnywhereCommand>();
         services.AddSingleton<ScrapShipCommand>();
         services.AddSingleton<UpgradeShipModule>();
+        services.AddSingleton<CompleteOtherConstruction>();
 
         // Ship Jobs
         services.AddSingleton<HaulerShipJobService>();
@@ -106,6 +107,7 @@ public static class DependencyInjectionHelperService
         services.AddSingleton<TransportShipJobService>();
         services.AddSingleton<ProbeShipJobService>();
         services.AddSingleton<SiphonShipJobService>();
+        services.AddSingleton<ExplorerShipJobService>();
 
         // Cache Services
         services.AddSingleton<IMongoCollectionFactory, MongoCollectionFactory>();

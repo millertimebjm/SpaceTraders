@@ -22,6 +22,7 @@ public class ShipCommandsServiceFactory(IServiceProvider _serviceProvider) : ISh
             ShipCommandEnum.HaulingAssistToSellAnywhere => _serviceProvider.GetRequiredService<HaulingAssistToSellAnywhereCommand>(),
             ShipCommandEnum.ScrapShip => _serviceProvider.GetRequiredService<ScrapShipCommand>(),
             ShipCommandEnum.UpgradeShipModule => _serviceProvider.GetRequiredService<UpgradeShipModule>(),
+            ShipCommandEnum.CompleteOtherConstruction => _serviceProvider.GetRequiredService<CompleteOtherConstruction>(),
             _ => throw new ArgumentException($"Unknown command: {command}", nameof(command))
         };
     }

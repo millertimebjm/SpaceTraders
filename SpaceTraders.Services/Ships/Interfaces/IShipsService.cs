@@ -26,4 +26,5 @@ public interface IShipsService
     Task<ScrapShipResponse> ScrapShipAsync(string symbol);
     Task<InstallModuleResult> InstallModule(string shipSymbol, string symbol);
     Task<RemoveModuleResult> RemoveModule(string symbol, string moduleToRemove);
+    Task<ShipWarpResult> WarpAsync(string shipSymbol, string waypointSymbol);
 }

@@ -20,4 +20,5 @@ public enum ShipCommandEnum
     HaulingAssistToSellAnywhere,
     ScrapShip,
     UpgradeShipModule,
+    CompleteOtherConstruction,
 }

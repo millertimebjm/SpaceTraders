@@ -499,7 +499,6 @@ public class ShipCommandsHelperService(
             throw new SpaceTraderResultException("Path does not exist for NavigateHelper", new HttpRequestException("Fake"), $"{ship.Symbol} | {waypointSymbol} | {ship.GoalModel?.TradeSymbol} | {ship.GoalModel?.BuyWaypointSymbol} | {ship.GoalModel?.SellWaypointSymbol}");
         }
 
-
         if (path.PathWaypoints.Count() == 1) return (nav, fuel, cooldown);
         var nextHop = path.PathWaypoints[1];
 
@@ -919,6 +918,15 @@ public class ShipCommandsHelperService(
                 var shipyard = headquartersSystem.Waypoints.Single(w => w.Shipyard?.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_LIGHT_HAULER.ToString()) == true);
                 return (shipyard.Symbol, ShipTypesEnum.SHIP_LIGHT_HAULER);
             }
+
+            if (!ships.Any(s => s.Registration.Role == ShipRegistrationRolesEnum.EXPLORER.ToString())
+                && reachableShipyards.Any(s => s!.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_EXPLORER.ToString())))
+            {
+                var shipyard = reachableShipyards.Where(s => s!.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_EXPLORER.ToString()))
+                    .OrderBy(s => s!.Symbol) // Tiebreaker
+                    .FirstOrDefault();
+                return (shipyard!.Symbol, ShipTypesEnum.SHIP_EXPLORER);
+            }
         }
         
         if (headquartersSystem.Waypoints.Any(w => w.JumpGate is not null && !w.IsUnderConstruction)
@@ -1168,4 +1176,50 @@ public class ShipCommandsHelperService(
 
         return new GoalModel(inventoryTradeGood.Symbol, marketplaceWaypoint.Symbol, constructionWaypoint.Symbol);
     }
+
+    public async Task<GoalModel?> CompleteOtherConstructionGoalModel(Ship ship, Dictionary<string, Ship> shipsDictionary)
+    {
+        var systems = await _systemsService.GetAsync();
+        var currentSystem = systems.Single(s => s.Symbol == ship.Nav.SystemSymbol);
+        if (currentSystem.Waypoints.Any(w => w.IsUnderConstruction))
+        {
+            return new GoalModel(null, ship.Nav.SystemSymbol, null);
+        }
+
+        var agent = await _agentsService.GetAsync();
+        var headquartersSystem = WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters);
+        var links = SystemsService.TraverseLinks(systems.ToList(), headquartersSystem, traversable: false);
+        // Check for other ships that are doing this
+
+        var closestSystemString = links
+            .Where(l => 
+                (l.leftSystem.Symbol == headquartersSystem || l.rightSystem.Symbol == headquartersSystem)
+                && l.dottedLine)
+            .Select(l => l.leftSystem.Symbol != headquartersSystem ? l.leftSystem.Symbol : l.rightSystem.Symbol)
+            .OrderBy(l => l)
+            .FirstOrDefault();
+        if (closestSystemString is null) return null;
+
+        var closestSystem = systems.Single(s => s.Symbol == closestSystemString);
+        var jumpGateWaypointStrings = closestSystem.Waypoints.Single(w => w.Type == WaypointTypesEnum.JUMP_GATE.ToString()).JumpGate!.Connections;
+        var traversableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol, int.MaxValue);
+        var traversableWaypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
+        var traversableJumpGateWaypoints = traversableWaypoints.Where(w => jumpGateWaypointStrings.Contains(w.Symbol)).ToList();
+        var traversableJumpGateWaypointStrings = traversableJumpGateWaypoints.Select(w => w.Symbol);
+
+        var paths = PathsService.BuildSystemPathWithCostWithBurn(traversableWaypoints, ship.Nav.WaypointSymbol, ship.Fuel.Capacity, ship.Fuel.Current);
+        var shortestJumpGateWaypointPath = paths
+            .Where(p => traversableJumpGateWaypointStrings.Contains(p.WaypointSymbol))
+            .OrderByDescending(p => p.TimeCost)
+            .First();
+
+        return new GoalModel(null, closestSystemString, shortestJumpGateWaypointPath.WaypointSymbol);
+    }
+
+    public async Task<(Nav nav, Fuel fuel)> WarpAsync(Ship ship, Waypoint goalJumpGate)
+    {
+        var shipWarpResult = await _shipsService.WarpAsync(ship.Symbol, goalJumpGate.Symbol);
+        return (shipWarpResult.Nav, shipWarpResult.Fuel);
+    }
+
 }
