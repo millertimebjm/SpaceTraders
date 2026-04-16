@@ -1,15 +1,14 @@
 using Microsoft.AspNetCore.Mvc;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
-using SpaceTraders.Models.Results;
 using SpaceTraders.Mvc.Models;
+using SpaceTraders.Mvc.Services;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Contracts.Interfaces;
 using SpaceTraders.Services.Marketplaces.Interfaces;
 using SpaceTraders.Services.Ships;
 using SpaceTraders.Services.Ships.Interfaces;
 using SpaceTraders.Services.ShipStatuses.Interfaces;
-using SpaceTraders.Services.Shipyards;
 using SpaceTraders.Services.Surveys.Interfaces;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Transactions.Interfaces;
@@ -26,8 +25,8 @@ public class ShipsController(
     ISurveysCacheService _surveysCacheService,
     ITransactionsCacheService _transactionsService,
     IShipStatusesCacheService _shipStatusesCacheService,
-    ISystemsService _systemsService
-) : BaseController(_agentsService, _shipStatusesCacheService, _systemsService)
+    ISystemsService _systemsService,
+    BaseControllerDependencyInjectionContext baseControllerContext) : BaseController(baseControllerContext)
 {
     [Route("/ships")]
     public async Task<IActionResult> Index()

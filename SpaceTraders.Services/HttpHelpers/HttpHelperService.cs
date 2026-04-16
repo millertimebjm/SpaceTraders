@@ -10,7 +10,6 @@ namespace SpaceTraders.Services.HttpHelpers;
 
 public class HttpHelperService(
     IApiRequestLimiterService _limiterService,
-    HttpClient _httpClient,
     IConfiguration _configuration) : IHttpHelperService
 {
     private const int DELAY_IN_MILLISECONDS = 410;

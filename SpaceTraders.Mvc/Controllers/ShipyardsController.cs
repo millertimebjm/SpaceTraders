@@ -1,9 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using SpaceTraders.Models;
+using SpaceTraders.Mvc.Services;
 using SpaceTraders.Services.Agents.Interfaces;
-using SpaceTraders.Services.ShipStatuses.Interfaces;
 using SpaceTraders.Services.Shipyards.Interfaces;
-using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Waypoints.Interfaces;
 
 namespace SpaceTraders.Mvc.Controllers;
@@ -11,10 +10,8 @@ namespace SpaceTraders.Mvc.Controllers;
 public class ShipyardsController(
     IShipyardsService _shipyardsService,
     IAgentsService _agentsService,
-    IShipStatusesCacheService _shipStatusesCacheService,
-    ISystemsService _systemsService,
-    IWaypointsService _waypointsService
-) : BaseController(_agentsService, _shipStatusesCacheService, _systemsService)
+    IWaypointsService _waypointsService,
+    BaseControllerDependencyInjectionContext baseControllerContext) : BaseController(baseControllerContext)
 {
     [Route("/systems/{systemSymbol}/waypoints/{shipyardWaypointSymbol}/shipyard")]
     public async Task<IActionResult> Index(string systemSymbol, string shipyardWaypointSymbol)

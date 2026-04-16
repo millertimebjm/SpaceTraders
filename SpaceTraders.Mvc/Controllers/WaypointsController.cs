@@ -1,9 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using SpaceTraders.Models;
 using SpaceTraders.Mvc.Models;
-using SpaceTraders.Services.Agents.Interfaces;
+using SpaceTraders.Mvc.Services;
 using SpaceTraders.Services.Ships.Interfaces;
-using SpaceTraders.Services.ShipStatuses.Interfaces;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Waypoints;
 using SpaceTraders.Services.Waypoints.Interfaces;
@@ -11,13 +10,10 @@ using SpaceTraders.Services.Waypoints.Interfaces;
 namespace SpaceTraders.Mvc.Controllers;
 
 public class WaypointsController(
-    ILogger<WaypointsController> _logger,
     IWaypointsService _waypointsService,
     IShipsService _shipsService,
-    IAgentsService _agentsService,
     ISystemsService _systemsService,
-    IShipStatusesCacheService _shipStatusesCacheService
-) : BaseController(_agentsService, _shipStatusesCacheService, _systemsService)
+    BaseControllerDependencyInjectionContext baseControllerContext) : BaseController(baseControllerContext)
 {
     [Route("/waypoints/{waypointSymbol}")]
     public IActionResult Index(string waypointSymbol)

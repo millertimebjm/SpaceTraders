@@ -9,6 +9,8 @@ public enum SessionEnum
     CurrentCredits,
     SystemWaypoints,
     Waypoint,
+    AgentToken,
+    AgentTokenExpiration,
 }
 
 public static class SessionHelper

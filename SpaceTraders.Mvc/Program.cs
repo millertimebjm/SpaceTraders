@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Serilog;
 using SpaceTraders.Dispatcher;
 using SpaceTraders.Models.Enums;
+using SpaceTraders.Mvc.Services;
 using SpaceTraders.Services.Accounts;
 using SpaceTraders.Services.Accounts.Interfaces;
 using SpaceTraders.Services.Agents;
@@ -76,6 +77,7 @@ builder.Services.AddScoped<IAccountApiService, AccountApiService>();
 builder.Services.AddScoped<IContractsApiService, ContractsApiService>();
 builder.Services.AddSingleton<IHttpHelperService, HttpHelperService>();
 builder.Services.AddSingleton<IApiRequestLimiterService, ApiRequestLimiterChannelService>();
+builder.Services.AddScoped<BaseControllerDependencyInjectionContext>();
 
 // Cache Services
 builder.Services.AddSingleton<IMongoCollectionFactory, MongoCollectionFactory>();
@@ -180,5 +182,11 @@ using var scope = app.Services.CreateAsyncScope();
 var accountService = scope.ServiceProvider.GetRequiredService<IAccountService>();
 var account = await accountService.GetAsync();
 builder.Configuration[$"{_appConfigSectionName}:{ConfigurationEnums.AgentToken.ToString()}"] = account.Token;
+
+_ = Task.Run(async () =>
+{
+    var dispatcher = app.Services.GetRequiredService<IApiRequestLimiterService>();
+    await dispatcher.ProcessQueueAsync(CancellationToken.None);
+});
 
 app.Run();

@@ -1,20 +1,14 @@
-using System.Diagnostics;
-using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using SpaceTraders.Models.Enums;
-using SpaceTraders.Mvc.Models;
+using SpaceTraders.Mvc.Services;
 using SpaceTraders.Services.Agents.Interfaces;
-using SpaceTraders.Services.ShipStatuses.Interfaces;
-using SpaceTraders.Services.Systems.Interfaces;
 
 namespace SpaceTraders.Mvc.Controllers;
 
 public class AgentsController(
     IAgentsService agentsService,
-    IShipStatusesCacheService _shipStatusesCacheService,
-    ISystemsService _systemsService,
-    IConfiguration _configuration
-    ) : BaseController(agentsService, _shipStatusesCacheService, _systemsService)
+    IConfiguration _configuration,
+    BaseControllerDependencyInjectionContext baseControllerContext) : BaseController(baseControllerContext)
 {
     public async Task<IActionResult> Index()
     {

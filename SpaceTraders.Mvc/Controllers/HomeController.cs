@@ -1,18 +1,14 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using SpaceTraders.Mvc.Models;
-using SpaceTraders.Services.Agents.Interfaces;
-using SpaceTraders.Services.Ships;
+using SpaceTraders.Mvc.Services;
 using SpaceTraders.Services.ShipStatuses.Interfaces;
-using SpaceTraders.Services.Systems.Interfaces;
 
 namespace SpaceTraders.Mvc.Controllers;
 
 public class HomeController(
-    IAgentsService _agentsService,
     IShipStatusesCacheService _shipStatusesCacheService,
-    ISystemsService _systemsService
-) : BaseController(_agentsService, _shipStatusesCacheService, _systemsService)
+    BaseControllerDependencyInjectionContext baseControllerContext) : BaseController(baseControllerContext)
 {
     public async Task<IActionResult> Index()
     {

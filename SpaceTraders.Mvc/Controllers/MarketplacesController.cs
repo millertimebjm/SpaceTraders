@@ -5,13 +5,13 @@ using Microsoft.AspNetCore.Razor.TagHelpers;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Enums;
 using SpaceTraders.Mvc.Models;
+using SpaceTraders.Mvc.Services;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Marketplaces.Interfaces;
 using SpaceTraders.Services.Paths;
 using SpaceTraders.Services.Paths.Interfaces;
 using SpaceTraders.Services.ShipLogs.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
-using SpaceTraders.Services.ShipStatuses.Interfaces;
 using SpaceTraders.Services.Systems;
 using SpaceTraders.Services.Systems.Interfaces;
 using SpaceTraders.Services.Trades;
@@ -26,13 +26,12 @@ public class MarketplacesController(
     IAgentsService _agentsService,
     ITradesService _tradesService,
     ITradesCacheService _tradesCacheService,
-    IShipStatusesCacheService _shipstatusesCacheService,
     ISystemsService _systemsService,
     IShipLogsService _shipLogsService,
     IShipsService _shipsService,
     IPathsService _pathsService,
-    IWaypointsService _waypointsService
-) : BaseController(_agentsService, _shipstatusesCacheService, _systemsService)
+    IWaypointsService _waypointsService,
+    BaseControllerDependencyInjectionContext baseControllerContext) : BaseController(baseControllerContext)
 {
     [Route("/marketplaces/{marketplaceWaypointSymbol}")]
     public async Task<IActionResult> Index(string marketplaceWaypointSymbol)

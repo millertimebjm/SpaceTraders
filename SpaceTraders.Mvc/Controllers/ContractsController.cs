@@ -1,11 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using SpaceTraders.Models;
 using SpaceTraders.Models.Results;
+using SpaceTraders.Mvc.Services;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Contracts.Interfaces;
 using SpaceTraders.Services.Ships.Interfaces;
-using SpaceTraders.Services.ShipStatuses.Interfaces;
-using SpaceTraders.Services.Systems.Interfaces;
 
 namespace SpaceTraders.Mvc.Controllers;
 
@@ -13,9 +12,7 @@ public class ContractsController(
     IContractsService _contractsService,
     IShipsService _shipsService,
     IAgentsService _agentsService,
-    IShipStatusesCacheService _shipStatusesCacheService,
-    ISystemsService _systemsService
-) : BaseController(_agentsService, _shipStatusesCacheService, _systemsService)
+    BaseControllerDependencyInjectionContext baseControllerContext) : BaseController(baseControllerContext)
 {
     public async Task<IActionResult> Index()
     {

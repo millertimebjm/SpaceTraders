@@ -2,6 +2,7 @@ using System.Text;
 using Microsoft.AspNetCore.Mvc;
 using SpaceTraders.Models;
 using SpaceTraders.Mvc.Models;
+using SpaceTraders.Mvc.Services;
 using SpaceTraders.Services.Agents.Interfaces;
 using SpaceTraders.Services.Paths;
 using SpaceTraders.Services.Ships.Interfaces;
@@ -17,13 +18,12 @@ public class SystemsController(
     ILogger<SystemsController> _logger,
     ISystemsService _systemsService,
     IWaypointsService _waypointsService,
-    IAgentsService _agentsService,
     ISystemsApiService _systemsApiService,
     IShipsService _shipsService,
     IWaypointsApiService _waypointsApiService,
     ISystemsCacheService _systemsCacheService,
-    IShipStatusesCacheService _shipStatusesCacheService
-) : BaseController(_agentsService, _shipStatusesCacheService, _systemsService)
+    IShipStatusesCacheService _shipStatusesCacheService,
+    BaseControllerDependencyInjectionContext baseControllerContext) : BaseController(baseControllerContext)
 {
     [Route("/systems/{systemSymbol}")]
     public async Task<IActionResult> Index(
