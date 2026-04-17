@@ -1205,12 +1205,12 @@ public class ShipCommandsHelperService(
         var traversableSystems = SystemsService.Traverse(systems, ship.Nav.SystemSymbol, int.MaxValue);
         var traversableWaypoints = traversableSystems.SelectMany(s => s.Waypoints).ToList();
         var traversableJumpGateWaypoints = traversableWaypoints.Where(w => jumpGateWaypointStrings.Contains(w.Symbol)).ToList();
-        var traversableJumpGateWaypointStrings = traversableJumpGateWaypoints.Select(w => w.Symbol);
+        var traversableJumpGateWaypointStrings = traversableJumpGateWaypoints.Select(w => w.Symbol).ToList();
 
         var paths = PathsService.BuildSystemPathWithCostWithBurn(traversableWaypoints, ship.Nav.WaypointSymbol, ship.Fuel.Capacity, ship.Fuel.Current);
         var shortestJumpGateWaypointPath = paths
             .Where(p => traversableJumpGateWaypointStrings.Contains(p.WaypointSymbol))
-            .OrderByDescending(p => p.TimeCost)
+            .OrderBy(p => p.TimeCost)
             .First();
 
         return new GoalModel(null, closestSystemString, shortestJumpGateWaypointPath.WaypointSymbol);
@@ -1221,5 +1221,4 @@ public class ShipCommandsHelperService(
         var shipWarpResult = await _shipsService.WarpAsync(ship.Symbol, goalJumpGate.Symbol);
         return (shipWarpResult.Nav, shipWarpResult.Fuel);
     }
-
 }

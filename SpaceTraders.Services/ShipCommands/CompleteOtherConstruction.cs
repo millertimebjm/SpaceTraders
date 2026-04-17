@@ -87,27 +87,12 @@ public class CompleteOtherConstruction(
         if (ship.Nav.SystemSymbol != ship.GoalModel.BuyWaypointSymbol
             && ship.Nav.WaypointSymbol == ship.GoalModel.SellWaypointSymbol)
         {
-            if (ship.Nav.Status != NavStatusEnum.DOCKED.ToString())
-            {
-                nav = await _shipsService.DockAsync(ship.Symbol);
-                ship = ship with { Nav = nav };
-            }
-
-            if (ship.Cargo.Units == 0)
-            {
-                var purchaseCargoResult = await _shipCommandsHelperService.PurchaseCargo(ship, currentWaypoint, TradeSymbolsEnum.FUEL.ToString(), ship.Cargo.Capacity);
-                ship = ship with { Cargo = purchaseCargoResult.Cargo};
-                await _agentsService.SetAsync(purchaseCargoResult.Agent);
-                await _transactionsService.SetAsync(purchaseCargoResult.Transaction);
-            }
-
             if (ship.Nav.Status != NavStatusEnum.IN_ORBIT.ToString())
             {
                 nav = await _shipsService.OrbitAsync(ship.Symbol);
                 ship = ship with { Nav = nav };
             }
 
-            
             nav = await _shipsService.NavToggleAsync(ship, NavFlightModeEnum.DRIFT);
             ship = ship with { Nav = nav };
             

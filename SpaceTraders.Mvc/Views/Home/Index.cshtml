@@ -43,6 +43,29 @@
     <br/>
 }
 
+
+@{
+    var explorerShips = ships
+        .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.EXPLORER.ToString())
+        .HexadecimalSort();
+}
+@if (explorerShips.Any())
+{
+    <h3 style="text-align: center;">Explorers @explorerShips.Count()</h3>
+    <section class="text-center container">
+        <div style="display: flex; flex-wrap: wrap; justify-content: space-around">
+            @foreach (var shipStatus in explorerShips)
+            {
+                await Html.RenderPartialAsync("_ShipStatusBox", shipStatus);
+            }
+        </div>
+    </section>
+
+    <br/>
+    <br/>
+}
+
+
 @{
     var bulkHaulerShips = ships
         .Where(s => s.Ship.Registration.Role == ShipRegistrationRolesEnum.HAULER.ToString() 
