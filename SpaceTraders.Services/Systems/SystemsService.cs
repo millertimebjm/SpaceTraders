@@ -113,6 +113,35 @@ public class SystemsService(
         return links;
     }
 
+    public static List<(STSystem leftSystem, STSystem rightSystem, bool dottedLine, int distance)> TraverseLinksWithDistance(
+        List<STSystem> systems, 
+        string startingSystemString, 
+        bool traversable = false)
+    {
+        var startingSystem = systems.Single(s => s.Symbol == startingSystemString);
+        List<(STSystem leftSystem, STSystem rightSystem, bool dottedLine, int distance)> links = [];
+        var systemsToReview = new List<(string SystemSymbol, int Distance)>() { (startingSystem.Symbol, 0) };
+        while (systemsToReview.Any())
+        {
+            var systemToReview = systemsToReview.First();
+            systemsToReview.Remove(systemToReview);
+
+            var system = systems.Single(s => s.Symbol == systemToReview.SystemSymbol);
+            var jumpGateWaypoint = system.Waypoints.Single(w => w.JumpGate is not null);
+            foreach (var connection in jumpGateWaypoint!.JumpGate!.Connections)
+            {
+                var connectedSystem = systems.SingleOrDefault(s => s.Symbol == WaypointsService.ExtractSystemFromWaypoint(connection));
+                if (connectedSystem is null) continue;
+
+                if (links.Any(l => l.rightSystem.Symbol == system.Symbol && l.leftSystem.Symbol == connectedSystem.Symbol)) continue; 
+
+                var dottedLine = jumpGateWaypoint.IsUnderConstruction || connectedSystem.Waypoints.Any(w => w.JumpGate is not null && w.IsUnderConstruction);
+                links.Add((system, connectedSystem, dottedLine, systemToReview.Distance + 1));
+            }
+        }
+        return links;
+    }
+
     public static List<string> GetSystemSymbolsWithinXJumps(IReadOnlyList<STSystem> systems, string originSystemSymbol, int distance = 1, bool traversable = false)
     {
         var systemLinks = SystemsService.TraverseLinks(systems.ToList(), originSystemSymbol, traversable: traversable);

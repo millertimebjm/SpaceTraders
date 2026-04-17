@@ -1155,15 +1155,31 @@ public class ShipCommandsHelperService(
         var inventories = constructionWaypoint.Construction.Materials.Where(m => m.Fulfilled < m.Required).ToList();
         if (!inventories.Any()) return null;
 
+        Waypoint marketplaceWaypoint;
         var system = await _systemsService.GetAsync(WaypointsService.ExtractSystemFromWaypoint(constructionWaypoint.Symbol));
-        var marketplaceWaypoints = system.Waypoints.Where(w => w.Marketplace is not null && w.Marketplace.TradeGoods is not null);
-        var inventoryMarketplaceWaypoints = marketplaceWaypoints
-            .Where(w => w.Marketplace!.TradeGoods!.Any(tg => inventories.Any(i => tg.Symbol == i.TradeSymbol)));
+        var marketplaceWaypoints = system.Waypoints.Where(w => w.Marketplace is not null);
+        var inventoryMarketplaceWaypoints = marketplaceWaypoints.Where(w => w.Marketplace?.TradeGoods?.Any(tg => inventories.Any(i => tg.Symbol == i.TradeSymbol)) == true).ToList();
+        if (!inventoryMarketplaceWaypoints.Any())
+        {
+            var paths = PathsService.BuildSystemPathWithCostWithBurn(system.Waypoints.ToList(), ship.Nav.WaypointSymbol, ship.Fuel.Capacity, ship.Fuel.Current);
+            inventoryMarketplaceWaypoints = marketplaceWaypoints.Where(w => w.Marketplace!.Exchange.Any(e => inventories.Any(i => i.TradeSymbol == e.Symbol))
+                || w.Marketplace!.Exports.Any(e => inventories.Any(i => i.TradeSymbol == e.Symbol))).ToList();
+            var shortestPath = paths
+                .Where(p => inventoryMarketplaceWaypoints.Any(w => w.Symbol == p.WaypointSymbol))
+                .OrderBy(p => p.TimeCost)
+                .First();
+            Waypoint closestMarketplace = inventoryMarketplaceWaypoints.Single(w => w.Symbol == shortestPath.WaypointSymbol);
+            var shortestWaypointInventories = closestMarketplace.Marketplace!.Exchange.Select(e => e.Symbol).ToList();
+            shortestWaypointInventories.AddRange(closestMarketplace.Marketplace!.Exports.Select(e => e.Symbol).ToList());
+            var inventoryToBuy = shortestWaypointInventories.First(i => inventories.Any(i2 => i == i2.TradeSymbol));
+            return new GoalModel(inventoryToBuy, closestMarketplace.Symbol, constructionWaypoint.Symbol);
+        }
+
         var inventoryTradeGood = marketplaceWaypoints
             .SelectMany(w => w.Marketplace!.TradeGoods!)
             .Where(tg => inventories.Any(i => tg.Symbol == i.TradeSymbol))
             .OrderByDescending(tg => tg.Supply).First();
-        var marketplaceWaypoint = marketplaceWaypoints
+        marketplaceWaypoint = marketplaceWaypoints
             .Where(w => w.Marketplace!.TradeGoods!.Any(tg => tg.Symbol == inventoryTradeGood.Symbol && tg.Supply == inventoryTradeGood.Supply))
             .OrderBy(w => w.Symbol) // Tiebreaker
             .First();
@@ -1188,7 +1204,7 @@ public class ShipCommandsHelperService(
 
         var agent = await _agentsService.GetAsync();
         var headquartersSystem = WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters);
-        var links = SystemsService.TraverseLinks(systems.ToList(), headquartersSystem, traversable: false);
+        var links = SystemsService.TraverseLinksWithDistance(systems.ToList(), headquartersSystem, traversable: false);
         
         var otherShipExplorerSystemStrings = shipsDictionary
             .Values
@@ -1196,12 +1212,10 @@ public class ShipCommandsHelperService(
             .Select(s => s.GoalModel!.BuyWaypointSymbol);
 
         var closestSystemString = links
-            .Where(l => 
-                (l.leftSystem.Symbol == headquartersSystem || l.rightSystem.Symbol == headquartersSystem)
-                && l.dottedLine)
-            .Select(l => l.leftSystem.Symbol != headquartersSystem ? l.leftSystem.Symbol : l.rightSystem.Symbol)
-            .Where(l => !otherShipExplorerSystemStrings.Contains(l))
-            .OrderBy(l => l)
+            .Where(l => l.dottedLine && !otherShipExplorerSystemStrings.Contains(l.rightSystem.Symbol))
+            .OrderBy(l => l.distance)
+            .ThenBy(l => l.rightSystem) // tiebreaker
+            .Select(l => l.rightSystem.Symbol)
             .FirstOrDefault();
         if (closestSystemString is null) return null;
 
