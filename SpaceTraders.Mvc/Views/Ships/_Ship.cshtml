@@ -37,6 +37,14 @@
         }
     </ul>
     <li><b>Fuel:</b> @ship.Fuel.Current (@ship.Fuel.Capacity)</li>
+    @if (ship.ShipCommand is not null)
+    {
+        <li><b>ShipCommand:</b> @ship.ShipCommand.ShipCommandEnum.ToString()</li>
+    }
+    @if (ship.GoalModel is not null)
+    {
+        <li><b>GoalModel:</b> @ship.GoalModel.TradeSymbol, @ship.GoalModel.BuyWaypointSymbol => @ship.GoalModel.SellWaypointSymbol</li>
+    }
 
     @{
         var shipCooldown = ShipsService.GetShipCooldown(ship);
@@ -49,6 +57,12 @@
     {
         <li><b>Cooldown:</b> Ready</li>
     }
+
+    @if (!string.IsNullOrWhiteSpace(ship.Error))
+    {
+        <li><b>Error:</b> @ship.Error</li>
+    }
+
     @if (currentShipSymbol != ship.Symbol)
     {
         <li><a href="/ships/@ship.Symbol/active">Set as Active</a></li>

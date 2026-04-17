@@ -55,13 +55,20 @@ public class CompleteOtherConstruction(
         Cooldown cooldown = ship.Cooldown;
 
         if (ship.Fuel.Current < ship.Fuel.Capacity
-            && currentWaypoint.Marketplace!.TradeGoods!.Any(tg => tg.Symbol == TradeSymbolsEnum.FUEL.ToString()))
+            && currentWaypoint.Marketplace?.TradeGoods?.Any(tg => tg.Symbol == TradeSymbolsEnum.FUEL.ToString()) == true)
         {
+
             if (ship.Nav.Status != NavStatusEnum.DOCKED.ToString())
             {
                 nav = await _shipsService.DockAsync(ship.Symbol);
                 ship = ship with { Nav = nav };
             }
+
+            var refuelResponse = await _shipCommandsHelperService.Refuel(ship, currentWaypoint);
+            if (refuelResponse is null) throw new SpaceTraderResultException("Refuel failed");
+            ship = ship with { Fuel = refuelResponse.Fuel };
+            await _agentsService.SetAsync(refuelResponse.Agent);
+            await _transactionsService.SetAsync(refuelResponse.Transaction);
         }
 
         if (ship.Nav.SystemSymbol != ship.GoalModel.BuyWaypointSymbol
@@ -72,7 +79,7 @@ public class CompleteOtherConstruction(
                 nav = await _shipsService.OrbitAsync(ship.Symbol);
                 ship = ship with { Nav = nav };
             }
-            (nav, fuel, cooldown) = await _shipCommandsHelperService.NavigateHelper(ship, ship.GoalModel.BuyWaypointSymbol!);
+            (nav, fuel, cooldown) = await _shipCommandsHelperService.NavigateHelper(ship, ship.GoalModel.SellWaypointSymbol!);
             ship = ship with { Nav = nav ?? ship.Nav, Fuel = fuel ?? ship.Fuel, Cooldown = cooldown };
             return new ShipStatus(ship, $"Navigate To closest jump gate {ship.Nav.Route.Destination.Symbol}", DateTime.UtcNow);
         }
@@ -80,6 +87,20 @@ public class CompleteOtherConstruction(
         if (ship.Nav.SystemSymbol != ship.GoalModel.BuyWaypointSymbol
             && ship.Nav.WaypointSymbol == ship.GoalModel.SellWaypointSymbol)
         {
+            if (ship.Nav.Status != NavStatusEnum.DOCKED.ToString())
+            {
+                nav = await _shipsService.DockAsync(ship.Symbol);
+                ship = ship with { Nav = nav };
+            }
+
+            if (ship.Cargo.Units == 0)
+            {
+                var purchaseCargoResult = await _shipCommandsHelperService.PurchaseCargo(ship, currentWaypoint, TradeSymbolsEnum.FUEL.ToString(), ship.Cargo.Capacity);
+                ship = ship with { Cargo = purchaseCargoResult.Cargo};
+                await _agentsService.SetAsync(purchaseCargoResult.Agent);
+                await _transactionsService.SetAsync(purchaseCargoResult.Transaction);
+            }
+
             if (ship.Nav.Status != NavStatusEnum.IN_ORBIT.ToString())
             {
                 nav = await _shipsService.OrbitAsync(ship.Symbol);

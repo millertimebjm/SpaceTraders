@@ -104,6 +104,10 @@ public class ShipLoopsService(
             await Parallel.ForEachAsync(shipStatusesToDoWork, new ParallelOptions {MaxDegreeOfParallelism = 10}, async (shipStatusToDoWork, ct) => 
             {
                 //Stopwatch processingTimeStart = Stopwatch.StartNew();
+                if (shipStatusToDoWork.Ship.Symbol == "SPATIAL260414-86")
+                {
+                    
+                }
                 await DoShipWork(shipStatusToDoWork, shipStatuses);
                 //executionAverageCalculator.Add((processingTimeStart.Elapsed, DateTime.UtcNow));
             });
