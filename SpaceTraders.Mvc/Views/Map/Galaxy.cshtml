@@ -140,8 +140,14 @@
 
             // Camera / View State
             let zoom = 0.2;
-            let cameraX = 0; // Relative to grid center
-            let cameraY = 0;
+            //let cameraX = 0; // Relative to grid center
+            //let cameraY = 0;
+            @{
+                var staticObjectCenter = staticObjects.Single(so => so.Label == Model.StartingSystem);
+            }
+
+            let cameraX = 2000 - @staticObjectCenter.X;
+            let cameraY = 2000 - @staticObjectCenter.Y;
             
             // Interaction State
             let isDragging = false;

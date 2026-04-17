@@ -919,7 +919,7 @@ public class ShipCommandsHelperService(
                 return (shipyard.Symbol, ShipTypesEnum.SHIP_LIGHT_HAULER);
             }
 
-            if (!ships.Any(s => s.Registration.Role == ShipRegistrationRolesEnum.EXPLORER.ToString())
+            if (ships.Count(s => s.Registration.Role == ShipRegistrationRolesEnum.EXPLORER.ToString()) < 2
                 && reachableShipyards.Any(s => s!.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_EXPLORER.ToString())))
             {
                 var shipyard = reachableShipyards.Where(s => s!.ShipTypes.Any(st => st.Type == ShipTypesEnum.SHIP_EXPLORER.ToString()))
@@ -1189,13 +1189,18 @@ public class ShipCommandsHelperService(
         var agent = await _agentsService.GetAsync();
         var headquartersSystem = WaypointsService.ExtractSystemFromWaypoint(agent.Headquarters);
         var links = SystemsService.TraverseLinks(systems.ToList(), headquartersSystem, traversable: false);
-        // Check for other ships that are doing this
+        
+        var otherShipExplorerSystemStrings = shipsDictionary
+            .Values
+            .Where(s => s.ShipCommand?.ShipCommandEnum == ShipCommandEnum.CompleteOtherConstruction && s.GoalModel?.BuyWaypointSymbol is not null)
+            .Select(s => s.GoalModel!.BuyWaypointSymbol);
 
         var closestSystemString = links
             .Where(l => 
                 (l.leftSystem.Symbol == headquartersSystem || l.rightSystem.Symbol == headquartersSystem)
                 && l.dottedLine)
             .Select(l => l.leftSystem.Symbol != headquartersSystem ? l.leftSystem.Symbol : l.rightSystem.Symbol)
+            .Where(l => !otherShipExplorerSystemStrings.Contains(l))
             .OrderBy(l => l)
             .FirstOrDefault();
         if (closestSystemString is null) return null;

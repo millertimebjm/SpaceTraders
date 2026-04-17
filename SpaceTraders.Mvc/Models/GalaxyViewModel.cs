@@ -4,5 +4,6 @@ namespace SpaceTraders.Mvc.Models;
 
 public record GalaxyViewModel(
     Task<IReadOnlyList<STSystem>> SystemsTask,
-    Task<IEnumerable<ShipStatus>> ShipStatusesTask
+    Task<IEnumerable<ShipStatus>> ShipStatusesTask,
+    string StartingSystem
 );
