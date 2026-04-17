@@ -107,6 +107,10 @@ public class CompleteOtherConstruction(
                 ship = ship with { Nav = nav };
             }
 
+            
+            nav = await _shipsService.NavToggleAsync(ship, NavFlightModeEnum.DRIFT);
+            ship = ship with { Nav = nav };
+            
             var systems = await _systemsService.GetAsync();
             var goalSystem = systems.Single(s => s.Symbol == ship.GoalModel.BuyWaypointSymbol);
             var goalJumpGate = goalSystem.Waypoints.Single(s => s.JumpGate is not null);
