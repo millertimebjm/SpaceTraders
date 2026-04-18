@@ -1175,11 +1175,11 @@ public class ShipCommandsHelperService(
             return new GoalModel(inventoryToBuy, closestMarketplace.Symbol, constructionWaypoint.Symbol);
         }
 
-        var inventoryTradeGood = marketplaceWaypoints
+        var inventoryTradeGood = inventoryMarketplaceWaypoints
             .SelectMany(w => w.Marketplace!.TradeGoods!)
             .Where(tg => inventories.Any(i => tg.Symbol == i.TradeSymbol))
             .OrderByDescending(tg => tg.Supply).First();
-        marketplaceWaypoint = marketplaceWaypoints
+        marketplaceWaypoint = inventoryMarketplaceWaypoints
             .Where(w => w.Marketplace!.TradeGoods!.Any(tg => tg.Symbol == inventoryTradeGood.Symbol && tg.Supply == inventoryTradeGood.Supply))
             .OrderBy(w => w.Symbol) // Tiebreaker
             .First();

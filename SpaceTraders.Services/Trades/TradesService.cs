@@ -67,6 +67,7 @@ public class TradesService(
                 }
                 if (tradeModel.ExportBuyPrice > import.SellPrice) continue;
                 var pathModel = pathModels.SingleOrDefault(pm => pm.WaypointSymbol == tradeModel.ImportWaypointSymbol);
+                if (pathModel is null) continue;
                 var newTradeModel = tradeModel with
                 {
                     ImportWaypointSymbol = waypointSymbol,
