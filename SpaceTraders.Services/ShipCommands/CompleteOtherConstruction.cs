@@ -106,8 +106,16 @@ public class CompleteOtherConstruction(
 
         if (ship.Nav.SystemSymbol == ship.GoalModel.BuyWaypointSymbol)
         {
-            ship = ship with { GoalModel = null, ShipCommand = new ShipCommand(ship.Symbol, ShipCommandEnum.SupplyConstruction) };
-            return new ShipStatus(ship, "Ready to Supply Construction.", DateTime.UtcNow);
+            var agent = await _agentsService.GetAsync();
+            if (agent.Credits < 10_000_000)
+            {
+                ship = ship with { GoalModel = null, ShipCommand = new ShipCommand(ship.Symbol, ShipCommandEnum.BuyToSell) };
+            }
+            else
+            {
+                ship = ship with { GoalModel = null, ShipCommand = new ShipCommand(ship.Symbol, ShipCommandEnum.SupplyConstruction) };
+            }
+            return new ShipStatus(ship, "Ready to work in new system.", DateTime.UtcNow);
         }
 
         ship = ship with { Cooldown = new Cooldown(ship.Symbol, 60 * 10, 60 * 10, DateTime.UtcNow.AddMinutes(10)) };
