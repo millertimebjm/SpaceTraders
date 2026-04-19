@@ -44,7 +44,7 @@ public class TransportShipJobService(
             return new ShipCommand(ship.Symbol, ShipCommandEnum.Exploration);
         }
 
-        return null;
+        return new ShipCommand(ship.Symbol, ShipCommandEnum.BuyToSell);
     }
 
     private async Task LoadMoreSystems()
