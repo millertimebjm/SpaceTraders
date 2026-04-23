@@ -107,8 +107,8 @@ public class ExplorationCommand(
                 return new ShipStatus(ship, $"Navigate To Explore {ship.Nav.WaypointSymbol}", DateTime.UtcNow);
             }
 
-            ship = ship with { ShipCommand = null };
-            return new ShipStatus(ship, $"No instructions set.", DateTime.UtcNow);
+            ship = ship with { ShipCommand = new (ship.Symbol, ShipCommandEnum.BuyToSell) };
+            return new ShipStatus(ship, $"Nothing to explore, buying and selling.", DateTime.UtcNow);
         }
     }
 
